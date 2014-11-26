@@ -1,5 +1,5 @@
 <?php
-
+//echo 0
 if(@$force_toplevel)
 	define('TOPLEVEL_FILE', realpath($force_toplevel));
 else 
