@@ -1,0 +1,11 @@
+<script type="text/javascript">
+  var a = /^#h([0-9]+)w([0-9]+)id-(.*)$/.exec(location.hash);
+  if (a) {
+    try {
+      parent.parent.document.getElementById(a[3]).style.height = a[1] + 'px';
+      parent.parent.document.getElementById(a[3]).style.width = a[2] + 'px';
+    } catch(e) {
+      alert(e.description);
+    }
+  }
+</script>

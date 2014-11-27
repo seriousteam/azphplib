@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<script>
+function GetOpener() { 
+	return frameElement ? 
+		frameElement.parentNode && frameElement.parentNode.opener || parent.opener
+		: opener ;
+}
+function Init() {
+	var w = GetOpener();
+	document.getElementById("help_body").innerHTML = GetOpener().document.getElementById("helpText").innerHTML;
+	parent.closeLoader(frameElement.id);
+	frameElement.height = document.body.offsetHeight;
+	frameElement.width = document.body.parentNode.scrollWidth;
+	if("recalcParentSize" in parent) parent.recalcParentSize();
+}
+</script>
+</head>
+<body onload="Init()">
+<table width="100%">
+<tr><td align="right">
+<a href="#" onclick="parent.killFrame(parent,frameElement); return false;"><img src="p_windowclosex.png" class="iclose"></a></td>
+<tr><td>
+<div id="help_body">
+</div>
+</td>
+</tr>
+</table>
+</body>
+

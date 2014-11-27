@@ -1,0 +1,439 @@
+<?php
+$seqcmd = array(
+		'pgsql' => "select nextval('mainseq')"
+		);
+		
+$type_translations_db_to_internal = array(
+	'default' => array(
+		'VARCHAR' => 'VARCHAR', //eq NVARCHAR
+		'CHAR' => 'CHAR',
+		'DECIMAL' => 'DECIMAL',
+		'INTEGER' => 'INTEGER',
+		//FLOAT...
+		'DATE' => 'DATE',
+		'TIMESTAMP' => 'TIMESTAMP',
+		'TIME' => 'TIME',
+		'CLOB' => 'CLOB',
+		'BLOB' => 'BLOB'
+		),
+	'pgsql' => array(
+		'character varying' => 'VARCHAR', //eq NVARCHAR
+		'character' => 'CHAR',
+		'numeric' => 'DECIMAL',
+		'integer' => 'INTEGER',
+		//FLOAT...
+		'date' => 'DATE',
+		'timestamp without time zone' => 'TIMESTAMP', //better to work with(!) timezone!
+		'time with time zone' => 'TIME',
+		'text' => 'CLOB',
+		'bytea' => 'BLOB'
+		)
+);
+
+//TODO
+// function to get current seq value 1) as char 2) as int
+// server function to get seq value, based on client seq and rownum
+
+//TODO: set like escape, the best way - always choose  
+// LIKE .... ESCAPE char
+/*
+	default escape
+	orcale - none
+	pg - \
+	my - \
+	ms - none
+*/
+
+//REGEXP
+/*
+	pg:			e ~ re (posix)
+				e SIMILAR TO semiregexp
+	orcale: 		e regexp_like re (posix)
+	ms:			e LIKE like+square brackets
+	my:			e REGEXP re
+*/
+
+
+
+function replace_dbspecific_funcs($cmd, $dialect) {
+	static $repl = [
+		'pgsql'=> [[],[]],
+		'oracle'=> [[],[]],
+		'mssql'=> [['||'],["+''+"]],
+		'mysql'=> [[],[]],
+	];
+	static $fdef = [
+		'LN' => [ 'mssql' => 'LOG' ],
+		'TRUNC' => [ 'pgsql' => 'TRUNC', 'oracle' => 'TRUNC', 'mssql' => 'ROUND$1$2,1$3', 'mysql' => 'TRUNCATE' ],
+		'YEAR' => [ 'pgsql' => "DATE_PART$1'year',$2$3", 
+				'oracle' => 'EXTRACT$1year FROM $2$3', 
+				'mssql' => 'YEAR', 
+				'mysql' => 'YEAR' ],
+		'MONTH' => [ 'pgsql' => "DATE_PART$1'month',$2$3", 
+				'oracle' => 'EXTRACT$1month FROM $2$3', 
+				'mssql' => 'MONTH', 
+				'mysql' => 'MONTH' ],
+		'DAY' => [ 'pgsql' => "DATE_PART$1'day',$2$3", 
+				'oracle' => 'EXTRACT$1day FROM $2$3', 
+				'mssql' => 'DAY', 
+				'mysql' => 'DAY' ],
+		'DATE_TO_MONTHS' => [ 
+				'pgsql' => "TO_CHAR$1$2,'yyyy-mm'$3", 
+				'oracle' => "TO_CHAR$1$2,'yyyy-mm')$3", 
+				'mssql' => "LEFT$1CONVERT<varchar,$2,120),7$3", 
+				'mysql' => "DATE_FORMAT$1$2,'%Y-%m'$3" ],
+		'MONTHS_BETWEEN' => [
+				'pgsql' => 
+						"$1 SELECT DATE_PART('year', mbw.d1)*12 + DATE_PART('month', mbw.d1) - DATE_PART('year', mbw.d2)*12 - DATE_PART('month', mbw.d2) FROM ( SELECT $2 AS d1 $3 $4 AS d2 ) mbw $5",
+				'oracle' => "MONTH_BETWEEN$1 TRUNC($2,'month') $3 TRUNC($4,'month') $5",
+				'mssql' => "DATEDIFF$1month, $4 $3 $2 $5",// --chage order
+				'mysql' => "PERIOD_DIFF$1 date_format($2, '%Y%m') $3 date_format($4, '%Y%m') $5",
+				],
+		'DAYS_BETWEEN' => [
+				'pgsql' => 
+						"DATE_PART$1'day',($2)::TIMESTAMP - ($4)::TIMESTAMP $5",
+				'oracle' => "$1 TRUNC($2) - (TRUNC($4) $5",
+				'mssql' => "DATEDIFF$1day, $4 $3 $2 $5",// --chage order
+				'mysql' => "DATEDIFF$1$2$3$4$5",
+				],
+		'ADD_DAYS' => [
+				'pgsql' => "$1 ($2) + INTERVAL $4 DAY$5",
+				'oracle' => "$1 ($2) + INTERVAL $4 DAY$5",
+				'mssql' => "DATEADD$1day, $4 $3 $2 $5",// --chage order
+				'mysql' => "$1 ($2) + INTERVAL $4 DAY$5",
+				],
+		'ADD_MONTHS' => [
+				'pgsql' => "$1 ($2) + INTERVAL $4 MONTH$5",
+				'oracle' => "$1 ($2) + INTERVAL $4 MONTH$5",
+				'mssql' => "DATEADD$1month, $4 $3 $2 $5",// --chage order
+				'mysql' => "$1 ($2) + INTERVAL $4 MONTH$5",
+				],
+		'NOW' => [ //with timezone, if possible!
+				'pgsql' => "CURRENT_TIMESTAMP",
+				'oracle' => "CURRENT_TIMESTAMP",
+				'mssql' => "CURRENT_TIMESTAMP",
+				'mysql' => "CURRENT_TIMESTAMP",
+				],
+		'TODAY()' => [ 
+				'pgsql' => "CURRENT_DATE",
+				'oracle' => "CURRENT_DATE ", //servel local
+				'mssql' => "CAST(CURRENT_TIMESTAMP AS DATE)", //servel local
+				'mysql' => "CURRENT_DATE", //server local
+				],
+		'XSESSION_([A-Z_0-9]+)()' =>
+				[
+				'pgsql' => "XSESSION!",
+				'oracle' => "XSESSION!",
+				'mssql' => "(SELECT val FROM #svar_x_$1)",
+				'mysql' => "XSESSION!",
+				]
+	];
+	static $frepl_from = null;
+	static $frepl_to = null;
+	if(!$frepl_from) {
+		$frepl_from = array_fill_keys(array_keys($repl), []);
+		$frepl_to = array_fill_keys(array_keys($repl), []);
+		foreach($fdef as $f=>$def)
+			foreach($def as $d => $v) {
+				if(strstr($v, '$5')) {
+					//works at any(!) level, but take max area as argument, need levelization
+					$frepl_from[$d][] = 
+						array_map(function($X) use($f) {
+							return "/(?<=^|[^a-zA-Z0-9_])$f\s*(~$X<)(.*?)(~$X~)(.*?)(>$X~)/";
+						}, range(0,30) );
+					$frepl_to[$d][] = $v;
+				} else
+				if(strstr($v, '$3')) {
+					//works at any(!) level, but take max area as argument, need levelization
+					$frepl_from[$d][] = 
+						array_map(function($X) use($f) {
+							return "/(?<=^|[^a-zA-Z0-9_])$f\s*(~$X<)(.*?)(>$X~)/";
+						}, range(0,30) );
+					$frepl_to[$d][] = $v;
+				} else {
+					//works at all(!) levels at once
+					$frepl_from[$d][] = 
+						str_replace('()(?=\s*~)', '(?:\s*~\d+<\s*>\d+~)', 
+							"/(?<=^|[^a-zA-Z0-9_])$f(?=\s*~)/");
+					$frepl_to[$d][] = $v;
+				}
+			}
+	}
+	$cmd = levelized_process($cmd,
+		function($s, $lvl) use($frepl_from, $frepl_to, $dialect) {
+			foreach($frepl_from[$dialect] as $k=>$v)
+				$s = preg_replace(
+					is_array($v) ? $v[$lvl] : $v,
+					$frepl_to[$dialect][$k],
+					$s);
+			return $s;
+		}
+	);
+	return str_replace($repl[$dialect][0], $repl[$dialect][1], (string)$cmd);
+}
+
+//use it before subst constants or subselects
+//TODO: escape \
+class dbspecific_select {
+	var $select = '';
+	var $cmd = null;
+	var $parsed = null;
+	var $table = '';
+	var $alias = '';
+	function __construct($cmd, $select, $parsed) {
+		$this->cmd = $cmd;
+		$this->select = $select;
+		$this->parsed = $parsed;
+		main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
+	}
+	function __toString() { return $this->cmd->doToString($this->select); }
+}
+function make_dbspecific_select($cmd, $parsed, $dialect) {
+	$sel = $parsed;
+	switch($dialect) {
+		case 'oracle': 
+		  if(isset($parsed->LIMIT)) {
+		    $l = $parsed->LIMIT; $parsed->LIMIT = '';
+		    $sel = "SELECT * FROM ( $parsed ) WHERE ROWNUM <= $l";
+	 	    $parsed->LIMIT = $l;
+		  }
+		  break;
+		case 'mssql': 
+		 if(isset($parsed->LIMIT)) {
+		    $l = $parsed->LIMIT; $parsed->LIMIT = '';
+		    $sel = preg_replace('/^(\s*SELECT\s)/i', "$1TOP $l ", $parsed );
+	 	    $parsed->LIMIT = $l;
+		 }
+		  break;
+	}
+	//echo $sel;
+	return new dbspecific_select($cmd, replace_dbspecific_funcs($sel, $dialect), $parsed);
+}
+
+//FIXME: we should take alias from command! not from outside
+function main_table_of_many($tables, &$main_table, &$alias, $table_requried = true) {
+	global $RE_ID;
+	if(preg_match("/^\s*($RE_ID)\s+($RE_ID)?\s*$/", $tables, $m)) { 
+		$main_table = $m[1];
+		$alias = $m[2];
+		return false; //one table
+	}
+	if(!preg_match("/^\s*($RE_ID)\s+($RE_ID)\s/", $tables, $m))
+		if($table_requried)
+			throw new Exception("Can't find main table and it's alias in $tables");
+		else
+			return;
+	$main_table = $m[1];
+	$alias = $m[2];
+	return true;
+}
+
+function make_dbspecific_insert_from_select($parsed, $sel, $dialect) {
+	// in select part we have processed everyting before!
+	switch($dialect) {
+	}
+	return $parsed->{'_INSERT INTO'}.' '.$sel; //nothing to do here!
+}
+
+function make_dbspecific_select_values($cmd, $dialect) {
+  if($dialect == 'oracle') return 'SELECT '.$cmd.' FROM DUAL';
+  return 'SELECT '.$cmd;
+}
+
+//check every database if we have to have aliases in multitable update at left side if '='
+// (if field reside in two tables)
+function make_dbspecific_update($parsed, $dialect) {
+	$ret = $parsed;
+	if(main_table_of_many($parsed->UPDATE, $main_table, $alias)) {
+		switch($dialect) {
+		case 'pgsql':
+		  $ret = "UPDATE $main_table xx SET $parsed->SET FROM $parsed->UPDATE WHERE xx.* IS NOT DISTINCT FROM $alias.*"
+		    .(@$parsed->WHERE? " AND ( $parsed->WHERE )":'');
+		  break;
+		case 'oracle':
+		  //UPDATE t SET f = v WHERE c ==> UPDATE (SELECT a1.*, v AS xx__f WHERE c) SET f = xx__f
+		  // NOTE: this KEEP order of placeholders (should be SET before WHERE)
+		  $lst = preg_split("/(?:^|,)\s*($RE_ID)\s*=/", $parsed->SET, 
+				    null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
+		  do{
+		    $f = current($lst);
+		    $set[] =  "$f = xx_$f";
+		    $exprs[] = next($lst) ." AS xx_$f";
+		  }while(next($lst));
+		  $set = strlist($set);
+		  $exprs = strlist($exprs);
+		  $ret = "UPDATE (SELECT $alias.*, $exprs FROM $parsed->UPDATE $parsed->_WHERE) SET $set";
+		  break;
+		case 'mssql': 
+			$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
+			break;
+		case 'mysql': 
+		  // we need return aliases back!
+		  $parsed->SET = preg_replace("/(^|,)\s*($RE_ID)\s*=/", "$1 $alias.$2 =", $parsed->SET);
+		  $ret = "$parsed->_UPDATE$parsed->_SET$parsed->_WHERE"; 
+		  break;
+		}
+	} else {
+		switch($dialect) {
+		case 'mssql': 
+			if($alias)
+				$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
+			break;
+		}
+	}
+	return replace_dbspecific_funcs($ret, $dialect);
+}
+function make_dbspecific_delete($parsed, $dialect) {
+	$ret = $parsed;
+	if(main_table_of_many($from = $parsed->{'DELETE FROM'}, $main_table, $alias)) {
+		switch($dialect) {
+		case 'pgsql':
+			$ret = "DELETE $main_table xx FROM $from WHERE xx.* IS NOT DISTINCT FROM $alias.*"
+					.(@$parsed->WHERE? " AND ( $parsed->WHERE )":'');
+			break;
+		case 'oracle': 
+			$ret = "DELETE FROM (SELECT $alias.* FROM $from $parsed->_WHERE)"; break;
+		case 'mssql': $ret = "DELETE $alias FROM $from $parsed->_WHERE"; break;
+		case 'mysql': $ret = "DELETE $alias FROM $from $parsed->_WHERE"; break;
+		}
+	} else
+	if($dialect === 'mysql') {
+		//mysql use special syntax even for delete from one table only
+		// and don't allow use aliases, but we need
+		// so, convert it to multitable case
+		$ret = "DELETE $alias FROM $from $parsed->_WHERE";
+	}
+	return replace_dbspecific_funcs($ret, $dialect);
+}
+
+/*TODO
+database specific functions
+DATE:
+	WEEK_DAY_OF
+pg: date_part('dow',
+ms: datepart(weekday,
+or: 
+my:
+
+	DATE_FROM_YMD		
+pg:						
+ms:						
+or:						
+my:						
+
+TIME:
+		HOURS_OF			MINUTES_OF			SECONDS_OF		TIME_FROM_HMS
+pg:
+ms:
+or:
+my:
+
+TIMESTAMP: DATE+TIME
+	DATE_OF			TIME_OF			MAKE_TIMESTAMP	
+pg:													
+ms:													
+or:													
+my:													
+
+
+CLOB:
+		FIRST_OF
+pg:
+ms:
+or:
+my:
+
+CHAR:
+	LPAD RPAD
+pg:
+ms:
+or:
+my:
+
+---
+add null row
+with t as (select 1 as a, '2' as b from dual)
+select t.* from t 
+union all 
+select t.* from (select null as a from dual) a left outer join t on a.a is not null;
+
+
+NULL SAFE COMPARE
+
+mysql a <=> b
+pgsql a IS NOT DISTINCT FROM b
+mssql exists( select a intersect select b)
+???orcale LNNVL( a = b ) 
+???oracle DECODE(A,B,1,0)
+???like mssql, but what about indexes?
+*/
+
+function prepareDB(&$db)
+{
+	$dbtype=$db->dialect;
+	// for postgre
+	if ($dbtype=="pgsql")
+	{
+		$db->exec ("SET client_encoding to 'UTF8'");
+		$db->exec ("SET DateStyle = ISO,YMD");
+		$db->exec ("SET timezone = UTC");
+		$db->exec ("SET client_min_messages = 'warning'");
+		$db->exec ("SET bytea_output=escape");
+	}
+	// for mysql
+	if ($dbtype=="mysql")
+	{
+		$db->exec ("SET NAMES 'utf8'");
+		$db->exec ("SET SESSION time_zone = '+00:00'");
+		$db->exec ("SET SESSION sql_mode='STRICT_ALL_TABLES,PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,ONLY_FULL_GROUP_BY,NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_BACKSLASH_ESCAPES'");
+	}
+	// for ms sql 
+	if ($dbtype=="mssql")
+	{
+		// to do AnsiNPW=Yes
+		// utf-8 setted in connection attribs
+		$db->exec ("SET LANGUAGE us_english");
+		$db->exec ("SET DATEFORMAT YMD");
+	}
+	// oracle
+	if ($dbtype=="oci")
+	{
+		$db->exec ("ALTER SESSION SET NLS_CALENDAR='Gregorian'");
+		// NLS_LANG задается передается через переменные среды 
+		//$db->exec ("ALTER SESSION SET NLS_LANG='ENGLISH_UNITED KINGDOM.UTF8'"); // RUSSIAN_CIS // AMERICAN_AMERICA
+		$db->exec ("ALTER SESSION SET NLS_DATE_FORMAT='YYYY-MM-DD'");
+		$db->exec ("ALTER SESSION SET NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'");
+		$db->exec ("ALTER SESSION SET TIME_ZONE='UTC'");
+		$db->exec ("ALTER SESSION SET NLS_NUMERIC_CHARACTERS='.,'");
+	}
+}
+
+function setDbSessionVar($name, $value, $args = []) {
+	static $created = [];
+	$tname = "svar_x_$name";
+	if(!@$created[$name]) {
+		$dbh = get_connection('');
+		switch($dbh->dialect) {
+			case 'mssql':
+				$dbh->exec("IF object_id('tempdb..#$tname') IS NOT NULL DROP TABLE #$tname");
+				$s = $dbh->exec("SELECT * INTO #$tname FROM ($value) a");
+				//$s->execute($args);
+				//echo $s->rowCount(), '-', $s->queryString;
+				//$s = $dbh->prepare("SELECT val FROM #$tname");
+				//$s->execute([]);
+				//while($r = $s->fetchColumn())
+				//	echo "!!!$r!!!";
+			break;
+		}
+	}
+}
+
+/*
+	offset!
+	MY: OFFSET offset
+	MS: 
+	PG: OFFSET offset
+	OR
+	
+*/
+?>
