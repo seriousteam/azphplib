@@ -51,6 +51,7 @@ if (isset($_REQUEST[fwdrez_get]))
 		header("200 OK",true,200);
 		echo '<html><meta http-equiv="refresh" content="10">Not ready yet.</html>';
 		// del old files
+		
 		$dirlist=scandir($rezdir);
 		foreach($dirlist as $fl)
 		 if ($fl!="."&&$fl!="..")
@@ -61,6 +62,7 @@ if (isset($_REQUEST[fwdrez_get]))
 		 		if ((time()-$ftime)>$delete_time) unlink($rezdir.$fl);
 		 	}
 		 }
+		
 	}
 	die;	
 }
@@ -87,13 +89,15 @@ else
 		}
 	}
 	//$_SERVER['argv']=$user_data_q;
+	$cookie_header = apache_request_headers()['Cookie'];
 	$data_source=
 		"<?php\n ".
 		"$"."_REQUEST=".var_export($_REQUEST,true).";\n".
 		"$"."_GET=".var_export($_GET,true).";\n".
 		"$"."_POST=".var_export($_POST,true).";\n".
 		"$"."_COOKIE=".var_export($_COOKIE,true).";\n".
-		"$"."_SERVER=".var_export($_SERVER,true).";\n".
+		'$_SERVER='.var_export($_SERVER,true).";\n".
+		'$COOKIE_HEADER='.var_export($cookie_header, true).";\n".
 		//"$"."argv=".var_export($user_data_q,true).";\n".
 		"$"."force_toplevel=".var_export($target,true).";\n".
 		"require_once ".var_export($target,true).";\n".

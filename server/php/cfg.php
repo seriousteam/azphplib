@@ -1,7 +1,7 @@
 <?php
-//echo 0
-//changes to commit
-//from az3 merging process1
+
+mb_internal_encoding("UTF-8");
+
 if(@$force_toplevel)
 	define('TOPLEVEL_FILE', realpath($force_toplevel));
 else 
@@ -27,7 +27,7 @@ require_once (__DIR__.'/dialects.php');
 
 $CURRENT_USER = 
   @$_SERVER['HTTP_X_AUTH_USER'] ?:(
-	  @$_COOKIE['Uname--'] ?:(
+	  @$_COOKIE['Uname'] ?:(
 	  @$_COOKIE['AUTH_USER'] ?:(
 		  @$_SERVER['PHP_AUTH_USER'] ?:(
 		   function_exists('posix_geteuid') ?
@@ -36,7 +36,7 @@ $CURRENT_USER =
 ))));
 $CURRENT_PW = 
   @$_SERVER['HTTP_X_AUTH_PW'] ?:(
-	  @$_COOKIE['Upass--'] ?:(
+	  @$_COOKIE['Upass'] ?:(
 	  @$_COOKIE['AUTH_PW'] ?:(
 		  @$_SERVER['PHP_AUTH_PW'] ?:(
 			''
@@ -71,6 +71,8 @@ $G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?:
 
 // $G_ENV_URI_PREFIX <--> $G_P_DOC_ROOT
 // so, $G_ENV_URI_PREFIX/path equals to $G_P_DOC_ROOT/path
+
+$GLOBAS_STATE_VARS = [];
 
 //echo $G_P_DOC_ROOT, ' ', $_SERVER['SCRIPT_FILENAME'];
 @include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doen't allow to use SetEnv
@@ -113,35 +115,54 @@ if($G_ENV_TABLE_DB_MAPPING) {
 function table_db($table){
   global $main_cfg;
   global $a_table_db;
+  global $default_db;
   return $main_cfg[@$a_table_db[$table] ?: 'default_db'];
 }
 
-if($G_ENV_LOCAL_USERS)
+if($G_ENV_LOCAL_USERS) {
   /*
     [user]
     role = D | role = S
 	D - default
 	S - ???
    */
-	if(preg_match('/^SQL:(.*)/',$G_ENV_LOCAL_USERS, $m)) {
-		$cmd = $m[1];
+	$CURRENT_DBCHECKED_USER =  $CURRENT_USER;
+	if(is_array($G_ENV_LOCAL_USERS))
+		foreach($G_ENV_LOCAL_USERS as $cond=>$def)
+			if(preg_match($cond, $CURRENT_USER, $m)) {
+					$CURRENT_DBCHECKED_USER = @$m['user'] ?: $m[0];
+					$G_ENV_LOCAL_USERS =  $def;
+					break;
+				}
+	if(preg_match('/^(?:SQL|SQL WITH IP)(?:\(([a-z][a-zA-Z0-9_]*)\))?:(.*)/',$G_ENV_LOCAL_USERS, $m)) {
+		$table_to_check = $m[1] ?: '';
+		$cmd = $m[2];
 		$local_users = cached('local-users', $CURRENT_USER,
-			function($user, $pass) use($cmd) {
-				$dbh = get_connection('');
+			function($user, $name_to_check, $pass, $ip) use($cmd, $table_to_check) {
+				$dbh = get_connection($table_to_check);
 				$stmt = $dbh->prepare($cmd);
-				try {	$stmt->execute([$user, $pass]); } catch(Exception $e) { die($e); }
+				try {	$stmt->execute([$name_to_check, $pass]); 
+				} catch(Exception $e) { die($e); }
 				if($r = $stmt->fetchAll(PDO::FETCH_OBJ)) {
 					$ret = [];
-					foreach($r as $e) $ret[$e->ROLE] = $e->STATUS;
+					foreach($r as $e) {
+						if($mt = explode('/', @$e->IP ?: '0.0.0.0/0', 2)) {
+							$bits = (int)(32-$mt[1]);
+							if($bits < 32 && (ip2long($ip) >> $bits) != (ip2long($mt[0]) >> $bits) ) continue;
+						}
+						$ret[$e->ROLE] = $e->STATUS;
+					}
+					if(!$ret)
+						return 'local user not found';
 					return [ $user => $ret ];
 				} else {
 					return 'local user not found';
 				}
-			}, null, $CURRENT_PW
+			}, null, $CURRENT_DBCHECKED_USER, $CURRENT_PW, $CURRENT_USER_IP
 		);
 	} else
 		$local_users = cached_ini($G_ENV_LOCAL_USERS, true);
-else
+} else
   $local_users = array( $CURRENT_USER => [ 'LOCAL' =>'D' ] );
 
 if($local_users === 'local user not found') {
@@ -273,6 +294,13 @@ $CURRENT_ROLES = user_roles($CURRENT_USER, $CURRENT_ROLES);
 $CURRENT_ROLES_CSV = str_replace(' ', ',', $CURRENT_ROLES);
 $CURRENT_ROLES_ARRAY = explode(' ', $CURRENT_ROLES);
 
+function add_role_to_context($role) {
+	global $CURRENT_ROLES, $CURRENT_ROLES_CSV, $CURRENT_ROLES_ARRAY;
+	$CURRENT_ROLES .= ' '.$role;
+	$CURRENT_ROLES_CSV .= ','.$role;
+	$CURRENT_ROLES_ARRAY[] = $role;
+}
+
 // uri after striping our prefix (normalized in some sence)
 $LOCALIZED_URI = (PHP_SAPI == 'cli' && !isset($force_toplevel))? 
 	$_SERVER['argv'][0]
@@ -328,12 +356,13 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 		$path .= '('.filemtime ($path).')';
 		
 	$path = substr($path, strlen($G_P_DOC_ROOT)+1);
+	$path = str_replace('\\','/', $path);
 	return our_URI($path) . $args;	
 }
 
 $CFG_STDIN_CONTENT = null;
 function main_argument($str = true) {
-global $force_toplevel;
+	global $force_toplevel;
   if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
     $arg = @$_SERVER['argv'][1] ?: '-';
     if($arg === '-')
@@ -360,8 +389,8 @@ global $force_toplevel;
 }
 
 function main_subarguments($str = true) {
-global $force_toplevel;
-  if(PHP_SAPI == 'cli'&&!isset($force_toplevel)) {
+	global $force_toplevel;
+  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
     $arg = $_SERVER['argv'][1] ?: '-';
 	$args = [];
     if($arg === '-' && $str) {
@@ -414,7 +443,8 @@ if(__FILE__ != TOPLEVEL_FILE) return;
 header('Content-type: text/plain');
 
 echo <<<XCFG
-	user is $CURRENT_USER
+	user is $CURRENT_USER 
+		from $CURRENT_USER_IP
 	roles $CURRENT_ROLES_CSV		
 	root is 
 		$G_P_DOC_ROOT

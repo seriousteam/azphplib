@@ -131,18 +131,49 @@ $call_param->name = value;
 function phpQuote($v) { return '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $v).'\''; }
 function phpDQuote($v) { return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $v).'"'; }
 
+function templater_replace_zones($text, &$zones, &$entries) {
+	global $RE_ID;
+	
+	$entries = [];
+	
+	$text = preg_replace_callback("/\\[\\[DEF\\s++($RE_ID)\\s(.*?)\\]\\]/s", 
+			function($m) use(&$entries){ 
+				$entries[$m[1]] = $m[2];
+				return "";
+			}
+		,$text);
+	
+	return preg_replace_callback("/\\[\\[BEGIN:($RE_ID)\\]\\](.*)\[\\[END:\\1\\]\\]/s", 
+		function($m) use(&$zones){
+			$zones[$m[1]] = templater_replace_zones($m[2], $zones, $entries);
+			return "[[ZONE:$m[1]]]";
+		}
+	,$text);
+}
+
 function templater_take_zones($text, $file) {
 	global $library_prefix;
 	echo '<',"?php\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
-	$zones = [];
-	preg_replace_callback('/\[\[BEGIN:([a-zA-Z_][a-zA-Z_0-9])\]\](.*)\[\[END:\1\]\]/s', 
-		function($m) use(&$zones){
-			$zones[$m[1]] = $m[2];
-			return '[[ZONE:$m[1]]]';
-		}
-	,$text);
+	$text = templater_replace_zones( $text, $zones, $entries);
 	$zones['_main_'] = $text;
+	
+	foreach($entries as $k=>$v) {
+	echo <<<FUNC
+
+\$functions['$k'] = function(\$cmd, \$args = null, \$params = null) {
+	global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+
+	if(\$params === null) \$params = new smap;
+	\$call_params = new smap(\$params); 
+
+	\$params->fieldvals = sas_coder_DecodeMap(\$params->fieldvals);
+	\$fieldvals = new smap(null, \$params->fieldvals);
+			
+$v
+};
+FUNC;
+}
 	foreach($zones as $k=>$v)
 		templater_take_one_zone($k, $v, $file);
 		
@@ -183,6 +214,7 @@ function templater_take_one_zone($name, $text, $file) {
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
+global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
 
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
@@ -234,14 +266,14 @@ FUNC;
 	//process repositions
 	$to_process = null; //it's a reference to last processed noncommand part
 	$repos = preg_split('/(\[\[
-					[-a-zA-Z0-9_:$.]*+@[-a-zA-Z0-9_:*.]*+
+					[-a-zA-Z0-9_:$.]*+@(?:[-a-zA-Z0-9_:*.]*+|\{\}\.?|\(\)\.?|\[\]\.?)
 					\s
 					.*?
 					\]\])/sx', 
 		$text, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
 	//var_dump($repos);
 	foreach($repos as &$part) { 
-		if(preg_match('/^\[\[([-a-zA-Z0-9_:$.]*+)@([-a-zA-Z0-9_:*.]*+) \s++ (.*) \]\]$/sx', $part, $m)) {
+		if(preg_match('/^\[\[([-a-zA-Z0-9_:$.]*+)@([-a-zA-Z0-9_:*.]*+|\{\}\.?|\(\)\.?|\[\]\.?) \s++ (.*) \]\]$/sx', $part, $m)) {
 			//[[@tag command]] [[attr@tag command]] [[attr@* command]] [[$@tag command]]
 			$attribute = $m[1];
 			$tag = $m[2];
@@ -261,7 +293,8 @@ FUNC;
 				switch($tag) {
 				case '{}': case '()': case '[]':
 					$to_find = $tag[0];
-					if(preg_match("/(?<pre>.*)(?<tag>$to_fild(?:\s[^>]*)?>)(?<tail>.*)/si", $to_process, $tg_split)) {
+					//var_dump("/(?<pre>.*)(?<tag>\\$to_find)(?<tail>.*)/si", $to_process);
+					if(preg_match("/(?<pre>.*)(?<tag>\\$to_find)(?<tail>.*)/si", $to_process, $tg_split)) {
 						$to_process = $tg_split['pre'].$command."<<$tag>>".
 							$tg_split['tag'].$tg_split['tail'];
 					}
@@ -288,7 +321,7 @@ FUNC;
 								else
 									$tg_split['tag'] = str_replace('>', " $attribute=\"$command\">", $tg_split['tag']);
 							} else //
-								$tg_split['tag'] = str_replace('>', ' '.$commnad, $tg_split['tag']);
+								$tg_split['tag'] = str_replace('>', ' '.$command.'>', $tg_split['tag']);
 							$to_process = $tg_split['pre'].$tg_split['tag'].$tg_split['tail'];
 						} else {
 							//here, we should find tag and and it's end
@@ -322,7 +355,7 @@ FUNC;
 		//echo '====',$text;
 	} while($textp !== $text);
 	do {
-		$text = preg_replace('#(\[\[.*?\]\])<<\.>>
+		$text = preg_replace('#(\[\[(?:.(?!\]\]))*?.\]\])<<\.>>
 				(<(\S+?)(\s[^>]*+)?> 
 						(
 						[^<]*+
@@ -332,6 +365,7 @@ FUNC;
 			#sx', '<$3$4>$1[[{]]$5[[}]]</$3>', $textp = $text);
 		//echo '====',$text;
 	} while($textp !== $text);
+	//var_dump($text);
 	
 	do {
 		$text = preg_replace('#<<\{\}>> (\{ [^{]*+(?:(?-1)[^{]*+)*? \}) #sx', 
@@ -351,7 +385,7 @@ FUNC;
 	$text = preg_replace('#\[\[}\]\]\s*+\[\[/\*\+\*/\]\]\s*+\[\[{\]\]#sx', '', $text);
 	
 	//convert default call zones to explicit call by name
-	preg_replace('/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si',
+	$text = preg_replace("/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si",
 			'[[$1 $3::$2]]',
 			$text);
 
@@ -362,7 +396,7 @@ FUNC;
 	foreach($m[1] as $i=>$s) {
 		if(array_key_exists($s, $selects))
 			throw new Exception("select name '$s' redefinition");
-		if(preg_match('/^\s*+SAMPLE\s++AND\s++(.*)/', $m[3][$i], $g))
+		if(preg_match('/^\s*+SAMPLE\s++AND\s++(.*)/si', $m[3][$i], $g))
 			$m[3][$i] = $g[1];
 		$c = $selects[$s] = new stdClass;
 		$c->select = unescape_template_command($m[3][$i]);
@@ -451,13 +485,11 @@ CTX;
 				$a_add_top = '';
 				if(preg_match('/^\s*+SAMPLE\s++AND\s/si', $m[3])) {
 					$sample = '_and_sample';
-					$a_add = ",\${$m[2]}->subselect_info('$m[1]')";
-					$a_add_top = ",\$rowsets['$m[1]']";
 				}
 				if(@$m[2])
-					$res = "foreach(with_loop_info$sample(\${$m[2]}->$m[1], \$counters->{$m[1]} $a_add) as \$$m[1])";
+					$res = "foreach(with_loop_info$sample(\${$m[2]}->$m[1], \$counters->{$m[1]}, \$statements->{$m[1]} = \${$m[2]}->subselect_info('$m[1]')) as \$$m[1])";
 				else
-					$res = "foreach(with_loop_info$sample(\$rowsets['$m[1]'], \$counters->{$m[1]} $a_add_top) as \$$m[1])";
+					$res = "foreach(with_loop_info$sample(\$rowsets['$m[1]'], \$counters->{$m[1]}, \$statements->{$m[1]} = @\$rowsets['$m[1]']->exInfo) as \$$m[1])";
 			} 
 			else if(preg_match("/^ESC\s+(.*)/i", $cmd, $m)) {
 				$escape_mode = $m[1];
@@ -519,9 +551,12 @@ EEE;
 					$cmd_part = explode('~', $cmd);
 					$cmd_part = array_map('trim', $cmd_part);
 					$db_part = array_shift($cmd_part);
-					if(preg_match("/^($RE_ID):/", $db_part, $m)) {
+					if(preg_match("/^($RE_ID):(.*)/", $db_part, $m)) {
 						$pre = "$m[1]:; ";
-						$db_part = "@\$$m[1]";
+						if(!$m[2])
+							$db_part = ";";
+						else
+							$db_part = "@\$$m[1]";
 					}
 					//process field part
 					$db_part = preg_replace("/\\\$params\s*\.\s*($RE_ID)/", 
@@ -548,18 +583,30 @@ EEE;
 									);
 								switch($f) {
 								case 'NPP': return "\$counters->$m[1]";
-								case 'COUNT': return "\$counters->$m[1]";
+								case 'COUNT': return "(\$counters->$m[1]-1)";
 								case 'FIRST': return "(\$counters->$m[1] === 1)";
-								case 'SAMPLE': return "(\$counters->$m[1] === 0)";
+								case 'SAMPLE': return "(\$counters->$m[1] === 0? 'sample' : '')";
+								case 'SQL': return "make_counting_command(\$statements->$m[1])";
 								}
-								if(preg_match('/^CMD\s+(.*)/', $f, $mc)) {
-									global $RE_ID;
-									preg_match_all("/a\\.$RE_ID/", $mc[1], $mc);
+								global $RE_ID;
+								if(preg_match("/^CMD([ID])?(\\+PK)?\\s+(.*)/", $f, $mc)) {
+									$ins = $mc[1];
+									$with_pk = $mc[2];
+									$cmd_fields = $mc[3];
+									
+									preg_match_all("/a\\.($RE_ID)/", $cmd_fields, $mc);
 									foreach($mc[0] as $v)
 										if(!array_key_exists($v,$select->fields))
 											$select->fields[$v] = str_replace('.','__',$v);
+									if($with_pk) $with_pk = implode(',', $mc[1]);
 									return 
-									"make_manipulation_command(\$$m[1], \$counters->$m[1])";
+									$ins == 'I'?
+									"make_manipulation_command(null, 0, \$statements->$m[1], '$with_pk')"
+									:
+									($ins == 'D'?
+									"make_manipulation_command(\$$m[1], -1, \$statements->$m[1], '$with_pk')"
+									:
+									"make_manipulation_command(\$$m[1], \$counters->$m[1], \$statements->$m[1], '$with_pk')");
 								}
 								$alias = 'x_'.count($select->fields);
 							} else {
@@ -608,14 +655,14 @@ EEE;
 					$res = $db_part;
 					
 					if($cmd_part && 
-						preg_match('/^(E|Es|Ei|En|Ed|Et|E2|E3|Eh)(?:\s+(.*))?$/s'
+						preg_match('/^(E[a-z0-9]?)(?:\s+(.*))?$/s'
 							, end($cmd_part), $mend )) {
 						array_pop ($cmd_part);
 						$cmd_part[] = "output_editor_$mend[1]('".count($strings)."')";
-						$strings[] = "'". preg_replace_callback("/'(\d+)'/", 
+						$strings[] = phpDQuote(preg_replace_callback("/'(\d+)'/", 
 							function($m) use(&$strings) { return $strings[(int)$m[1]];}
 							,@$mend[2])
-						. "'";
+						);
 					}
 					
 					foreach($cmd_part as $c) {
@@ -646,6 +693,7 @@ EEE;
 									$strings[] = phpQuote($m[1]);
 								}
 							}
+							else if($c == '#') {}
 							else if($c == '?') {}
 							else if(preg_match("/^($RE_ID\()(.*)/s", $c, $m))
 								$res = $m[1].$res.', '.$m[2];
@@ -682,6 +730,7 @@ EEE;
 						case '=':
 						case '?:':
 							$res .= ';';
+						case '#':
 							break;
 						case '?':
 							$res = "if( $res )";
@@ -689,8 +738,14 @@ EEE;
 						default:
 							if(end($cmd_part)[0] == '$')
 								$res .= ';';
+							else if(preg_match('/^\?:/',end($cmd_part))) { $res.=';'; }
 							else
-							$res = "output_$escape_mode($res);";
+							switch(substr(rtrim($res),-1,1)) {
+								case ';': case '{' : case '}':
+									break;
+								default:
+									$res = "output_$escape_mode($res);";
+							}
 					}
 					
 					$res = "$pre$res";
@@ -768,10 +823,9 @@ EEE;
 	}
 
 	echo "\n\t\$counters = new stdClass;";
+	echo "\n\t\$statements = new stdClass;";
 	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit);";
 	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
-	//for manipulation command
-	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->args = \$args;";
 	//for paging
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->$main_select_alias;";
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->offset = \$requested_offset;";
@@ -780,10 +834,13 @@ EEE;
 	foreach($selects as $n=>$sel) {
 		if(!$sel->outer) {
 			//free standing select => execute it immidiatly
-			if(@$sel->call_args)
-				echo "\n\t\$rowsets['$n'] = process_query('".addslashes($sel->select)."', $sel->call_args);";
+			if(preg_match('/^\s*+ARRAY\s++(.*)/si',$sel->select, $m)) {
+				echo "\n\t\$rowsets['$n'] = $m[1];";
+			} 
+			else if(@$sel->call_args)
+				echo "\n\t\$rowsets['$n'] = process_query(".phpDQuote($sel->select).", $sel->call_args);";
 			else
-				echo "\n\t\$rowsets['$n'] = process_query('".addslashes($sel->select)."');";
+				echo "\n\t\$rowsets['$n'] = process_query(".phpDQuote($sel->select).");";
 		}
 	}
 	

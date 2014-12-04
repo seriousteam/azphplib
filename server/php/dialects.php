@@ -1,6 +1,7 @@
 <?php
 $seqcmd = array(
 		'pgsql' => "select nextval('mainseq')"
+		, 'mssql'=> "declare @a int; exec @a = GetNewSeqVal_mainseq; select @a;"
 		);
 		
 $type_translations_db_to_internal = array(
@@ -64,24 +65,40 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 	];
 	static $fdef = [
 		'LN' => [ 'mssql' => 'LOG' ],
+		'IS DISTINCT' => ['pgsql' => '$1$2$5 IS DISTINCT FROM $1$4$5',
+				 'mysql' => 'NOT $1$2 <=> $4$5' ,
+				 'mssql' => 'NOT EXISTS(SELECT $2 INTERSECT SELECT $4)' ,
+				 'oracle' => 'NOT EXISTS(SELECT $2 FORM dual INTERSECT SELECT $4 FROM dual)' ,
+				],
+		'IS NOT DISTINCT' => ['pgsql' => '$1$2$5 IS NOT DISTINCT FROM $1$4$5',
+				 'mysql' => '$2 <=> $4' ,
+				 'mssql' => 'EXISTS(SELECT $2 INTERSECT SELECT $4)' ,
+				 'oracle' => 'EXISTS(SELECT $2 FORM dual INTERSECT SELECT $4 FROM dual)' ,
+				],
+		'STRING_TO_INTEGER'=>[ 'pgsql'=> '$1$2$3::text' ],
+
 		'TRUNC' => [ 'pgsql' => 'TRUNC', 'oracle' => 'TRUNC', 'mssql' => 'ROUND$1$2,1$3', 'mysql' => 'TRUNCATE' ],
-		'YEAR' => [ 'pgsql' => "DATE_PART$1'year',$2$3", 
+		'POSITION' => [ 'mssql' => 'CHARINDEX', 'pgsql' => 'POSITION$1$2 IN $4$5', 'oracle' => 'INSTRC$1$4$3$2$5', 'mysql' => 'POSITION$1$2 IN $4$5'],
+		'SUBSTRING' => [ 'pgsql' => 'SUBSTR', 'oracle' => 'SUBSTR', 'mssql' => 'SUBSTRING', 'mysql' => 'SUBSTRING' ],
+		'LENGTH' => [ 'pgsql' => 'LENGTH', 'oracle' => 'LENGTHC', 'mssql' => "LEN$1REPLACE($2,' ','_')$3", 'mysql' => 'CHAR_LENGTH' ],
+		
+		'YEAR' => [ 'pgsql' => 'DATE_PART$1\'year\',$2$3', 
 				'oracle' => 'EXTRACT$1year FROM $2$3', 
 				'mssql' => 'YEAR', 
 				'mysql' => 'YEAR' ],
-		'MONTH' => [ 'pgsql' => "DATE_PART$1'month',$2$3", 
+		'MONTH' => [ 'pgsql' => 'DATE_PART$1\'month\',$2$3', 
 				'oracle' => 'EXTRACT$1month FROM $2$3', 
 				'mssql' => 'MONTH', 
 				'mysql' => 'MONTH' ],
-		'DAY' => [ 'pgsql' => "DATE_PART$1'day',$2$3", 
+		'DAY' => [ 'pgsql' => 'DATE_PART$1\'day\',$2$3', 
 				'oracle' => 'EXTRACT$1day FROM $2$3', 
 				'mssql' => 'DAY', 
 				'mysql' => 'DAY' ],
 		'DATE_TO_MONTHS' => [ 
-				'pgsql' => "TO_CHAR$1$2,'yyyy-mm'$3", 
-				'oracle' => "TO_CHAR$1$2,'yyyy-mm')$3", 
-				'mssql' => "LEFT$1CONVERT<varchar,$2,120),7$3", 
-				'mysql' => "DATE_FORMAT$1$2,'%Y-%m'$3" ],
+				'pgsql' => 'TO_CHAR$1$2,\'yyyy-mm\'$3', 
+				'oracle' => 'TO_CHAR$1$2,\'yyyy-mm\')$3', 
+				'mssql' => 'LEFT$1CONVERT<varchar,$2,120),7$3', 
+				'mysql' => 'DATE_FORMAT$1$2,\'%Y-%m\'$3' ],
 		'MONTHS_BETWEEN' => [
 				'pgsql' => 
 						"$1 SELECT DATE_PART('year', mbw.d1)*12 + DATE_PART('month', mbw.d1) - DATE_PART('year', mbw.d2)*12 - DATE_PART('month', mbw.d2) FROM ( SELECT $2 AS d1 $3 $4 AS d2 ) mbw $5",
@@ -120,9 +137,21 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'mssql' => "CAST(CURRENT_TIMESTAMP AS DATE)", //servel local
 				'mysql' => "CURRENT_DATE", //server local
 				],
+		'TRUE.' => [ 
+				'pgsql' => "TRUE",
+				'oracle' => "1",
+				'mssql' => "1",
+				'mysql' => "1",
+				],
+		'FALSE.' => [ 
+				'pgsql' => "FALSE",
+				'oracle' => "0",
+				'mssql' => "0",
+				'mysql' => "0",
+				],
 		'XSESSION_([A-Z_0-9]+)()' =>
 				[
-				'pgsql' => "XSESSION!",
+				'pgsql' => "(SELECT val FROM svar_x_$1)",
 				'oracle' => "XSESSION!",
 				'mssql' => "(SELECT val FROM #svar_x_$1)",
 				'mysql' => "XSESSION!",
@@ -153,7 +182,9 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				} else {
 					//works at all(!) levels at once
 					$frepl_from[$d][] = 
-						str_replace('()(?=\s*~)', '(?:\s*~\d+<\s*>\d+~)', 
+						str_replace(
+							['()(?=\s*~)', '.(?=\s*~)'], 
+							['(?:\s*~\d+<\s*>\d+~)', '(?=$|[^a-zA-Z0-9_])'], 
 							"/(?<=^|[^a-zA-Z0-9_])$f(?=\s*~)/");
 					$frepl_to[$d][] = $v;
 				}
@@ -408,11 +439,11 @@ function prepareDB(&$db)
 	}
 }
 
-function setDbSessionVar($name, $value, $args = []) {
+function setDbSessionVar($name, $value, $args = [], $for_table = '') {
 	static $created = [];
 	$tname = "svar_x_$name";
 	if(!@$created[$name]) {
-		$dbh = get_connection('');
+		$dbh = get_connection($for_table);
 		switch($dbh->dialect) {
 			case 'mssql':
 				$dbh->exec("IF object_id('tempdb..#$tname') IS NOT NULL DROP TABLE #$tname");
@@ -423,6 +454,16 @@ function setDbSessionVar($name, $value, $args = []) {
 				//$s->execute([]);
 				//while($r = $s->fetchColumn())
 				//	echo "!!!$r!!!";
+			break;
+			case  'pgsql': 
+				$dbh->exec("DROP TABLE IF EXISTS $tname");
+				$dbh->exec("CREATE TEMPORARY TABLE $tname AS $value");
+				//$s->execute($args);
+				//echo $s->rowCount(), '-', $s->queryString;
+				//$s = $dbh->prepare("SELECT val FROM $tname");
+				//$s->execute([]);
+				//while($r = $s->fetchColumn())
+					//echo "!!!$r!!!";
 			break;
 		}
 	}

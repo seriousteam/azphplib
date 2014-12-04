@@ -15,3 +15,6 @@ $default_dir - папка с которой стартанет менеджер,
 Также там определены параметры админа (admin/1).
 
 dir.php - основной php-шник файлового менеджера
+
+
+http://grant.rfh.ru/az/server/php/mfm/dir.php

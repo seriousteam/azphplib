@@ -22,46 +22,27 @@ function strlist($func_or_array, $a = null, $b = null) {
 }
 
 function split_by_strings($s) {
-  return preg_split("/('[^']*(?:''[^']*)*')/", $s, 
+  return preg_split("/('[^']*+(?:''[^']*+)*')/", $s, 
 		    null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
 }
 
 function levelized_process($s, $f) {
-  static $RE_ARGS1 = '/
-      \(
-        (
-          (?:
-            (?>[^()]*)
-            (?R)?
-          )*
-        )
-      \)
-  /xS';
-  $cnt = 0;
-  $lvl = 1;
-  do {
-    $s = preg_replace($RE_ARGS1, "~$lvl<$1>$lvl~", $s, -1, $cnt);
-    if($s === NULL)
-      var_dump(preg_last_error()==PREG_BACKTRACK_LIMIT_ERROR);
-    ++$lvl;
-  } while($cnt);
-  --$lvl;
-  while(--$lvl) {
-    //assume, that all commas inside contained brackets replaced 
-    $s = preg_replace("/(?<!^) # not from beginning, due to \G assert start too
-        (?<=~$lvl< #from requested tag begin
-          |\G #or from last replace
-        )(  #capture it!
-          (?>
-            (?:(?!>$lvl~)[^,])* #anything, but end
-          )
-        )
-        ,   #we are looking for it!!!
-      /x",
-      "$1~$lvl~",
-      $s);
+  //TODO: strcspn
+  $s = preg_split('/([(),])/', $s, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
+  $mlvl = 0;
+	$lvl = 0;
+   foreach($s as &$e) {
+	   switch($e) {
+		   case '(' : ++$lvl; $e = "~$lvl<"; $mlvl = max($mlvl, $lvl); break; 
+		   case ')' : $e = ">$lvl~"; --$lvl; break; 
+		   case ',' : if($lvl) $e = "~$lvl~";
+		}
+	}
+  $s = implode('', $s);
+  for($lvl = $mlvl; $lvl; --$lvl ) {
     $s = $f($s, $lvl);
   }
+
   //echo "\n?????",$s;
 
   $s = preg_replace(["/~[0-9]~/", "/~[0-9]</", "/>[0-9]~/" ], [ ',', '(', ')' ], $s);
@@ -69,8 +50,15 @@ function levelized_process($s, $f) {
   return $s;
 }
 
+class unprocessedSubselect { var $str = '';
+	function __construct($s) { $this->str = (string)$s; }
+}
+class processedSubselect { var $str = '';
+	function __construct($s) { $this->str = (string)$s; }
+}
+
 class _PreCmd {
-  const RE_STR = "/'[^']*(?:''[^']*)*'/";
+  const RE_STR = "/'[^']*+(?:''[^']*+)*'/";
   
   var $cmd = '';
   var $strings = [];
@@ -81,11 +69,18 @@ class _PreCmd {
 	  return 
 		$quote ? "'".str_replace("'","''", $s)."'" : str_replace("'","''", $s);
 	}
-	
-  function __construct($cmd) { 
-    if(strcspn($cmd,_SQL_FORBIDDEN) != strlen($cmd))
-      throw new Exception('forbidden symbol in command:'.$cmd);
+
+  function __construct($cmd, $safe_source = false) { $this->preprocess($cmd, $safe_source); }
+  function preprocess($cmd, $safe_source = false) { 
     $cmd = trim($cmd);
+    if(!$safe_source && strcspn($cmd,_SQL_FORBIDDEN) != strlen($cmd))
+      throw new Exception('forbidden symbol in command:'.$cmd);
+      
+      // (=ID:text:ID=) ===> escape(text)
+    $cmd = preg_replace_callback('/\(=([A-Za-z0-9_]++):(.*?):\1=\)/s',
+	function($m) { return _PreCmd::escape($m[2]); 	}
+    , $cmd); //replace heredoc
+
     $cmd = preg_replace_callback(_PreCmd::RE_STR,
 			       function($str) {
 				 $c = count($this->strings);
@@ -96,6 +91,10 @@ class _PreCmd {
       throw new Exception('multiple commands: '.$cmd);
     if(strcspn($cmd,'~') != strlen($cmd))
       throw new Exception('reserved symbol ~ in command outside strings');
+      
+    $cmd = preg_replace('#(?<=^)\s*+//.*+(?:\R|$)#m','', $cmd); //replace '//' comment
+    $cmd = preg_replace('/(?<=^)\s*+#.*+(?:\R|$)/m','', $cmd); //replace '#' comment
+    $cmd = preg_replace('#/\*.*?\*/#s','', $cmd); //replace '/* */' comment
     
     global $RE_ID;
     $cmd = preg_replace("/(?<!\\s|[.a-zA-Z0-9_])$RE_ID/"," $0", $cmd); //start all ids from space!
@@ -106,30 +105,48 @@ class _PreCmd {
     $cmd = str_ireplace('( SELECT ','( SELECT ', $cmd);
 
     $cmd = levelized_process($cmd, function($cmd, $lvl) {
-        return preg_replace_callback("/~$lvl<\s+SELECT\s+(.*?)>$lvl~/",
+        return preg_replace_callback("/~$lvl<\s+SELECT\s+(.*?)>$lvl~/s",
           function($a) use($lvl) {
             $r = '(%'.count($this->selects).')';
-            $this->selects[] = preg_replace(["/~[0-9]~/", "/~[0-9]</", "/>[0-9]~/" ], [ ',', '(', ')' ], "( SELECT $a[1])");
+            //var_dump($r,'====>',$a[1]);
+            //debug_print_backtrace();
+            $this->selects[] = new unprocessedSubselect(
+			preg_replace(["/~[0-9]~/", "/~[0-9]</", "/>[0-9]~/" ], [ ',', '(', ')' ], "( SELECT $a[1])") );
             return $r;
           },
           $cmd);
       }
     );
     $this->cmd = $cmd;
+    return $this;
   }
   function subst($a) {
     return preg_replace_callback('/\(%([0-9]+)\)/', 
-				 function($m) { return $this->subst($this->selects[(int)$m[1]]); },
+				 function($m) { return $this->subst($this->selects[(int)$m[1]]->str); },
 				 $a
     );
   }
   function doToString($a) {
-    if(!is_string($a)) $a = $a->select;
-    return preg_replace_callback("/'([0-9]+)'/",
-				 function($m) { return $this->strings[(int)$m[1]]; },
-				 $this->subst($a));
+    //if(!is_string($a)) $a = $a->select;
+    return preg_replace_callback("/'([0-9]+)'|\(%([0-9]+)\)/",
+				 function($m) { 
+					if($m[1]!=='') {
+						if(!array_key_exists((int)$m[1], $this->strings))
+							debug_print_backtrace();
+						return $this->strings[(int)$m[1]]; 
+					} else {
+						return 
+						$this->selects[(int)$m[2]] instanceof unprocessedSubselect?
+							$this->doToString(
+								$this->subst($this->selects[(int)$m[2]]->str)
+							)
+						:
+							$this->selects[(int)$m[2]]->str
+						;
+					}
+				},
+				$a);
   }
-  //function __toString() { return (string)($this->cmd); }
 }
 
 class parsedCommand
@@ -194,20 +211,12 @@ class parsedCommand
 class parsedCommandSmart extends parsedCommand {
   var $pre = null;
   var $params = 0;
-  function __construct($parts, $cmd) {
-    $this->pre = new _PreCmd($cmd);
+  function __construct($parts, $cmd, $pre=null) {
+    $this->pre = $pre ? $pre->preprocess($cmd) : new _PreCmd($cmd);
     $this->params = substr_count($this->pre->cmd, '?');
     parent::__construct($parts, $this->pre->cmd);
   }
   function __toString() { return $this->pre->doToString(parent::__toString()); }
-  function __get($name)
-  {
-    if($name[0] === '_' && $name[1] === 's') {
-	$n = substr($name,2);
-	return $this->pre->doToString($this->{$n});
-    }
-    //return parent::___get($name);
-  }
 }
 
 ?>

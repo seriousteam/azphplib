@@ -13,7 +13,7 @@ forwarder.php - скрипт который занимается приемом запросов и выдачей ответа. При
 и удаляет старые файлы оставшиеся в результате каких либо ошибок, например, если юзер не дождался выдачи результата 
 и т.д. (время "жизни" файлов определяется в forwd-defs.php). После выдачи результата, файл результата так же удаляется.
 Что нужно forwarder-у, пример строки
-http://localhost/forward/forwarder.php?fwdrez_header=text/html&fwdrez_scr=target.php&param1=dfdfg&param2=еноты полоскуны
+http://localhost/forward/forwarder.php?fwdrez_header=text/html&fwdrez_scr=forward/target.php&param1=dfdfg&param2=еноты полоскуны
 fwdrez_header - отвечает за вид возвращаемого заголовка Content-type: fwdrez_header
 fwdrez_scr - имя скрипта, который надо запустить и которому будут переданы параметры
 fwdrez_savename - имя для сохраняемого файла с результатами (если нужно положить результат в файл)
@@ -27,3 +27,6 @@ fwdrez_get - имя файла являющимся результатом действия скрипта.
 executer.php - исполняемый скрипт, инклюдит файл с переменными и инклюдит файл запускаемого скрипта
 
 forwd-defs.php - различные дефайны и переменные используемые в forwarder.php и resulter.php
+
+тест по быстрому РГНФ
+http://grant.rfh.ru/az/server/php/forwarder/forwarder.php?fwdrez_header=text/html&fwdrez_scr=az/server/php/forwarder/target.php

@@ -242,6 +242,7 @@ class modelParser extends _PreCmd {
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
 							continue;
 						}
+
 						if(!preg_match("/\s*+(?<name>$RE_ID)\s++
 									(?<rel>@@?\s*+)?(?<type>(?<local>$RE_ID)(?<haspart>\.(?<part>$RE_ID)?)?)(?:\s*:\s*+'(?<relcond>\d++)')?
 									(?:\(\s*+(?<size>\d++)(?:\s*,\s*+(?<prec>\d++))?\s*\))?
@@ -493,4 +494,3 @@ if(__FILE__ != TOPLEVEL_FILE) return;
 
 print_actual_model();
 
-?>

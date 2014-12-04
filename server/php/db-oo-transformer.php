@@ -55,9 +55,9 @@ class _XNode {
       $j = [ "$tn $this->alias" ];
       foreach($this->childs as $k => $v) {
         $sj = (string)$v; if($v->childs) $sj = "( $sj )"; //associate right(!)
-        $j[] = "$sj ON ".$this->table->fields[$k]->getCondition($this->alias, $v->alias);
+        $j[] = ($this->table->fields[$k]->inner? '' : ' LEFT') . " JOIN $sj ON " . $this->table->fields[$k]->getCondition($this->alias, $v->alias);
       }
-      return implode(' JOIN ', $j);
+      return implode('', $j);
   }
 }
 
@@ -114,11 +114,13 @@ class _XPath {
   }
 }
 
+//TODO: GREATEST, LEAST
+
 const _SQL_FUNC_KWD =
   '/^(AS|NULL|CAST|IS|
   SUM|MIN|MAX|AVG|COUNT|
   AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|ESCAPE|
-  CASE|WHEN|THEN|ELSE|END|
+  CASE|WHEN|THEN|ELSE|END|NULLIF|
   LOWER|UPPER|POSITION|SUBSTRING|CHAR_LENGTH|CHARACTER_LENGTH|OCTET_LENGTH|LENGTH|
   TRIM|RTRIM|LTRIM|LEFT|RIGHT|
   ASC|DESC|COALESCE|
@@ -126,7 +128,10 @@ const _SQL_FUNC_KWD =
   NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|
   MONTHS_BETWEEN|DAYS_BETWEEN|ADD_DAYS|ADD_MONTHS|
   DISTINCT|
-  VARCHAR|CHAR|DECIMAL|INTEGER|DATE|TIMESTAMPTZ|TIMESTAMP|TIME|CLOB|BLOB|XSESSION_[A-Z_0-9]+)$/ix';
+  TRUE|FALSE|
+  VARCHAR|CHAR|DECIMAL|INTEGER|DATE|TIMESTAMPTZ|TIMESTAMP|TIME|CLOB|BLOB|
+  STRING_TO_INTEGER|
+  XSESSION_[A-Z_0-9]+)$/ix';
 
 //parts
 $SELECT_STRUCT = [ 'SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'LIMIT' ];
@@ -170,8 +175,15 @@ class _Cmd extends _PreCmd {
     
     //reset aliasing
     _XNode::$a_num = 0;
+    //debug_backtrace();
     //after next line toString will compose processed command
-    $cmd = $this->process_command($this->cmd);
+    if(preg_match('/^\s*ESCAPE\s++(.*)/si', $cmd, $m)) {
+      $cmd = new stdClass;
+      $cmd->select = $m[1];
+      $cmd->subselects = [];
+      $cmd->parsed = null;
+    } else
+      $cmd = $this->process_command($this->cmd);
     if(!is_string($cmd)) { // select command, copy fields here
       $this->subselects = $cmd->subselects;
       $this->parsed = $cmd->parsed;
@@ -207,8 +219,10 @@ class _Cmd extends _PreCmd {
   }
 
   function parse_joins($from) {
+    //var_dump($from, $this->selects);
+    
     global $RE_ID;
-    static $RE_JOIN = '((LEFT|RIGHT|FULL) )?((OUTER|INNER) )?JOIN|ON';
+    static $RE_JOIN = '(?:LEFT |RIGHT |FULL )?(?:OUTER |INNER )?JOIN(?:\s*\()?|ON';
     $a = preg_split("/ ($RE_JOIN) /i",
       $from, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
     $aout = [];
@@ -239,7 +253,7 @@ class _Cmd extends _PreCmd {
         $op = '';
       }
     }
-    //var_dump($a);
+    //var_dump($aout);
     return $aout;
   }
 
@@ -257,8 +271,10 @@ class _Cmd extends _PreCmd {
     array_unshift($tree->stack, $tree->roots);
     $tree->roots = array();
     $joins = $this->parse_joins($from);
-    if(count($joins)<1)
+    if(count($joins)<1) {
+	debug_print_backtrace();
       throw new Exception("No tables to select from: <<<$from>>>");
+    }
     $joins[0]->alias = $joins[0]->alias ?: 'a'; //set default  ('a') alias for root table
 	
     foreach($joins as $t)
@@ -286,10 +302,12 @@ class _Cmd extends _PreCmd {
       { $p = reset($tree->roots); 
         $r = $p->access_filters; $p->access_filters = []; 
         }
+//var_dump($to_recompose);
     $prop = implode(' ', $to_recompose); //string conversion performed in toString of fromItems
     preg_match_all('/\(%([0-9]+)\)/', $prop, $subs);
     foreach($subs[1] as $sn) 
-      $this->selects[(int)$sn] = $this->process_select($this->selects[(int)$sn], $externals, $tree);
+      $this->selects[(int)$sn] =  new processedSubselect(
+	$this->process_select($this->selects[(int)$sn]->str, $externals, $tree));
     $tree->roots = array_shift($tree->stack);
     //echo "\nstack level: ".count($tree->stack);
     $this->set_dialect($to_recompose[0]->tbl);
@@ -303,7 +321,7 @@ class _Cmd extends _PreCmd {
     global $Tables, $SELECT_STRUCT;
     
     if(preg_match('/^\s*\(%([0-9]+)\)\s*$/', $s, $subs)) //if called for encoded subselect => replace with it meaning
-      $s = $this->selects[(int)($subs[1])];
+      $s = $this->selects[(int)($subs[1])]->str;
     
     $parsed = new parsedCommand($SELECT_STRUCT, $s);
     //var_dump($parsed);
@@ -354,7 +372,9 @@ class _Cmd extends _PreCmd {
     preg_replace_callback("/(?<select>\(%[0-9]+\)) AS ARRAY (?<alias>$RE_ID)/i",
       function($m) use(&$tree, &$subselects){
         // select to array here
-        $a = $this->process_select($m['select'], $paths);
+        $old_num = _XNode::$a_num; //keep old alias numeration
+            $a = $this->process_select($m['select'], $paths);
+        _XNode::$a_num = $old_num;
         if(!$paths)
           throw new Exception("Uncorrelated array subselect: $a->stmt");
         foreach($paths as $i=>$p)
@@ -420,8 +440,9 @@ class _Cmd extends _PreCmd {
 			  ' '.$s);
     //process subselects here! it's has only side effect
     preg_match_all('/\(%([0-9]+)\)/', $s, $subs);
-    foreach($subs[1] as $sn) 
-      $this->selects[(int)$sn] = $this->process_select($this->selects[(int)$sn], $externals, $tree);
+    foreach($subs[1] as $sn)
+      $this->selects[(int)$sn] =  new processedSubselect(
+		$this->process_select($this->selects[(int)$sn]->str, $externals, $tree));
     return $ret;
   }
   
@@ -501,7 +522,7 @@ class _Cmd extends _PreCmd {
     if($filter) {
       preg_match('/^\s*\((.*)\)\s*$/', $parsed->VALUES, $m); //trim spaces and brackets
       $select = make_dbspecific_select_values($m[1], $this->dialect);
-      var_dump($parsed->{'_INSERT INTO'});
+      //var_dump($parsed->{'_INSERT INTO'});
       return 
         replace_dbspecific_funcs(
           "{$parsed->{'_INSERT INTO'}} "

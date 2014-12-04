@@ -57,36 +57,38 @@ class loop_helper extends IteratorIterator {
 	var $initial = 1;
 	
 	var $offset = 0;
+	
+	var $exInfo = null;
 
-  function __construct($i, &$counter = null, $initial = 1, $info = null) { 
-			parent::__construct(
-				$i === null ? new EmptyIterator :
-				is_array($i)? new ArrayIterator($i) : $i
-			); 
+  function __construct($i, &$counter = null, $initial = 1, $exInfo = null) { 
+	$this->exInfo = $exInfo;
+	
+	parent::__construct(
+		$i === null ? new EmptyIterator :
+		(is_array($i)? new ArrayIterator($i) : $i)
+	); 
+
 	$this->info = new loop_info;
 	$this->info->outer = loop_info::$top;
-	if($this->info->outer) {
-		$this->info->level = $this->info->outer->level+1;
-	}
+	loop_info::$top = $this->info;
+	if($this->info->outer) $this->info->level = $this->info->outer->level+1;
 	$this->counter = &$counter;
 	$this->initial = $initial;
-	loop_info::$top = $this->info;
+
 	$this->offset =  @$i->offset;
+
   }
   function next (  ) { 
-	if($this->counter === 0)
-		parent::rewind();
-	else    parent::next();
+	if($this->counter !== 0)
+		parent::next();
 	++$this->counter;
   }
   function rewind (  ) {
 	$this->counter = $this->initial;
-	if($this->counter!==0) {
-		parent::rewind();
-		if($i = $this->offset) {
-			while($i--)
-				$this->next();
-		}
+	parent::rewind();
+	if($i = $this->offset) {
+		while($i--)
+			$this->next();
 	}
   }
   function valid() { 
@@ -106,20 +108,36 @@ class loop_helper extends IteratorIterator {
 	}
 	return $ret;
   }
-  function current() { return $this->counter? parent::current() : new everything_you_want($this->info); }
+  function current() {  
+	$r = $this->counter? parent::current() : new everything_you_want($this->exInfo->cmd);
+	return method_exists($r, 'addInfo') ? $r->addInfo($this->exInfo) : $r; 
+}
 
   function __destruct() { loop_info::$top = $this->info->outer; }
 }
-function with_loop_info($a, &$it = null, $info = null) { return new loop_helper($a, $it, 1, $info); }
-function with_loop_info_and_sample($a, &$it = null, $info = null) { return new loop_helper($a, $it, 0, $info); }
+function with_loop_info($collection, &$counter = null, $info = null) { return new loop_helper($collection, $counter, 1, $info); }
+function with_loop_info_and_sample($collection, &$counter = null, $info = null) { return new loop_helper($collection, $counter, 0, $info); }
 
 class everything_you_want { 
-	private $cmd = null;
-	function __construct($cmd = null) { $this->cmd = $cmd; }
-	function cmd() { return $this->cmd; }
+  private $cmd = null;
+  private $subselects = [];
+  private $info = null;
+  function getName() { return $this->cmd->table; }
+  function addInfo($info) { $this->info = $info; return $this; }
+  function exInfo() { return $this->info; }
+
 	function __get($name) { return null; } 
-	function subselect_info($name) { return $this->cmd->subselects[$name]; }
-	function ns($name) { return new namedString($name, null); }
+	function __construct($cmd) { $this->cmd = $cmd; 
+	    foreach($cmd->subselects as $p=>$s) {
+	      $args = [];
+	      foreach($s->args as $i=>$a)
+		$args[] = null;
+		
+		$this->subselects[$p] = new axCommandInfo($s, $args);
+	    }
+	}
+	function subselect_info($name) { return $this->subselects[$name]; }
+	function ns($name) { return new namedString($name, null, $this); }
 }
 
 function current_loop() { return loop_info::$top; }
@@ -185,7 +203,7 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 		return (string)$parsed_target;
 	}
 	if(!preg_match('/^\s*SELECT\s/si', $cmd)) $cmd = 'SELECT '. $cmd;
-	$parsed_src = new parsedCommandSmart($SELECT_STRUCT, $cmd);
+	$parsed_src = new parsedCommandSmart($SELECT_STRUCT, $cmd, $parsed_target->pre);
 	if(!$parsed_src->ok || !$parsed_target->ok) return $target; //FIXME: throw
 	if(!preg_match("/^\s*($RE_ID)(\s|$)/",$parsed_target->FROM, $mt)) 
 		throw new Exception("table not specified in template base command, which is: $target");
@@ -196,16 +214,16 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	//copy parts
 	if(@$parsed_src->WHERE)
 		$parsed_target->WHERE = 
-			@$parsed_target->WHERE? "( $parsed_target->WHERE ) AND ($parsed_src->_sWHERE)"
-			: $parsed_src->_sWHERE;
+			@$parsed_target->WHERE? "( $parsed_target->WHERE ) AND ($parsed_src->WHERE)"
+			: $parsed_src->WHERE;
 	if(@$parsed_src->{'GROUP BY'})
 		$parsed_target->{'GROUP BY'} = 
-			@$parsed_target->{'GROUP BY'}? $parsed_target->{'GROUP BY'}.', '.$parsed_src->{'_sGROUP BY'}
-			: $parsed_src->{'_sGROUP BY'};
+			@$parsed_target->{'GROUP BY'}? $parsed_target->{'GROUP BY'}.', '.$parsed_src->{'GROUP BY'}
+			: $parsed_src->{'GROUP BY'};
 	if(@$parsed_src->{'ORDER BY'})
 		$parsed_target->{'ORDER BY'} = 
-			@$parsed_target->{'ORDER BY'}? $parsed_target->{'ORDER BY'}.', '.$parsed_src->{'_sORDER BY'}
-			: $parsed_src->{'_sORDER BY'};
+			@$parsed_target->{'ORDER BY'}? $parsed_target->{'ORDER BY'}.', '.$parsed_src->{'ORDER BY'}
+			: $parsed_src->{'ORDER BY'};
 	if(@$parsed_src->LIMIT)
 		$parsed_target->LIMIT = $parsed_src->LIMIT; //TODO: min, max, what?
 		
@@ -251,6 +269,19 @@ function toTitle($v) { return $v? mb_substr($v,0,1, 'UTF-8').'.' : $v; }
 function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? FALSE : TRUE); }
 function subRE($v, $re, $np = 0) { return preg_match($re, $v, $m)? $m[$np] : ''; }
 function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d\s*/', '', $v); }
+function ru_addressIdx($v) { return preg_match('/(\d{6})/i', $v, $m) ? $m[1] : null; }
+function ru_addressTag($v) {
+	//$m[1] - Дом, $m[2] - Корпус, $m[3] - Строение, $m[4] - Квартира, $m[5] - Комната
+	return preg_match('/'.
+	',?\s*(?:дом\s|д(?:\.|\s))\s*(?P<house>\d[\/0-9а-я]*(?:\s+литер\s[а-я])?)'.
+	'(?:,?\s*(?:корпус\s|кор(?:\.|\s)|корп(?:\.|\s)|к(?:\.|\s)|-)\s*(?P<corpus>[\/0-9а-я]+))?'.
+	'(?:,?\s*(?:строение\s|стр(?:\.|\s)|с(?:\.|\s))\s*(?P<build>[\/0-9а-я]+))?'.
+	'(?:,?\s*(?:офис\s|оф(?:\.|\s))\s*(?P<office>[\/0-9а-я]+))?'.
+	'(?:,?\s*(?:помещение\s|пом(?:\.|\s))\s*(?P<place>[\/0-9а-я]+))?'.
+	'(?:,?\s*(?:(?:квартира\s|-|кв(?:\.|\s))\s*(?P<flat>[\/0-9а-я]+)|(?:комната\s|ком(?:\.|\s))\s*(?P<room>[\/0-9а-я]+)))?/ui', $v, $m) ?
+	array_intersect_key($m, array_fill_keys(array('house','corpus','build','office','place','flat','room'), 0)) : null;
+}
+
 function HASROLE($role) { global $CURRENT_ROLES_ARRAY; if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; return ''; }
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
 
@@ -264,6 +295,12 @@ function URIPart($val, $name) {
 		return "$name=".rawurlencode($val);
 	else
 		return '';
+}
+
+function seqCookie() {
+	$s = @$_COOKIE['seq'] + 1;
+	setcookie('seq', $s);
+	return $s;
 }
 
 function sas_PROC($v, $pname, $proc, $file, $root = '/') {
@@ -319,6 +356,12 @@ function sas_PERSON_TO_QUERIES() {
 	global $CURRENT_USER;
 	setDbSessionVar('SAS_PERSON', "SELECT enflw as val FROM enpn2persons WHERE enpnw = '$CURRENT_USER' ", []);
 }
+
+function CURRENT_USER_TO_QUERIES($table = '') {
+	global $CURRENT_USER;
+	setDbSessionVar('CURRENT_USER', "SELECT CAST('$CURRENT_USER' AS VARCHAR(255)) AS val ", [], $table);
+}
+
 
 //http://localhost/sys/rct/templates/free/common/common-choosers.js(1396521129)
 
@@ -401,7 +444,9 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 	$file = realpath($file);
 	
 	if($name) { 
-		array_unshift($args, $cmd);
+		$args = $args ?: [];
+		if($cmd!=='')
+			array_unshift($args, $cmd);
 		$cmd = 'T:'.$name;
 	}
 	$params = $call_parameters->___map; //only  recently added  parameters!!!!
@@ -412,6 +457,7 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 	$args = [];
 	$call_parameters->clear(); //clear paramters after call
 	
+	$ret = str_replace('\\','/', $ret);
 	echo $ret;
 }
 
@@ -453,7 +499,7 @@ function x_str_putcsv($a) {
 	return stream_get_contents($f);
 }
 
-function take_approx_values_from_command($cmd, $args = []) {
+function take_approx_values_from_command($cmd, $args) {
 	global $RE_ID;
 	//count args in select and from (usually 0), and skip them
 	$p = substr_count($cmd->SELECT, '?') 
@@ -461,35 +507,46 @@ function take_approx_values_from_command($cmd, $args = []) {
 	//and remove all args except where
 	$where = $cmd->WHERE;
 	$args = array_slice($args, $p, substr_count($where, '?') );
-	preg_replace_callback('/\?/', function($m) use(&$cnt) { return '?'. $cnt++; }, $where );
-	
+	$where = preg_replace_callback('/\?/', function($m) use(&$cnt) { return '?'. (int)$cnt++; }, $where );
+
 	//take main alias
-	$alias = $cmd->alias;
-	
-	preg_match_all("/$alias\.($RE_ID)\s*=\s*(\?\d+|'\d+'|\d+(?:\.\d*)?)/", $where, $m);
-	
+	$alias = 'a1'; //$cmd->alias;
+
+	preg_match_all("/$alias\.($RE_ID)\s*+(?:=|LIKE)\s*+(\?\d+|'\d+'|\d+(?:\.\d*)?)/i", $where, $m);
+
 	$m[2] = preg_replace_callback('/^\?(\d+)/', 
-		function($m) use($args) { return "'". str_replace("'","''", $args[$m[1]]) . "'"; }
+		function($m) use($args) { return '?'. $args[(int)$m[1]]; }
 		, $m[2]);
 	return array_combine($m[1], $m[2]);
 }
 
-function make_manipulation_command($data, $counter) {
-	$cmd = $data->cmd();
+function make_manipulation_command($data, $counter, $stmt = NULL, $with_pk = '') {
+	$stmt = $stmt ?: $data->exInfo();
+	
+	$cmd = $stmt->cmd;
 	if(!$cmd) return ''; //no command
-	$args = @$cmd->args ?: []; 
 	if(isset($cmd->parsed->{'GROUP BY'})) return ''; //maybe we can handle this as an insert into group / update whole group?
 
-	$where_vals = take_approx_values_from_command($cmd->parsed, $args); //due to $data->cmd() converted to db here (and store universal version in parsed)
-	foreach($where_vals as &$v)
-		$v = $cmd->doToString($v);
+	$where_vals = 
+		take_approx_values_from_command($cmd->parsed, $stmt->args); //due to $data->cmd() converted to db here (and store universal version in parsed)
+	
+	$stringer = $cmd instanceof dbspecific_select ? $cmd->cmd : $cmd; //FIXME!!!
 
+	foreach($where_vals as &$v) {
+		if($v)
+			switch($v[0]) {
+			case '\'': 
+				$v = $stringer->unescape(substr($v,1,-1)); break;
+			case '?' : $v = substr($v,1); break;
+			}
+	}
+
+	$table = $cmd->table;
+	global $Tables;
+	$table = $Tables->{$table};
 	if($counter) {
 		//make core of update/delete
-		$table = $data->getName();
-		global $Tables;
-		$table = $Tables->{$table};
-		$pk = $table->PK(true);
+		$pk = $with_pk ? explode(',', $with_pk) : $table->PK(true);
 		if(!$pk) return '';
 		foreach($pk as $e) {
 			if(isset($data->{'a__'.$e}))
@@ -502,7 +559,12 @@ function make_manipulation_command($data, $counter) {
 				'key_vals' => 
 						sas_coder_ValList([sas_coder_ValList($d)])//sas compatible!
 			];
+		if($with_pk)
+			$arr['pk'] = $pk;
+		if($counter == -1)
+			$arr['def_vals'] = '-';
 	} else {
+		if($counter === FALSE) return $where_vals;
 		//make insert ptototype
 		$arr = [ 'table' => $table->___name,
 				'key_vals' => 
@@ -512,6 +574,14 @@ function make_manipulation_command($data, $counter) {
 			];
 	}
 	return file_URI('//az/server/php/crud.php', $arr);
+}
+
+function make_counting_command($stmt) {
+	$cmd = $stmt->cmd;
+	if(!$cmd) return ''; //no command
+	$params['cmd'] = (string)$cmd;
+	$params['args'] = $stmt->args;
+	return file_URI('//az/server/php/counter.php', $params);
 }
 
 class ctx {
@@ -673,20 +743,56 @@ function output_editor($mode, $value, $attrs = '')
 {
 	$tag = 'dfn';
 	$tag_a = 'tag';
-	if($mode == 'Et') $tag = 'pre';
-	if($mode == 'Et') $attrs .= ' content-resizable ';
-	if($mode == 'Es') { $attrs .= ' content-resizable=F '; $tag_a = 'tag=textarea'; }
-	static $md= [ 'E' => '', 'Es' => 'S', 'En' => 'N', 'Ei' => 'I', 'Ed' => 'D', 'E2' => '2', 'E3' => '3', 'Et' => '', 'Eh' => ''];
-	if($vtype = $md[$mode]) $vtype = "vtype=$vtype";
 	if(isset($value->Adm))
 		$name = "/$value->Adm/$value->Period/$value->Date/$value->Param";
 	else if($value instanceof namedString)
-		$name = preg_replace('/^[a-z][a-z0-9_]*__/','', $value->name);
+		$name = preg_replace('/^[a-z][a-z0-9_]*__/','', $value->name); //FIXME: dirty, we need a field object here, not a string
+	$translate = null;
+	if($mode == 'Er' || $mode == 'Em') { 
+		$rel_target = $attrs;
+		if(preg_match('/^([^:]*+):(.*)/s',  $attrs, $m)) {
+			$rel_target = trim($m[1]);
+			$attrs = $m[2];
+		} else $attrs = '';
+		if(!$rel_target) {
+			global $Tables;
+			$table = $Tables->{$value->container->getName()};
+			$f = $table->fields[$name];
+			$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
+		}
+		if(preg_match('/^\\$(.*)/',$rel_target, $m)) {
+			$b = $m[1];
+			$translate = $$b;
+			//var_dump($dis_nstates);
+		} else
+			$rel_target = '"'.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'"';
+		$tag = 'a';
+		//$attrs .= ' href=javascript:undefined onclick="setWithMenu(this)" ';
+	}
+	if($mode == 'Et') $tag = 'pre';
+	if($mode == 'Et') $attrs .= ' content-resizable ';
+	if($mode == 'Es') { $attrs .= ' content-resizable=F '; $tag_a = 'tag=textarea'; }
+	static $md= [ 'E' => '', 'Es' => 'S', 'En' => 'N', 'Ei' => 'I', 'Ed' => 'D', 'E2' => '2', 'E3' => '3', 'Et' => '', 'Eh' => '', 'Er' => '', 'Em' => ''];
+	if($vtype = $md[$mode]) $vtype = "vtype=$vtype";
 	if($mode == 'Ei' || $mode == 'En') $value = trimZ($value);
+	if($mode == 'Ed') $value = ru_date($value);
+	if($translate) $value = @$translate[ $value ];
 	if($mode == 'Eh')
 		echo "<input type=hidden name=\"$name\" fctl $attrs value=\"",htmlspecialchars($value),"\">";
 	else 	
 		echo "<$tag $tag_a $vtype name=\"$name\" fctl $attrs>",htmlspecialchars($value),"</$tag>";
+	if($mode == 'Er') {
+		echo "<dl mctl ref=Y>$rel_target</dl>";
+	}
+	else if($mode == 'Em') {
+		if($translate) {
+			echo	"<menu mctl>";
+			foreach($translate as $k=>$v) 
+			{ echo "<li value-patch='"; output_html($k); echo "'>"; output_html($v); echo "</li>"; }
+			echo "</menu>";
+		} else
+			echo "<menu mctl ref=Y>$rel_target</menu>";
+	}
 }
 
 function xlsx_file_output($file_name, $templ) {

@@ -33,6 +33,8 @@ if($key_vals) {
 	} else {
 		if($def_vals == '-')
 			$mode = 'D';
+		else
+			$mode = 'R';
 	}
 } else {
 	$mode = 'C';
@@ -40,15 +42,24 @@ if($key_vals) {
 
 try {
 	$table = $Tables->{$table};
-	$pk = $table->PK(true);
-	if(!$pk) throw new Exception("$table don't have PK");
+	$pk = @$_REQUEST['pk'] ?: $table->PK(true);
+	if(!$pk) throw new Exception("$table->___name don't have PK");
 
 //$SQL_EMULATION = TRUE;
 
 switch($mode) {
 case 'C':
 	$vals = $fieldvals + $def_vals;
-	//!! Insert($table->___name, $vals);
+	
+	foreach($vals as $f=>$v) {
+		if($f[0] == '+') {
+			$v = GenCID($table, $v?:0);
+			unset($vals[$f]);
+			$vals[substr($f,1)] = $v;
+		}
+	}
+	
+	$ss = Insert($table->___name, $vals);
 	
 	foreach($pk as $e)
 		$d[] = $vals[$e];
@@ -63,11 +74,13 @@ case 'C':
 	break;
 	
 case 'D':
-	//!! Delete($table->___name.' WHERE '.
-	//!! 	implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
-	//!! , $key_vals);
+	Delete($table->___name.' WHERE '.
+		implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
+	, $key_vals);
 	
 	echo 'D: _';
+	//if($stmt->rowCount() == 0)
+	//	echo "\n", $stmt->queryString;
 	break;
 	
 case 'U':
@@ -76,6 +89,8 @@ case 'U':
 	, $key_vals, $fieldvals);
 
 	echo 'U: _ '.$stmt->rowCount();
+	//if($stmt->rowCount() == 0)
+	//	echo "\n", $stmt->queryString;
 	break;
 
 case 'R':
@@ -83,11 +98,11 @@ case 'R':
 	foreach(Select(
 		implode(', ',
 			array_map( function($k, $v) { return $v? "$v AS $k" : $k; }
-				,array_keys($fieldvals)
-				,$fieldvals
+				,array_keys($def_vals)
+				,$def_vals
 			)
 		)
-		." FROM $table WHERE "
+		." FROM $table->___name WHERE "
 		.implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
 		, $key_vals
 	) as $r) {
