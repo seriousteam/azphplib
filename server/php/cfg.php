@@ -158,7 +158,7 @@ if($G_ENV_LOCAL_USERS) {
 				} else {
 					return 'local user not found';
 				}
-			}, null, $CURRENT_DBCHECKED_USER, $CURRENT_PW, $CURRENT_USER_IP
+			}, null, $CURRENT_DBCHECKED_USER, $CURRENT_PW, @$CURRENT_USER_IP
 		);
 	} else
 		$local_users = cached_ini($G_ENV_LOCAL_USERS, true);
