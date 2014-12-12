@@ -32,4 +32,3 @@ $functions['_main_'] = function($cmd, $args = null, $context = null) {
 if(__FILE__ != TOPLEVEL_FILE) return $functions;
 
 dispatch_template($cmd, $args);
-?>

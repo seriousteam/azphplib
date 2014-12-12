@@ -53,5 +53,3 @@ function ru_number($n, $lcmd = 3, $rcmd = null, $left = '', $right = '') {
 	$n = explode('.', $n);
 	$nl = explode(' ', $n[0]); $nr = $n[1];
 }
-
-?>

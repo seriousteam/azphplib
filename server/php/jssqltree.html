@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 function takeStrings(str, arr) {
 	return str.replace(/'[^']*(''[^']*)*?'/g, function(a) {
 		arr.push(a); return "'"+(arr.length-1)+"'";

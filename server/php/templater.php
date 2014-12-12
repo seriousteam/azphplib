@@ -151,6 +151,17 @@ function templater_replace_zones($text, &$zones, &$entries) {
 	,$text);
 }
 
+class sharing {
+	static $resources = [
+		'd3' => "echo '<script type=\"text/javascript\" src=\"',file_URI('//az/lib/d3.js', null, null),'\"></script>',\"\\n\";"
+	];
+	static function load($module) {
+		$text = sharing::$resources[$module];
+		sharing::$resources[$module] = '';
+		return $text;
+	}
+}
+
 function templater_take_zones($text, $file) {
 	global $library_prefix;
 	echo '<',"?php\n";
@@ -463,16 +474,6 @@ SEL
 			}~
 CTX;
 }, $text);
-	class sharing {
-		static $resources = [
-			'd3' => "echo '<script type=\"text/javascript\" src=\"',file_URI('//az/lib/d3.js', null, null),'\"></script>',\"\\n\";"
-		];
-		static function load($module) {
-			$text = sharing::$resources[$module];
-			sharing::$resources[$module] = '';
-			return $text;
-		}
-	}
 	//generate commands
 	$text = preg_replace_callback('/(?<=\[\[).*?(?=\]\])/s', 
 		function($m) use(&$selects, &$attributes, $escape_mode){
@@ -902,5 +903,3 @@ do {
 } while($text !== $textp);
 
 //echo $text;
-
-?>

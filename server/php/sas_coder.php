@@ -29,5 +29,3 @@ function sas_coder_DecodeMap( $s ) {
 			$r[str_replace('::',':',$m[1])] = str_replace('::',':', $m[2]);
 	return $r;
 }
-
-?>

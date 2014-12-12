@@ -12,4 +12,3 @@ echo "</html>";
 if (isset($_GET['sec'])) $sec=$_GET['sec'];
 sleep(5);
 //exec ("ping -n 6 127.0.0.1 >nul");
-?>

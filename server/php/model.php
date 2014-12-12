@@ -493,4 +493,3 @@ if(__FILE__ != TOPLEVEL_FILE) return;
 //append_information_schema_to_model('public');
 
 print_actual_model();
-

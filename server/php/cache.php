@@ -94,5 +94,3 @@ function cached($zone, $key, $fval = null, $fkey = null) {
 function cached_ini($f, $sections = false) {
   return cached('ini', $f, 'parse_ini_file', null, $sections);
 }
-
-?>

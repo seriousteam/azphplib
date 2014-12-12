@@ -129,5 +129,3 @@ $aaap = 'x x';
 $aaa->$aaap = '2';
 
 var_dump($aaa, $aaa->a, $aaa->{a}, $aaa->{'x x'});
-
-?>

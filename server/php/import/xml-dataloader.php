@@ -102,6 +102,3 @@ foreach($src->children() as $e) {
   }
 
 }
-
-?>
-

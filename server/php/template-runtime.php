@@ -263,7 +263,7 @@ function NVL($v, $def) { return $v === null || $v === ''? $def: $v; }
 function lpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_LEFT); }
 function rpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_RIGHT); }
 function replace($v, $from, $to) { return preg_replace($from, $to, $v); }
-function trimZ($v) { $v = $v[0]=='.' ? '0'.$v : $v; return strpos($v, '.') === FALSE? $v : rtrim(rtrim($v, '0'), '.'); }
+function trimZ($v) { $v = substr($v,0,1)=='.' ? '0'.$v : $v; return strpos($v, '.') === FALSE? $v : rtrim(rtrim($v, '0'), '.'); }
 function isNZ($v) { return preg_match('/^0*$/', $v)? '' : $v; }
 function toTitle($v) { return $v? mb_substr($v,0,1, 'UTF-8').'.' : $v; }
 function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? FALSE : TRUE); }
@@ -905,4 +905,3 @@ function qe_control_model($params) {
 		- attribute rowset has adm, period, dt, param, fs, ft, fb fields
 		- adm, period, dt, param is a key
 */
-

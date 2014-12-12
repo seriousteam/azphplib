@@ -30,4 +30,3 @@ $xml->load( $fname );
 $xslt->setParameter('', $params);
 
 echo $xslt->transformToXML($xml);
-?>

@@ -53,4 +53,3 @@ function kladrSearch($addr) {
 	$address = getKLADR( $addr, $kladr_conn);
 	return $address ? kladrPrint(ru_addressIdx( $addr ), $address, ru_addressTag( $addr ) ) : "";
 }
-?>

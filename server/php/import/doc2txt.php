@@ -10,4 +10,3 @@ $xml = new DOMDocument;
 $xml->loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
 // Return data without XML formatting tags
 echo strip_tags($xml->saveXML());
-?>

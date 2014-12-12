@@ -472,4 +472,3 @@ XCFG
 
 var_dump($main_cfg);
 var_dump($local_objects_rights);
-?>

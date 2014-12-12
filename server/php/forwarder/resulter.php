@@ -9,4 +9,3 @@ $command.=">".$out."_";
 exec ($command);
 rename($out."_",$out);
 unlink($argv[2]);
-?>

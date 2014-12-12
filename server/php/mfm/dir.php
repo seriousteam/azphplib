@@ -291,4 +291,3 @@ if (isset($_POST['dir']))
 	}
 }
 echo $outtext."</body></html>";
-?>

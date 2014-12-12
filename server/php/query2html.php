@@ -38,6 +38,3 @@ if(__FILE__ != TOPLEVEL_FILE) return;
 
 
 query_to_html( main_argument(),  main_subarguments() );
-
-
-?>

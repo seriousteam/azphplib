@@ -218,5 +218,3 @@ class parsedCommandSmart extends parsedCommand {
   }
   function __toString() { return $this->pre->doToString(parent::__toString()); }
 }
-
-?>
