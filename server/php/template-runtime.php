@@ -263,27 +263,23 @@ function NVL($v, $def) { return $v === null || $v === ''? $def: $v; }
 function lpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_LEFT); }
 function rpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_RIGHT); }
 function replace($v, $from, $to) { return preg_replace($from, $to, $v); }
-function trimZ($v) { $v = $v[0]=='.' ? '0'.$v : $v; return strpos($v, '.') === FALSE? $v : rtrim(rtrim($v, '0'), '.'); }
+function trimZ($v) { $v = substr($v,0,1)=='.' ? '0'.$v : $v; return strpos($v, '.') === FALSE? $v : rtrim(rtrim($v, '0'), '.'); }
 function isNZ($v) { return preg_match('/^0*$/', $v)? '' : $v; }
 function toTitle($v) { return $v? mb_substr($v,0,1, 'UTF-8').'.' : $v; }
 function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? FALSE : TRUE); }
 function subRE($v, $re, $np = 0) { return preg_match($re, $v, $m)? $m[$np] : ''; }
 function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d\s*/', '', $v); }
-function ru_addressIdx($v) { return preg_match('/(\d{6})/i', $v, $m) ? $m[1] : null; }
-function ru_addressTag($v) {
-	//$m[1] - Дом, $m[2] - Корпус, $m[3] - Строение, $m[4] - Квартира, $m[5] - Комната
-	return preg_match('/'.
-	',?\s*(?:дом\s|д(?:\.|\s))\s*(?P<house>\d[\/0-9а-я]*(?:\s+литер\s[а-я])?)'.
-	'(?:,?\s*(?:корпус\s|кор(?:\.|\s)|корп(?:\.|\s)|к(?:\.|\s)|-)\s*(?P<corpus>[\/0-9а-я]+))?'.
-	'(?:,?\s*(?:строение\s|стр(?:\.|\s)|с(?:\.|\s))\s*(?P<build>[\/0-9а-я]+))?'.
-	'(?:,?\s*(?:офис\s|оф(?:\.|\s))\s*(?P<office>[\/0-9а-я]+))?'.
-	'(?:,?\s*(?:помещение\s|пом(?:\.|\s))\s*(?P<place>[\/0-9а-я]+))?'.
-	'(?:,?\s*(?:(?:квартира\s|-|кв(?:\.|\s))\s*(?P<flat>[\/0-9а-я]+)|(?:комната\s|ком(?:\.|\s))\s*(?P<room>[\/0-9а-я]+)))?/ui', $v, $m) ?
-	array_intersect_key($m, array_fill_keys(array('house','corpus','build','office','place','flat','room'), 0)) : null;
-}
 
 function HASROLE($role) { global $CURRENT_ROLES_ARRAY; if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; return ''; }
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
+
+function fieldPart($v, $p) {
+	$part = preg_quote($p);
+	
+	if(preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", $v, $m)) return $m[1];
+	
+	return '';
+}
 
 function URIPart($val, $name) {
 	if(is_array($val)) {
@@ -879,6 +875,7 @@ function qe_control_model($params) {
 			if($props->target) $properties[] = 'target:"'.$props->target->___name.'"';
 			$properties[] = $props->caption ? "caption:'{$props->caption}'" : "caption:\"$fld_name\"";
 			$properties[] = "recaption:'{$props->recaption}'" ;
+			$properties[] = "sicaption:'{$props->si_caption}'";
 			$properties[] = 'visibility:' .($props->vis ? 'true' : 'false');
 			$properties[] = "type:'{$props->type}'";
 			$fields[] = $fld_name.':{'.implode(',', $properties).'}';
@@ -887,6 +884,18 @@ function qe_control_model($params) {
 		$tbls[]=$name.': {'.implode(',', $fields).'}';					
 	}
 	return "<script>var qe_params={".$params."};var qe_model={".implode(',', $tbls)."}</script>";
+}
+
+function make_request($url, $srv = 'http://localhost') {
+	if(isset($_SERVER['HTTP_COOKIE']))
+		$opts = stream_context_create(array('http' =>
+			array(
+				'header'  => 'Cookie: '.$_SERVER['HTTP_COOKIE'],
+			)
+		));
+	else 
+		$opts = stream_context_create();
+	return file_get_contents('http://localhost/'.$url, false, $opts);
 }
 
 /*TODO
@@ -905,4 +914,3 @@ function qe_control_model($params) {
 		- attribute rowset has adm, period, dt, param, fs, ft, fb fields
 		- adm, period, dt, param is a key
 */
-

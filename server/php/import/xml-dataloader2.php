@@ -99,6 +99,3 @@ foreach($src->children() as $e) {
 
 header('Content-type: application/xml');
 echo $src->saveXML(); //output generated values
-
-?>
-

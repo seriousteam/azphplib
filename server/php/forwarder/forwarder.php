@@ -115,4 +115,3 @@ else
 	//localhost/forward/forwarder.php?fwdrez_header=text/html&fwdrez_scr=target.php&dfgd=df&dfgdfgd=3333
 
 }
-?>

@@ -35,4 +35,3 @@ $resulter=$scriptdir."resulter.php";
  // live time for temp and result files, sec
  // 10 min
 $delete_time=60*10;
-?>

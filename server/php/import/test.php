@@ -32,4 +32,3 @@ define('fff',$ff);
 //var_dump(fff());
 
 var_dump(get_current_user());
-?>

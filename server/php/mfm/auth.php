@@ -70,4 +70,3 @@ foreach ($userlist as $usr) if ($usr['name']==$_SESSION['name'])
 	if (isset($usr['default_dir']))$default_dir=$usr['default_dir']; 
 	break;
 }
-?>

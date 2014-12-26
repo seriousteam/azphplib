@@ -5,5 +5,3 @@ echo 'in include:', __FILE__, ' ',
   get_included_files()[0], '//', $_SERVER["SCRIPT_FILENAME"];
 
 var_dump('included file 3!!!', debug_backtrace());
-
-?>

@@ -257,4 +257,3 @@ foreach($db_oo_db_tests as $t => $e) {
 
 echo "\n\n\tDONE!";
 
-?>

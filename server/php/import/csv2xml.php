@@ -15,4 +15,3 @@ while($data = fgetcsv(STDIN)) {
   echo "\t<$table ".implode(' ', $data)." />\n";
 }
 print "</table>";
-?>

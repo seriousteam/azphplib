@@ -22,5 +22,3 @@ function query_to_x($cmd, $args) {
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 query_to_x( main_argument(),  main_subarguments() );
-
-?>

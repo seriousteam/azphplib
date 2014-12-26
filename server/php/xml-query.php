@@ -176,5 +176,3 @@ echo $out->saveXML();
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 query_to_xml( main_argument(),  main_subarguments(), [1] );
-
-?>

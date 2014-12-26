@@ -614,4 +614,3 @@ function getKLADR($address,$db_connection,$showErrs=false,$solo_mode=true,$file_
 	}		
 	catch(Exception $ex)	{if ($showErrs) echo "DB Error. ".$ex->getMessage();}
 }
-?>

@@ -125,6 +125,3 @@ function process_query($cmd, $args = []) {
 	$stmt = Select($cmd, $args);
 	return $stmt; //implements foreach
 }
-
-
-?>

@@ -21,5 +21,3 @@ function query_to_xml($cmd, $args = [], $into = null) {
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 query_to_xml( main_argument(),  main_subarguments() );
-  
-?>

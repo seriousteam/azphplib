@@ -639,4 +639,3 @@ class _Cmd extends _PreCmd {
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 
-?>

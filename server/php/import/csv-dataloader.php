@@ -72,5 +72,3 @@ while($data = fgetcsv($handle)) {
   }
   $stmt->execute($data);
 }
-?>
-

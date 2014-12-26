@@ -144,4 +144,3 @@ $all_keys = true; foreach($pk as $kf) if(!array_key_exists($kf, $where_vals)) $a
 if(__FILE__ != TOPLEVEL_FILE) return $functions;
 
 dispatch_template(main_argument(),  main_subarguments());
-?>

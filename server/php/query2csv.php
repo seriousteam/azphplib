@@ -21,5 +21,3 @@ function query_to_csv($stmt, $args = [], $captions = []) {
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 query_to_csv( main_argument(),  main_subarguments());
-
-?>

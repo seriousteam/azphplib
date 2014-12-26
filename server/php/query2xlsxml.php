@@ -108,5 +108,3 @@ function put_xlsxml_row($tbl, $row) {
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 query_to_xlsxml( main_argument(),  main_subarguments());
-
-?>

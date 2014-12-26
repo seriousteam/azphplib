@@ -28,4 +28,3 @@ foreach($src->children() as $e) {
   }
   fputcsv(STDOUT,  array_values( $attrs ) );
 }
-?>

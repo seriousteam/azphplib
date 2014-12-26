@@ -11,5 +11,3 @@ define ("ind_kl_doma","ind_kl_doma");
 //------------------------------------
 define ("kl_altnames","kl_altnames");
 define ("kl_socrbase","kl_socrbase");
-
-?>

@@ -430,7 +430,7 @@ function prepareDB(&$db)
 	if ($dbtype=="oci")
 	{
 		$db->exec ("ALTER SESSION SET NLS_CALENDAR='Gregorian'");
-		// NLS_LANG çàäàåòñÿ ïåðåäàåòñÿ ÷åðåç ïåðåìåííûå ñðåäû 
+		// NLS_LANG Ð·Ð°Ð´Ð°ÐµÑ‚ÑÑ Ð¿ÐµÑ€ÐµÐ´Ð°ÐµÑ‚ÑÑ Ñ‡ÐµÑ€ÐµÐ· Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ðµ ÑÑ€ÐµÐ´Ñ‹ 
 		//$db->exec ("ALTER SESSION SET NLS_LANG='ENGLISH_UNITED KINGDOM.UTF8'"); // RUSSIAN_CIS // AMERICAN_AMERICA
 		$db->exec ("ALTER SESSION SET NLS_DATE_FORMAT='YYYY-MM-DD'");
 		$db->exec ("ALTER SESSION SET NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'");
@@ -477,4 +477,3 @@ function setDbSessionVar($name, $value, $args = [], $for_table = '') {
 	OR
 	
 */
-?>

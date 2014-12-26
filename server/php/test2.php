@@ -7,5 +7,3 @@ echo 'in include:', __FILE__, ' ',
 var_dump('included  file - 2!!!', debug_backtrace());
 
 require(__DIR__.'/test3.php');
-
-?>

@@ -7,4 +7,3 @@ while($data = fgetcsv(STDIN)) {
   $last = $data = array_map(function($x, $y) { return $x?:$y; }, $data, $last);
   fputcsv(STDOUT,  $data );
 }
-?>
