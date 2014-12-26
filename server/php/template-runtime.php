@@ -886,6 +886,18 @@ function qe_control_model($params) {
 	return "<script>var qe_params={".$params."};var qe_model={".implode(',', $tbls)."}</script>";
 }
 
+function make_request($url, $srv = 'http://localhost') {
+	if(isset($_SERVER['HTTP_COOKIE']))
+		$opts = stream_context_create(array('http' =>
+			array(
+				'header'  => 'Cookie: '.$_SERVER['HTTP_COOKIE'],
+			)
+		));
+	else 
+		$opts = stream_context_create();
+	return file_get_contents('http://localhost/'.$url, false, $opts);
+}
+
 /*TODO
 1) make attribute table description
 	it defines:
