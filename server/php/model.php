@@ -105,6 +105,7 @@ class _Field {
 	}
   }
   function getCondition($src_alias, $target_alias) {
+	//src.rel = target.id
 	  if($this->condition) return str_replace(['src.', 'target.'], ["$src_alias.", "$target_alias."], $this->condition);
 	  if($this->sources)
 		  return implode(' AND ',
@@ -307,6 +308,7 @@ class modelParser extends _PreCmd {
 								}
 							else if(preg_match('/^REQUIRED$/', $p)) $fld->required = true;
 							else if(preg_match("/^VIS$/", $p))  $fld->vis = true;
+							else if(preg_match("/^SI:'(\d+)'/i", $p, $m)) $fld->si_caption = $this->unescape($m[1]);								
 							else if(preg_match("/^RE:'(\d+)'/i", $p, $m))  $fld->ctrl_re = $this->unescape($m[1]); 
 							else if(preg_match("/^MIN:'(\d+)'/i", $p, $m)) $fld->ctrl_min = $this->unescape($m[1]); 
 							else if(preg_match("/^MAX:'(\d+)'/i", $p, $m)) $fld->ctrl_max = $this->unescape($m[1]);							
