@@ -125,7 +125,7 @@ const _SQL_FUNC_KWD =
   TRIM|RTRIM|LTRIM|LEFT|RIGHT|
   ASC|DESC|COALESCE|
   ABS|SIGN|ROUND|TRUNC|SQRT|EXP|POWER|LN|
-  NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|
+  NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|
   MONTHS_BETWEEN|DAYS_BETWEEN|ADD_DAYS|ADD_MONTHS|
   DISTINCT|
   TRUE|FALSE|
@@ -496,10 +496,8 @@ class _Cmd extends _PreCmd {
       // and later concat it with original select 
       // or with converted VALUES to SELECT values FROM dual 
       _XNode::filter2str($filter, $filter_str);
-      $filter = 'SELECT * FROM ('
-	.make_dbspecific_select_values(
-				       strlist(function($f) { return "NULL AS $f";}, $fields)
-				       , $this->dialect)
+      $filter = 'SELECT * FROM (SELECT '
+				       . strlist($fields) . ' FROM '.$table
 	.' WHERE 1=0 UNION ALL %SEL%) a1 WHERE ' //FIXME: filter out dummy record! or require it for filter definition
 	. $filter_str;
       // this we have packed strings, so it's safe to replace %SEL% as string

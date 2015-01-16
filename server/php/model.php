@@ -85,6 +85,8 @@ class _Field {
   var $required = false;
   
   var $expression = '';
+  
+  var $choose = false;
 
   function __construct( $table = null) { 
     global $Tables;
@@ -247,7 +249,7 @@ class modelParser extends _PreCmd {
 									(?<rel>@@?\s*+)?(?<type>(?<local>$RE_ID)(?<haspart>\.(?<part>$RE_ID)?)?)(?:\s*:\s*+'(?<relcond>\d++)')?
 									(?:\(\s*+(?<size>\d++)(?:\s*,\s*+(?<prec>\d++))?\s*\))?
 									(?<other>.*)/x", $f, $m))
-								throw new Exception("stange field definition <<$f>>");
+								throw new Exception("strange field definition <<$f>>");
 						$fname = $m['name'];
 						$frel = @$m['rel'];
 						$ftype = $m['type'];
@@ -295,6 +297,7 @@ class modelParser extends _PreCmd {
 							if($p === 'PK') $fld->pk = true;
 							else if(preg_match('/^PK\((\d+)\)/i', $p, $m)) $fld->pk = $m[1];
 							else if(preg_match('/^ORDER\((\d+)\)/i', $p, $m)) $fld->order = $m[1];
+							else if(preg_match('/^CHOOSE/i', $p, $m)) $fld->choose = true;
 							else if(!$fld->caption && preg_match("/^'(\d+)'$/", $p, $m)) {
 								//var_dump($props, $p, $this->strings[(int)$m[1]]);
 								$fld->caption = $this->unescape($m[1]);
