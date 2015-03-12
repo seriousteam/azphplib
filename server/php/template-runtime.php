@@ -750,6 +750,8 @@ function output_editor($mode, $value, $attrs = '')
 	$translate = null;
 	if($mode == 'Er' || $mode == 'Em') { 
 		$rel_target = $attrs;
+		//var_dump($attrs);
+		//var_dump($value);
 		if(preg_match('/^([^:]*+):(.*)/s',  $attrs, $m)) {
 			$rel_target = trim($m[1]);
 			$attrs = $m[2];
