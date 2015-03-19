@@ -90,7 +90,7 @@ case 'U':
 
 	echo 'U: _ '.$stmt->rowCount();
 	//if($stmt->rowCount() == 0)
-	//	echo "\n", $stmt->queryString;
+		//echo "\n", $stmt->queryString;
 	break;
 
 case 'R':

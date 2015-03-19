@@ -70,9 +70,12 @@ class _XPath {
     $this->___name = $name;
   }
   function __toString() {
+	if($this->___name == '_id_') {
+		return $this->___node->table->ID($this->___node->alias);
+	}
     return
-        $this->___rel_to_node ? $this->___rel_to_node
-        : $this->___node->alias .'.'. $this->___name
+        $this->___rel_to_node 
+			?: $this->___node->alias .'.'. $this->___name
       ;
   }
   function __get($name) {
@@ -325,8 +328,10 @@ class _Cmd extends _PreCmd {
     
     $parsed = new parsedCommand($SELECT_STRUCT, $s);
     //var_dump($parsed);
-    if(!$parsed->ok)
+    if(!$parsed->ok) {
+		debug_print_backtrace ();
       throw new Exception("bad select structire: $s");
+	}
     
    
     $select = $parsed->SELECT;
@@ -433,7 +438,7 @@ class _Cmd extends _PreCmd {
                    $node = $roots[$alias];
 				   foreach($path as $name)
 				       $node = $node->$name;
-                   //record name in last node as accessed from commend
+                   //record name in last node as accessed from command
 				   $node->add_ro_filter();
 				   return $node;
 			  },
