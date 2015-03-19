@@ -74,7 +74,7 @@ class _Field {
   var $inner = false;
 
   var $search_priority = ''; 
-  var $search_op = '';
+  var $search_op = ''; 
   var $search_re = ''; 
   
   var $ctrl_re = '';
@@ -498,3 +498,4 @@ if(__FILE__ != TOPLEVEL_FILE) return;
 //append_information_schema_to_model('public');
 
 print_actual_model();
+
