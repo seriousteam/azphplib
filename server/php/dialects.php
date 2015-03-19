@@ -82,6 +82,10 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 		'SUBSTRING' => [ 'pgsql' => 'SUBSTR', 'oracle' => 'SUBSTR', 'mssql' => 'SUBSTRING', 'mysql' => 'SUBSTRING' ],
 		'LENGTH' => [ 'pgsql' => 'LENGTH', 'oracle' => 'LENGTHC', 'mssql' => "LEN$1REPLACE($2,' ','_')$3", 'mysql' => 'CHAR_LENGTH' ],
 		
+		'TO_DATE' => [ 'pgsql' => '$1$2$3::date', 
+				'oracle' => 'TRUNC$1$2$3', 
+				'mssql' => 'dateadd$1dd, datediff(dd,0,$2), 0$3', 
+				'mysql' => 'DATE$1$2$3' ],
 		'YEAR' => [ 'pgsql' => 'DATE_PART$1\'year\',$2$3', 
 				'oracle' => 'EXTRACT$1year FROM $2$3', 
 				'mssql' => 'YEAR', 

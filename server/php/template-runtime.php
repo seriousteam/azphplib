@@ -742,10 +742,12 @@ function output_editor($mode, $value, $attrs = '')
 	if(isset($value->Adm))
 		$name = "/$value->Adm/$value->Period/$value->Date/$value->Param";
 	else if($value instanceof namedString)
-		$name = preg_replace('/^[a-z][a-z0-9_]*__/','', $value->name); //FIXME: dirty, we need a field object here, not a string
+		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	$translate = null;
 	if($mode == 'Er' || $mode == 'Em') { 
 		$rel_target = $attrs;
+		//var_dump($attrs);
+		//var_dump($value);
 		if(preg_match('/^([^:]*+):(.*)/s',  $attrs, $m)) {
 			$rel_target = trim($m[1]);
 			$attrs = $m[2];
@@ -753,13 +755,13 @@ function output_editor($mode, $value, $attrs = '')
 		if(!$rel_target) {
 			global $Tables;
 			$table = $Tables->{$value->container->getName()};
+			if(!isset($table->fields[$name])) echo $value->name;
 			$f = $table->fields[$name];
 			$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
 		}
 		if(preg_match('/^\\$(.*)/',$rel_target, $m)) {
 			$b = $m[1];
 			$translate = $$b;
-			//var_dump($dis_nstates);
 		} else
 			$rel_target = '"'.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'"';
 		$tag = 'a';
@@ -769,9 +771,10 @@ function output_editor($mode, $value, $attrs = '')
 	if($mode == 'Et') $attrs .= ' content-resizable ';
 	if($mode == 'Es') { $attrs .= ' content-resizable=F '; $tag_a = 'tag=textarea'; }
 	static $md= [ 'E' => '', 'Es' => 'S', 'En' => 'N', 'Ei' => 'I', 'Ed' => 'D', 'E2' => '2', 'E3' => '3', 'Et' => '', 'Eh' => '', 'Er' => '', 'Em' => ''];
-	if($vtype = $md[$mode]) $vtype = "vtype=$vtype";
+	$vtype="";
+	if(!preg_match('/^\s*vtype=/',$attrs)) if($vtype = $md[$mode]) $vtype = "vtype=$vtype";
 	if($mode == 'Ei' || $mode == 'En') $value = trimZ($value);
-	if($mode == 'Ed') $value = ru_date($value);
+	if($mode == 'Ed') $value = substr(ru_date($value), 0, 16);
 	if($translate) $value = @$translate[ $value ];
 	if($mode == 'Eh')
 		echo "<input type=hidden name=\"$name\" fctl $attrs value=\"",htmlspecialchars($value),"\">";
