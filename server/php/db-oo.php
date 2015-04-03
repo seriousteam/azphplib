@@ -147,10 +147,10 @@ function prepare_or_exec_command($cmd, $args) {
   $cmd = get_cached_cmd_object($cmd);
   $dbh = get_connection($cmd->root());
   $stmt = $dbh->prepare($cmd);
-  global $Tables, $GLOBAS_STATE_VARS;
+  global $Tables, $GLOBAL_STATE_VARS;
   if($cmd->root() && $Tables->{$cmd->root()})
 	if($var = $Tables->{$cmd->root()}->TRIGGER_VAR()) {
-		setDbSessionVar($var, "SELECT '" . $GLOBAS_STATE_VARS[$var] . "' AS val", [], $cmd->root());
+		setDbSessionVar($var, "SELECT '" . $GLOBAL_STATE_VARS[$var] . "' AS val", [], $cmd->root());
 	}
   if($args !== null) {
 	$args = prepare_db_args($args);
@@ -159,8 +159,13 @@ function prepare_or_exec_command($cmd, $args) {
 		echo $stmt->queryString;
 		var_dump ($args);
 	} else
-		$stmt->execute($args);
-  }
+		try {
+			$stmt->execute($args);
+		} catch(Exception $e) {
+			debug_print_backtrace();
+			throw new Exception($e->getMessage() . "\n" . $stmt->queryString."\n-\n".implode("\n", $args ?: []));
+		}
+}
   return $stmt;
 }
 
