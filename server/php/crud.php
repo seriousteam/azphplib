@@ -60,6 +60,7 @@ case 'C':
 	}
 	
 	$ss = Insert($table->___name, $vals);
+	//echo $ss->queryString;
 	
 	foreach($pk as $e)
 		$d[] = $vals[$e];
