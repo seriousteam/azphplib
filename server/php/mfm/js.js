@@ -4,6 +4,7 @@ function getHTTPRequestObject()
 }
 var couldProcess = false;
 var httpRequester = getHTTPRequestObject();
+var texttimer=-1;
 function justResponse() 
 {
   if ( httpRequester.readyState == 4 ) 
@@ -12,6 +13,39 @@ function justResponse()
 	 couldProcess = false;
 	 if (httpRequester.status != 200) alert("Failed! Err text: "+value);
   }  
+}
+function startTextTimer()
+{
+	var targs=getCookie("ref_text_timer");
+	if (targs==null) targs=30;
+	texttimer=setInterval(isChangedContent,targs*1000);
+}
+function txtVerControl()
+{
+	if ( httpRequester.readyState == 4 ) 
+	{ 
+		var value = httpRequester.responseText; 
+		couldProcess = false;
+		if (httpRequester.status != 200) alert("Failed! Err text: "+value);
+		var myhash=getCookie("hashtext");
+		if (myhash!=value)		
+		{
+			clearInterval(texttimer);
+			if (confirm ("File has been modified by another user. Do you want relod it?")) location.reload();				 
+		}		
+	}  
+}
+function onChangeTimer()
+{
+	clearInterval(texttimer);
+	var val=document.getElementsByName('seltime')[0];
+	if (val!=null)
+	{
+		var ncp=val.options[val.selectedIndex].value;
+		setCookie("ref_text_timer",ncp);	
+		location.reload(true);	
+	}
+	startTextTimer();
 }
 function reloadResponse() 
 {
@@ -34,7 +68,8 @@ function saveFile()
 		var data="dir="+encodeURIComponent(document.URL)+"&edtext=";
 		if (document.getElementById("teditor")==null) data+=encodeURIComponent(editor.getValue());
 		else data+=encodeURIComponent(document.getElementById("teditor").value);		
-		sendPOST(data,"just");				
+		sendPOST(data,"just");
+		startTextTimer();
 	}	
 }
 function getChList()
@@ -62,12 +97,14 @@ function deleteFile()
 function sendPOST(data,type)
 {
 	httpRequester.open("POST", "dir.php",true);
+	httpRequester.onreadystatechange = justResponse;
 	if (type=="reload") httpRequester.onreadystatechange = reloadResponse;
-	else httpRequester.onreadystatechange = justResponse;			
+	if (type=="checktext") httpRequester.onreadystatechange = txtVerControl;
 	httpRequester.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	couldProcess = true;	
 	httpRequester.send(data);
 }
+
 function create(isfile)
 {	
 	var hnt="DIR";
@@ -166,4 +203,9 @@ function changeCP()
 		setCookie("current_cp",ncp);	
 		location.reload(true);	
 	}
+}
+function isChangedContent()
+{
+	var data="dir="+encodeURIComponent(document.URL)+"&get_hash=1";
+	sendPOST(data,"checktext");	
 }

@@ -184,26 +184,45 @@ foreach ($cparray as $cc)
 	if ($cc==$ccp) $cplist.="<option selected>$cc</option>";
 	else $cplist.="<option>$cc</option>";
 }
+$refresh="";
+$refarr=array("10","30","60","120");
+$ctimer="30";
+if (isset($_COOKIE['ref_text_timer'])) $ctimer=$_COOKIE['ref_text_timer'];
+foreach ($refarr as $cc)
+{
+	if ($cc==$ctimer) $refresh.="<option selected>$cc</option>";
+	else $refresh.="<option>$cc</option>";
+}
 $hlarr=array("plain","php","js","C","ini","sql");
 $hllist="";	
+$fcont=file_get_contents($win_suff.$get);
+$hashcont=md5($fcont);
 foreach ($hlarr as $hl) if ($curhl==$hl) $hllist.="<option selected>$hl</option>";
 	else $hllist.="<option>$hl</option>";
 $outtext.=<<<HTTXT
+<script>
+	setCookie("hashtext","$hashcont");
+	startTextTimer();
+</script>
 <div style="float:left;margin-bottom:3px;">
 <input type="submit" value="Save" onclick="saveFile();">
 <a href="$url">Exit</a><br>
 </div>
 <div style="float:right;margin-bottom:3px;">
-<select name="lang" onchange="changeLang();">
+<label title="Another user modify time check">Check time(s)</label>
+<select name="seltime" onchange="onChangeTimer();" title="Another user modify time check">
+$refresh
+</select>
+<select name="lang" onchange="changeLang();" title="Syntax hightlight">
 $hllist
 </select>
-<select name="codepg" onchange="changeCP()";>
+<select name="codepg" onchange="changeCP()"; title="Code page">
 $cplist
 </select>
-<input type="checkbox" name="simple_ed" $simple_ed_ch onclick="changeEdit();">Hightlight</div>
+<input title="On\Off hightlight code" type="checkbox" name="simple_ed" $simple_ed_ch onclick="changeEdit();">Hightlight</div>
 $text_st
 HTTXT;
-$fcont=file_get_contents($win_suff.$get);
+
 $escch="Empty";
 $encarray=array("UTF-8","cp1251","cp1252","KOI8-R");
 if ($fcont!="")
@@ -230,9 +249,11 @@ if (isset($_POST['dir']))
 		{							
 			$fl=fopen($win_suff.$vals['dir'],"w");
 			$svdata=$_POST['edtext'];
+			$newhash=md5($svdata);
 			if ($ccp!="UTF-8") $svdata=iconv("UTF-8",$ccp,$svdata);
 			fwrite($fl,$svdata);
-			fclose($fl);			
+			fclose($fl);
+			setcookie("hashtext",$newhash);			
 		}
 		if (isset($_POST['create_fl']))//isset($_POST['create_dr'])
 		{
@@ -243,6 +264,12 @@ if (isset($_POST['dir']))
 		{
 			$file=mkdir($win_suff.$vals['dir']."/".$_POST['create_dr']);
 			if ($file==false) errorOut();
+		}
+		if (isset($_POST['get_hash']))//
+		{
+			$fldat=file_get_contents($win_suff.$vals['dir']);
+			echo md5($fldat);
+			die;
 		}
 		if (isset($_POST['delfls']))//
 		{
