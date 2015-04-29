@@ -2,11 +2,14 @@
 require_once __DIR__.'/auth.php';
 require_once __DIR__.'/WinFsStreamWrapper.php';
 $ccp="UTF-8";
-if (isset($_COOKIE['current_cp'])) $ccp=$_COOKIE['current_cp'];
+if (isset($_REQUEST['current_cp'])) $ccp=$_REQUEST['current_cp'];
 $curhl="plain";
-if (isset($_COOKIE['synt_hl']))	$curhl=$_COOKIE['synt_hl'];
+if (isset($_REQUEST['synt_hl']))	$curhl=$_REQUEST['synt_hl'];
 header("Content-Type: text/html; charset=".$ccp);
+$ed_simple="0";
+if (isset($_REQUEST['ed_simple'])) $ed_simple=$_REQUEST['ed_simple'];
 ini_set("display_errors", 1);
+$editFileVars="current_cp=$ccp&synt_hl=$curhl&ed_simple=$ed_simple";
 $outtext=<<<HTHEAD
 <html>
 <head>
@@ -27,6 +30,11 @@ $outtext=<<<HTHEAD
 	}
 </style>
 <script type="text/javascript" src="js.js">
+</script>
+<script>
+setGlobVar('current_cp',"$ccp");
+setGlobVar('synt_hl',"$curhl");
+setGlobVar('ed_simple',$ed_simple);
 </script>
 </head>
 <body>
@@ -133,7 +141,7 @@ HTTT;
 				}
 				if ($reg_black_file!=null&&preg_match($reg_black_file,$link)) $file_tst=false;
 				if ($ddr!="."&&$file_tst&&$dir_tst) 
-					$files.="<div>$checkbox<a href='dir.php?dir=$link'><img src='file.png' width='22' height='22'>$ddr</a></div>";	
+					$files.="<div>$checkbox<a href='dir.php?dir=$link&$editFileVars'><img src='file.png' width='22' height='22'>$ddr</a></div>";	
 			}		
 		}		
 		$outtext.= $dirs.$files;
@@ -160,9 +168,9 @@ HTTT;
 			$hlset="c_cpp";
 			break;
 		}
-		if (isset($_COOKIE['ed_simple']))
+		if (isset($_REQUEST['ed_simple']))
 		{
-			if ($_COOKIE['ed_simple']!=0)
+			if ($_REQUEST['ed_simple']!="0")
 			{
 				$simple_ed_ch="checked";
 				$text_st='<div><pre id="editor" >';//style="clear: both;"
@@ -202,7 +210,7 @@ foreach ($hlarr as $hl) if ($curhl==$hl) $hllist.="<option selected>$hl</option>
 	else $hllist.="<option>$hl</option>";
 $outtext.=<<<HTTXT
 <script>
-	setCookie("hashtext","$hashcont");
+	setGlobVar("hashtext","$hashcont");
 	startTextTimer();
 </script>
 <div style="float:left;margin-bottom:3px;">
@@ -254,7 +262,9 @@ if (isset($_POST['dir']))
 			if ($ccp!="UTF-8") $svdata=iconv("UTF-8",$ccp,$svdata);
 			fwrite($fl,$svdata);
 			fclose($fl);
-			setcookie("hashtext",$newhash);			
+			//setcookie("hashtext",$newhash);			
+			echo $newhash;
+			die;
 		}
 		if (isset($_POST['create_fl']))//isset($_POST['create_dr'])
 		{
