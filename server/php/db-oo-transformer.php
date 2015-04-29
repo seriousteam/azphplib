@@ -1,6 +1,6 @@
 <?php
 
-require_once(__DIR__.'/cfg.php');
+require_once(__DIR__.'/cfg.php'); 
 require_once(__DIR__.'/rights.php');
 require_once(__DIR__.'/dialects.php');
 require_once(__DIR__.'/model.php');
@@ -412,41 +412,49 @@ class _Cmd extends _PreCmd {
   }
   function process_path($p, &$tree, &$externals) {
 	global $RE_ID;
+		
 	    //echo "\n^^^^$p", preg_match(_SQL_FUNC_KWD, $m[0])?"-F-":'-I-';
 			   if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
 			   $path = explode('.', $p);
-			   $alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
-	    $roots = $tree->roots;
-			   if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
+		$roots = $tree->roots;
+		reset($roots);
+		$alias = count($path)>1? array_shift($path) : key($roots);
+		//$alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
+	    
+		if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
 			   
 			    $level = (int)(@$mi[1]?:0);
 	    $alias = @$mi[2] ?: 'a';	    
 	    if($level + 1 >= count($tree->stack)) $roots = null;
 	    else $roots = $tree->stack[$level];
-	   }
+		}
 	    //echo "\n^^^^$p in $alias ";
 			   if(!$roots)
 			     { $externals[] = $alias.'.'.implode('.', $path); return '?'; }
-			   if(!@$roots[$alias]) {
+		if(!@$roots[$alias]) {
 	      $r = 'stack level: '.count($tree->stack).' roots: ';
-	     
+		 
 	      foreach($roots as $a => $v) 
 		if(is_object($v))
 		  $r .= "$a => {$v->table->___name} ";
-	      throw new Exception("alias '$alias' not found in $r (source:$m[0])");
+	      throw new Exception("alias '$alias' not found in $r (source:$p)");
 	   }
 	   $node = $roots[$alias];
 	foreach($path as $key=>$name) {		
 		if($name==='join') {
+			//var_dump(_XNode::$ext);
 			 //accessed left and right fields, but in different nodes!
 			// this is for check rights especially			
 			//now, we use direct link generation and dont check access to linked key fields
 			//$node = new _XPath($node, $name);
+			//echo '<pre>';
+			
 			$joinpath =  array_splice( $path, $key+1 );
+			//var_dump($joinpath);
 			
 			if(count($joinpath) && !preg_match("/^ext([0-9]*)(_$RE_ID)?/", $joinpath[0], $mi))
 				array_unshift($joinpath, 'ext');
-				
+			
 			$rel_node =  $this->process_path( implode('.', $joinpath), $tree, $externals );			
 
 			$node->___rel_to_node = $node->___node->table->fields[$node->___name]

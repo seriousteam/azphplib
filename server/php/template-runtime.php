@@ -269,7 +269,7 @@ function toTitle($v) { return $v? mb_substr($v,0,1, 'UTF-8').'.' : $v; }
 function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? FALSE : TRUE); }
 function subRE($v, $re, $np = 0) { return preg_match($re, $v, $m)? $m[$np] : ''; }
 function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d\s*/', '', $v); }
-
+function ROLES() { global $CURRENT_ROLES_ARRAY; return "('".implode("','",$CURRENT_ROLES_ARRAY)."')"; }
 function HASROLE($role) { global $CURRENT_ROLES_ARRAY; if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; return ''; }
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
 
@@ -314,6 +314,15 @@ function sas_CARD($rid, $file, $table, $root = '/') {
 		,'template' => $file
 		]);
 }
+function sas_SET($filter, $file, $table, $root = '/', $params = []) {
+	return $root . '?' .
+	http_build_query( array_merge([
+		'table' => "main.$table"
+		,'target' => 'show_template'
+		,'template' => $file
+		,'multi' => '1'
+		], $params, empty($filter)?[]:[ 'ro_filter' => sas_coder_ValList($filter) ]));
+} 
 
 function sas_TABLE($filter, $table, $root = '/') {
 	return $root . '?' .
