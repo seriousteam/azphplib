@@ -378,6 +378,10 @@ function extern_path($path){
   global $a_lib_map;
   return @$a_lib_map[$path];
 }
+$a_mfm_users = array();
+if($G_ENV_MFM_USERS) {
+    $a_mfm_users = cached_ini($G_ENV_MFM_USERS);
+}
 function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'filename'
 	global $G_P_DOC_ROOT;
 	

@@ -91,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD']=='GET')
 Filter: 
 <input type="text" name="fltxt" value="" onchange="filterContent();">
 <input type="submit" value="" style="border: none;background:white;" onclick="filterContent();">
+<input type="button" value="Grep" onclick="window.open('grep.php'+location.search);">
 </div>
 <div style="float:right;margin-bottom:3px;">
 User: $lgout
