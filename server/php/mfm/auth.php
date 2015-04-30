@@ -2,7 +2,6 @@
 require_once __DIR__.'/users.php';
 //=========== settings ============
 $default_dir=__DIR__."/../../../../../";
-$userlist[]=array('name'=>'admin','pass'=>'xsfraa__aasite','black_dir'=>'','white_dir'=>'#.*#','black_file'=>'','white_file'=>'#.*#');
 //=================================
 if (isset($_GET['action']) AND $_GET['action']=="logout") 
 {
