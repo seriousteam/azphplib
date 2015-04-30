@@ -41,20 +41,15 @@ if (!(isset($_SESSION['name']) AND $_SESSION['ip'] == $_SERVER['REMOTE_ADDR']))
 		align:center;
 		width:100%;height:100%;
 	}
-	form {
-		border:1px solid black;margin:3px;width:164px;height:119px;
-	}
-	input {width:160px;height:23px;margin:0px;}
 	</style>
-	<body>
+	<link rel="stylesheet" href="mfm.css">
+	<body mfmlogin>
 	<table align="center">
 	<tr align="center"><td>
 	<form method="GET">
-	<a>Name</a><br>
-	<input type="text" name="auth_name"><br>
-	<a>Pass</a><br>
-	<input type="password" name="auth_pass"><br>
-	<input type="submit" value="Login"><br>
+	<input type="text" name="auth_name" autofocus placeholder="User name">
+	<input type="password" name="auth_pass" placeholder="Password">
+	<input type="submit" value="Login">
 	</form>
 	</td>
 	</tr>

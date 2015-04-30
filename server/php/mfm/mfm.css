@@ -1,0 +1,37 @@
+body[mfmlogin] *{ font-size:110% }
+[mfmlogin] input {display:block; width:15em; height:2em; margin:1em; padding:0.5em;}
+
+[mfmlogin] input[type="text"],
+[mfmlogin] input[type="password"] {
+	border-radius:0.2em;
+	border:none;
+	box-shadow:0 0 0.1em #aaa;
+}
+[mfmlogin] input[type="submit"] {
+	box-shadow:0 0 0.2em #aaa;
+	text-shadow:0 0 0.5em #aaa;
+	color:white;
+	height:3em;
+	border-radius:0.2em;
+	border:none;
+	cursor:pointer;
+	background: #7abcff; /* Old browsers */
+	background: -moz-linear-gradient(top,  #7abcff 0%, #60abf8 44%, #4096ee 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#7abcff), color-stop(44%,#60abf8), color-stop(100%,#4096ee)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  #7abcff 0%,#60abf8 44%,#4096ee 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  #7abcff 0%,#60abf8 44%,#4096ee 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  #7abcff 0%,#60abf8 44%,#4096ee 100%); /* IE10+ */
+	background: linear-gradient(to bottom,  #7abcff 0%,#60abf8 44%,#4096ee 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#7abcff', endColorstr='#4096ee',GradientType=0 ); /* IE6-9 */
+}
+[mfmlogin] input:focus,
+[mfmlogin] input:active {
+	box-shadow:0 0 0.5em #aaa;
+	outline:none;
+}
+[mfmlogin] input[type="text"]:before
+{
+	position:absolute;
+	content:"username";
+	color:black;
+}
