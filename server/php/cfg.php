@@ -352,6 +352,13 @@ $LOCALIZED_URI = (PHP_SAPI == 'cli' && !isset($force_toplevel))?
 	  : $_SERVER['REQUEST_URI']
 	)
 	;
+
+//echo $LOCALIZED_URI;
+
+$lu = explode('?', $LOCALIZED_URI, 2);
+
+if(@$lu[1]) $LOCALIZED_URI = $lu[0] . '?' . str_replace('/', '%4F', $lu[1]);
+
 	
 /*
 	$LOCALIZED_URI - URI pointed current rendered page
@@ -374,13 +381,13 @@ if($G_ENV_LIB_MAPPING) {
    */
   $a_lib_map = cached_ini($G_ENV_LIB_MAPPING);
 }
-function extern_path($path){
-  global $a_lib_map;
-  return @$a_lib_map[$path];
-}
 $a_mfm_users = array();
 if($G_ENV_MFM_USERS) {
     $a_mfm_users = cached_ini($G_ENV_MFM_USERS);
+}
+function extern_path($path){
+  global $a_lib_map;
+  return @$a_lib_map[$path];
 }
 function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'filename'
 	global $G_P_DOC_ROOT;

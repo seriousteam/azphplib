@@ -391,6 +391,7 @@ function load_template($file) {
 }
 
 $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
+//  echo $LOCALIZED_URI;
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
@@ -584,7 +585,7 @@ function make_manipulation_command($data, $counter, $stmt = NULL, $with_pk = '')
 function make_counting_command($stmt) {
 	$cmd = $stmt->cmd;
 	if(!$cmd) return ''; //no command
-	$params['cmd'] = (string)$cmd;
+	$params['cmd'] = $cmd->doToString((string)$cmd->parsed);
 	$params['args'] = $stmt->args;
 	return file_URI('//az/server/php/counter.php', $params);
 }
@@ -748,12 +749,11 @@ function output_editor($mode, $value, $attrs = '')
 {
 	$tag = 'dfn';
 	$tag_a = 'tag';
-	if(isset($value->Adm))
-		$name = "/$value->Adm/$value->Period/$value->Date/$value->Param";
-	else if($value instanceof namedString)
-		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	$translate = null;
+	if($value instanceof namedString)
+		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	if($mode == 'Er' || $mode == 'Em') { 
+		$tag = 'a'; $attrs2 = '';
 		$rel_target = $attrs;
 		//var_dump($attrs);
 		//var_dump($value);
@@ -761,6 +761,14 @@ function output_editor($mode, $value, $attrs = '')
 			$rel_target = trim($m[1]);
 			$attrs = $m[2];
 		} else $attrs = '';
+		
+		if(preg_match('/^{add}\s*+(.*)/', $rel_target, $m)) {
+			$rel_target = $m[1];
+			$tag = 'button';
+			$value = '+';
+			$attrs .= ' add';
+		}
+		
 		if(!$rel_target) {
 			global $Tables;
 			$table = $Tables->{$value->container->getName()};
@@ -773,7 +781,6 @@ function output_editor($mode, $value, $attrs = '')
 			$translate = $$b;
 		} else
 			$rel_target = '"'.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'"';
-		$tag = 'a';
 		//$attrs .= ' href=javascript:undefined onclick="setWithMenu(this)" ';
 	}
 	if($mode == 'Et') $tag = 'pre';
@@ -790,18 +797,85 @@ function output_editor($mode, $value, $attrs = '')
 	else 	
 		echo "<$tag $tag_a $vtype name=\"$name\" fctl $attrs>",htmlspecialchars($value),"</$tag>";
 	if($mode == 'Er') {
-		echo "<dl mctl ref=Y>$rel_target</dl>";
+		echo "<dl mctl ref=Y $attrs2>$rel_target</dl>";
 	}
 	else if($mode == 'Em') {
 		if($translate) {
-			echo	"<menu mctl>";
+			echo	"<menu mctl $attrs2>";
 			foreach($translate as $k=>$v) 
 			{ echo "<li value-patch='"; output_html($k); echo "'>"; output_html($v); echo "</li>"; }
 			echo "</menu>";
 		} else
-			echo "<menu mctl ref=Y>$rel_target</menu>";
+			echo "<menu mctl ref=Y $attrs2>$rel_target</menu>";
 	}
 }
+
+$default_templated_editors = [
+	'' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
+	, 'S' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
+	, 'N' => '<dfn tag vtype=N fctl name="$name" $attrs>$value</dfn>'
+	, 'I' => '<dfn tag vtype=I fctl name="$name" $attrs>$value</dfn>'
+	, 'D' => '<dfn tag vtype=D fctl name="$name" $attrs>$value</dfn>'
+	, '2' => '<dfn tag vtype=2 fctl name="$name" $attrs>$value</dfn>'
+	, '3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
+	, 'T' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
+	, 'H' => '<input type=hidden name="$name" fctl $attrs value="$value">'
+	, 'R' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'M' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
+	, 'R+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'M+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+];
+
+$default_templated_translators = [
+	'I' => 'trimZ'
+	, 'N' => 'trimZ'
+	, 'D' => ''
+];
+
+function set_rel_target($v, $target = '') {
+	$v->rel_target = $target;
+	return $v;
+}
+
+function output_editor2($value, $template, $attrs, $attrs2)
+{
+	$name = '';
+	//$value;
+	$rel_target = @$value->rel_target;
+	$data = '';
+	
+	//TODO: get default editor from model
+	
+	if($value instanceof namedString)
+		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
+	
+	if($value instanceof namedString 
+	&& isset($value->rel_target) && $value->rel_target == '') {
+		global $Tables;
+		$table = $Tables->{$value->container->getName()};
+		if(!isset($table->fields[$name])) echo $value->name;
+		$f = $table->fields[$name];
+		$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
+	}
+	
+	if($value instanceof namedString 
+	&& isset($value->rel_target) && is_array($value->rel_target)) {
+		$value = @$value->rel_target[ $value ];
+		$data = [];
+		foreach($value->rel_target as $k=>$v) 
+		{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
+		$rel_target = implode("\n", $data);
+	}
+	else
+		$rel_target = '"'.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'"';
+	
+	if($mode == 'Ei' || $mode == 'En') $value = trimZ($value);
+	if($mode == 'Ed') $value = substr(ru_date($value), 0, 16);
+	
+	$value = $htmlspecialchars( $value );
+	eval("echo $template;");
+}
+
 
 function xlsx_file_output($file_name, $templ) {
 	

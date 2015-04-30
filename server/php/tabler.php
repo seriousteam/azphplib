@@ -144,9 +144,9 @@ $all_keys = true; foreach($pk as $kf) if(!array_key_exists($kf, $where_vals)) $a
 	onclick="var e = this; X.XHR('GET','<?php output_html(make_counting_command($statements->data));?>').done(function(t) { e.setV(e.V().replace(/\?|\d+/, t)); })"
 >Число записей: ?</button>
 <?php }?>
-<button first_page type=button onclick="applyFuncFilter(I('filter_def'), null, this)" offset="<?php output_html(($page_limit && $requested_offset? $requested_offset - $page_limit : ''));?>">В начало</button>
-<button prev_page type=button onclick="applyFuncFilter(I('filter_def'), this, this)" offset="<?php output_html(($page_limit && $requested_offset? $requested_offset - $page_limit : ''));?>">&lt; Предыдущая страница</button>
-<button next_page type=button onclick="applyFuncFilter(I('filter_def'), this, this)" offset="<?php output_html(($page_limit && $main_counter > $requested_limit? $requested_offset + $page_limit : ''));?>">Следующая страница &gt;</button>
+<button first_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), null, this)" offset="<?php output_html(($page_limit && $requested_offset? $requested_offset - $page_limit : ''));?>">В начало</button>
+<button prev_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="<?php output_html(($page_limit && $requested_offset? $requested_offset - $page_limit : ''));?>">&lt; Предыдущая страница</button>
+<button next_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="<?php output_html(($page_limit && $main_counter > $requested_limit? $requested_offset + $page_limit : ''));?>">Следующая страница &gt;</button>
 
 <!--FILTRED.--></div>
 
