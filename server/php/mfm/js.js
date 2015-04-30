@@ -5,14 +5,12 @@ function getHTTPRequestObject()
 var couldProcess = false;
 var httpRequester = getHTTPRequestObject();
 var texttimer=-1;
-global_file_hash = null; 
 function justResponse() 
 {
   if ( httpRequester.readyState == 4 ) 
   { 
 	 var value = httpRequester.responseText; 
 	 couldProcess = false;
-	 global_file_hash = null;//
 	 if (httpRequester.status != 200) alert("Failed! Err text: "+value);
   }  
 }
@@ -29,12 +27,12 @@ function txtVerControl()
 		var value = httpRequester.responseText; 
 		couldProcess = false;
 		if (httpRequester.status != 200) alert("Failed! Err text: "+value);
-		if (global_file_hash && global_file_hash!=value)		
+		var myhash=getCookie("hashtext");
+		if (myhash!=value)		
 		{
 			clearInterval(texttimer);
 			if (confirm ("File has been modified by another user. Do you want relod it?")) location.reload();				 
-		}
-		global_file_hash = value;
+		}		
 	}  
 }
 function onChangeTimer()
