@@ -29,6 +29,7 @@ $outtext=<<<HTHEAD
 	height:94%;
 	}
 </style>
+<link rel="stylesheet" href="mfm.css">
 <script type="text/javascript" src="js.js">
 </script>
 <script>
@@ -37,7 +38,7 @@ setGlobVar('synt_hl',"$curhl");
 setGlobVar('ed_simple',$ed_simple);
 </script>
 </head>
-<body>
+<body mfmmain>
 HTHEAD;
 function ru_realpath($pth)
 {
@@ -86,26 +87,25 @@ if ($_SERVER['REQUEST_METHOD']=='GET')
 	else header("Location: $url?dir=$get");
 	if (is_dir($win_suff.$get))
 	{
-		$lgout=$_SESSION['name']." <a href=http://".$_SERVER['HTTP_HOST'].
-			$_SERVER['SCRIPT_NAME']."?action=logout>Logout</a>";
+		$lgout="<span username>".$_SESSION['name']."</span><button logout title=\"Sign out\" onclick=\"window.open('http://".$_SERVER['HTTP_HOST'].
+			$_SERVER['SCRIPT_NAME']."?action=logout')\"></button>";
 		$outtext.= <<<HTTT
-<hr style="margin:1px;">
-<div style="float:left;margin-bottom:3px;">
-<input type="button" value="New file" onclick="create(1);">
-<input type="button" value="New dir" onclick="create(0);">
-<input type="button" value="Delete" onclick="deleteFile();">
-<input type="button" value="Copy" onclick="copyFiles();">
-<input type="button" value="Paste" onclick="pasteFiles();">
-Filter: 
-<input type="text" name="fltxt" value="" onchange="filterContent();">
-<input type="submit" value="" style="border: none;background:white;" onclick="filterContent();">
-<input type="button" value="Grep" onclick="window.open('grep.php'+location.search);">
+<div buttons>
+<div leftside>
+<button newfile onclick="create(1);" title="New File"></button>
+<button newdir onclick="create(0);"  title="New Dir"></button>
+<button delete onclick="deleteFile();" title="Delete Choosen"></button>
+<button copy onclick="copyFiles();" title="Copy Choosen"></button>
+<button paste onclick="pasteFiles();" title="Insert Copy"></button>
+<button grep onclick="window.open('grep.php'+location.search);" title="Grep"></button>
+<input autofocus filter placeholder=Filter type="text" name="fltxt" value="" onchange="filterContent();" title="Filter Files and Folders">
+<input type="submit" value="" style="border: none;background:transparent;" onclick="filterContent();">
 </div>
-<div style="float:right;margin-bottom:3px;">
-User: $lgout
+<div rightside>
+$lgout
 </div>
-<div style="clear: both;">
-<hr>
+</div>
+<div style="clear: both;" container>
 HTTT;
 		$sdr=scandir($win_suff.$get);
 		$dirs="";
@@ -129,8 +129,11 @@ HTTT;
 			if ($reg_black_dir!=null) if (preg_match($reg_black_dir,$link)) $dir_tst=false;				
 			if (is_dir($win_suff.$get."/".$ddr))
 			{
-				if ($ddr!="."&&$dir_tst) 
-					$dirs.="<div>$checkbox<a href='dir.php?dir=$link'><img src='folder.png' width='22' height='22'>$ddr</a></div>";
+				if ($ddr!="."&&$dir_tst)
+					if($ddr=="..")
+						$dirs="<div folder upfolder><a href='dir.php?dir=$link'></a></div>".$dirs;
+					else
+						$dirs.="<div folder>$checkbox<a href='dir.php?dir=$link'>$ddr</a></div>";
 			}
 			else 
 			{
@@ -141,7 +144,7 @@ HTTT;
 				}
 				if ($reg_black_file!=null&&preg_match($reg_black_file,$link)) $file_tst=false;
 				if ($ddr!="."&&$file_tst&&$dir_tst) 
-					$files.="<div>$checkbox<a href='dir.php?dir=$link&$editFileVars'><img src='file.png' width='22' height='22'>$ddr</a></div>";	
+					$files.="<div file>$checkbox<a href='dir.php?dir=$link&$editFileVars'>$ddr</a></div>";	
 			}		
 		}		
 		$outtext.= $dirs.$files;
