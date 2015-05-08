@@ -49,7 +49,7 @@ if (!(isset($_SESSION['name']) AND $_SESSION['ip'] == $_SERVER['REMOTE_ADDR']))
 	<form method="GET">
 	<input type="text" name="auth_name" autofocus placeholder="User name">
 	<input type="password" name="auth_pass" placeholder="Password">
-	<input type="submit" value="Login">
+	<input type="submit" value="Sign in">
 	</form>
 	</td>
 	</tr>
