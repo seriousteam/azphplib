@@ -65,7 +65,7 @@ $G_ENV_CACHE_TTL = getenv('CACHE_TTL');
 
 $G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
 $G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?: 
-	preg_match('#(.*)/(prg|z|az)/.*#', $_SERVER['SCRIPT_FILENAME'], $m) ? $m[1] :
+	preg_match('#(.*)/(az)/.*#', $_SERVER['SCRIPT_FILENAME'], $m) ? $m[1] :
 	dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
 	 // p_doc_root/az/server/php/cfg.php
 
