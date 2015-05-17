@@ -811,20 +811,27 @@ function output_editor($mode, $value, $attrs = '')
 }
 
 $default_templated_editors = [
-	'' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
-	, 'S' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
-	, 'N' => '<dfn tag vtype=N fctl name="$name" $attrs>$value</dfn>'
-	, 'I' => '<dfn tag vtype=I fctl name="$name" $attrs>$value</dfn>'
-	, 'D' => '<dfn tag vtype=D fctl name="$name" $attrs>$value</dfn>'
-	, '2' => '<dfn tag vtype=2 fctl name="$name" $attrs>$value</dfn>'
-	, '3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
-	, 'T' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
-	, 'H' => '<input type=hidden name="$name" fctl $attrs value="$value">'
-	, 'R' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'M' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
-	, 'R+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'M+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+	':' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
+	, ':S' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
+	, ':N' => '<dfn tag vtype=N fctl name="$name" $attrs>{$H->expr("trimZ($value)")}</dfn>'
+	, ':I' => '<dfn tag vtype=I fctl name="$name" $attrs>{$H->expr("trimZ($value)")}</dfn>'
+	, ':D' => '<dfn tag vtype=D fctl name="$name" $attrs>{$H->expr("ru_date(substr($value,0,16))")}</dfn>'
+	, ':2' => '<dfn tag vtype=2 fctl name="$name" $attrs>$value</dfn>'
+	, ':3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
+	, ':T' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
+	, ':H' => '<input type=hidden name="$name" fctl $attrs value="$value">'
+	, ':R' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, ':M' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
+	, ':R+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, ':M+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
 ];
+
+class templated_editors_helper {
+	var $a = null;
+	function __construct($a) { $this->a = $a; }
+	function stmt($e) { extract($this->a); return eval($e); }
+	function expr($e) { extract($this->a); return eval("return $e;"); }
+}
 
 $default_templated_translators = [
 	'I' => 'trimZ'
@@ -832,15 +839,14 @@ $default_templated_translators = [
 	, 'D' => ''
 ];
 
-function set_rel_target($v, $target = '') {
+function as_chooser($v, $target = '') {
 	$v->rel_target = $target;
 	return $v;
 }
 
-function output_editor2($value, $template, $attrs, $attrs2)
+function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
 	$name = '';
-	//$value;
 	$rel_target = @$value->rel_target;
 	$data = '';
 	
@@ -867,12 +873,13 @@ function output_editor2($value, $template, $attrs, $attrs2)
 		$rel_target = implode("\n", $data);
 	}
 	else
-		$rel_target = '"'.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'"';
-	
-	if($mode == 'Ei' || $mode == 'En') $value = trimZ($value);
-	if($mode == 'Ed') $value = substr(ru_date($value), 0, 16);
+		$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 	
 	$value = $htmlspecialchars( $value );
+	$template = '"'.addslashes($template).'"';
+	
+	$H = new templated_editors_helper(compact('value', 'name', 'rel_target', '$data', 'attrs', 'attrs2'));
+		
 	eval("echo $template;");
 }
 

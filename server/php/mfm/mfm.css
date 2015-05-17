@@ -4,7 +4,7 @@ body[mfmlogin] *{ font-size:110% }
 [mfmlogin] input[type="text"],
 [mfmlogin] input[type="password"] {
 	border-radius:0.2em;
-	border:none;
+	border:1px solid #eee;
 	box-shadow:0 0 0.1em #aaa;
 }
 [mfmlogin] input[type="submit"] {
@@ -44,7 +44,7 @@ body[mfmmain] {
 [mfmmain] a { text-decoration:none; color: black; }
 [mfmmain] div[container] div 
 {
-	padding:0.25em;
+	padding:1em;
 }
 [mfmmain] div[container] div:nth-child(even) {
 	background-color:#eee;
@@ -52,22 +52,27 @@ body[mfmmain] {
 [mfmmain] div[folder][upfolder] a {
 	border:none;
 	position:relative;
+	margin-left:-1em;
+	width:100%;
+	display:block;
 }
 [mfmmain] div[folder][upfolder] a:before {
 	position:absolute;
 	content:"";
+	top:0;
 	width: 0;
 	height: 0;
 	border-style: solid;
-	border-width: 20px 20px 0 0;
+	border-width: 24px 24px 0 0;
 	border-color: #aaa transparent transparent transparent;
 }
 [mfmmain] div[folder] a,
 [mfmmain] div[file] a {
-	border-radius:1em;
-	padding:0.1em;
-	padding-left:0.5em;
-	padding-right:0.5em;
+	margin-left:2em;
+	border-radius:2em;
+	padding:0.75em;
+	padding-left:1em;
+	padding-right:1em;
 }
 [mfmmain] div[container] div:nth-child(odd)[folder][upfolder] a {
 	background-color:transparent;
@@ -125,7 +130,7 @@ body[mfmmain] {
 [mfmmain] button[newfile]
 {
 	box-shadow:0 0 0.1em gray,0 2px 0.2em gray;
-	background:none;
+	background:white;
 }
 
 [mfmmain] button[newfile]:after
@@ -141,6 +146,10 @@ body[mfmmain] {
     background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABDklEQVRIicXVsUoDQRSF4c+QQiSkCkF8AhELA3kAKytL2zSKvfgKtlr4BmKTJiDWgpWFnQo+hC5BLKzVQoRxmXF1sksOLCz37p5/98wdBp7xMcN1gA6GImqhH2v8Ux1c4RDtMqAuLeIEF4KPbkcePMO4wmwfO4neNu4wwnUMsJEAh1oL7rt4xZ6fifSxtOBroWbRGyZ4ifVigBvcVphuSkxNSUUsiic8VLy4/gdzUEdEvyn5B0Wm4Qp6YSEGOMdpJuAIu2EhFtF7pvm3wlEt6tzJUcUiOtZwRHUucjGXMZ3gMtNwhK2wEAMsY5AJ6JULc4noHo+ZhkOshoUUoOrASalbBjQeUeM7uYVpg/7TT+ylQEpeAqIsAAAAAElFTkSuQmCC") no-repeat left center transparent;
     background-size: 100% 100%;
 	opacity:0.2;
+}
+[mfmmain] button[newdir]
+{
+	box-shadow:0 0 0.1em gray,0 2px 0.2em gray;
 }
 [mfmmain] button[newdir]:after
 {
@@ -257,7 +266,10 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#93cede', end
     background-size: 100% 100%;
 	opacity:0.2;
 }
-
+[mfmmain] button[logout] 
+{
+	box-shadow:0 0 0.1em gray,0 2px 0.2em gray;
+}
 [mfmmain] button[logout]:after
 {
 	content:  "\0000a0";
@@ -277,5 +289,5 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#93cede', end
 	vertical-align:middle;
 	margin-right:0.5em;
 	font-size:150%;
-	color:#aaa;
+	color:#fff;
 }
