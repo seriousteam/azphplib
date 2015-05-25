@@ -104,6 +104,16 @@ function get_cached_cmd_object_int($key, $cmd) {
        'cmd' => serialize(new _Cmd($cmd)) );
 }
 
+/*
+	command cache assumption;
+	1) we try to cache command for all
+	2) if cached for all command is different from new one generated for onother user
+		we switched to cache for users
+	3) we use roles for make a main key
+		so role selection bypass this tecnicue
+		and we recache for user 
+*/
+
 function get_cached_cmd_object($cmd) {
   global $CURRENT_ROLES, $CURRENT_USER;
  
@@ -165,18 +175,60 @@ function prepare_or_exec_command($cmd, $args) {
 			debug_print_backtrace();
 			throw new Exception($e->getMessage() . "\n" . $stmt->queryString."\n-\n".implode("\n", $args ?: []));
 		}
-}
+  }
   return $stmt;
 }
 
-function Insert($cmd, $args = null) {
+/*
+$dbc
+
+//pgsql
+$stmt = $dbc->prepare("insert into test(v) values(?) returning k");
+$stmt->execute([1]);
+$pv = $stmt->fetchColumn();
+	//or
+	$dbc->lastInsertId("{$table}_{$pk}_seq");
+
+//mssql
+$stmt = $dbc->prepare("insert into test(v) output inserted.k values(?)");
+$stmt->execute([1]);
+$pv = $stmt->fetchColumn();
+	//or!
+	$pv = $dbc->lastInsertId();
+
+//oracle
+$stmt = $dbc->prepare("insert into test(v) values(?) returning k into ?");
+$stmt->execute([1]);
+//????
+
+//mysql
+$stmt = $dbc->prepare("insert into test(v) values(?)");
+$stmt->execute([1]);
+$pv = $dbc->lastInsertId();
+
+
+*/
+function execute_and_get_generated_id($stmt, $a) {
+	global $RE_ID;
+	$stmt->execute($a);
+	if(preg_match('#^/*lastInsertedId_[a-zA-Z0-9]+:($RE_ID)#', $stmt->queryString, $m)) {
+		$f = $m[0];
+		return $f($m[1]);
+	}
+	return $stmt->columnCount() ? $stmt->fetchColumn() : NULL;
+}
+
+function Insert($cmd, $args = null, &$gen = null) {
   if(!preg_match('/^\s*INSERT\s+INTO\s/i',$cmd)) $cmd = 'INSERT INTO '.$cmd;
   if($args !== null) {
     $cmd .= '( '.strlist(array_keys($args)).' ) '
 	 . ' VALUES ('.strlist(array_fill(0, count($args), '?')).')';
     $args = array_values($args);
   }
-  return prepare_or_exec_command($cmd, $args);
+  $stmt = prepare_or_exec_command($cmd, func_num_args() < 3 ? $args : NULL);
+  if(func_num_args() >= 3) 
+	  $gen = execute_and_get_generated_id($stmt, $args);
+  return $stmt;
 }
 
 function Update($cmd, $key = null, $args = null) {

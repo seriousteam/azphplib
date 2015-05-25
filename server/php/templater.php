@@ -666,10 +666,10 @@ EEE;
 						);
 					}
 					if($cmd_part && 
-						preg_match('/^e:([a-z0-9+-]*)(?:\s+(.*))?$/s'
+						preg_match('/^e:([a-zA-Z0-9+-]*)(?:\s+(.*))?$/s'
 							, end($cmd_part), $mend )) {
 						array_pop ($cmd_part);
-						$cmd_part[] = "output_editor2(default_templated_editors[':$mend[1]'], '".count($strings)."','".(count($strings)+1)."')";
+						$cmd_part[] = "output_editor2(default_templated_editor('$mend[1]'), '".count($strings)."','".(count($strings)+1)."')";
 						$mend = explode('>:<', @$mend[2]);
 						$mend[0] = preg_replace_callback("/'(\d+)'/", 
 							function($m) use(&$strings) { return $strings[(int)$m[1]];}
@@ -722,6 +722,10 @@ EEE;
 					$res = 
 						preg_replace('/^output_editor_([a-zA-Z0-9]+)\(([^-]+)->([^,]+)(,(.*))?\)$/s'
 							, 'output_editor(\'$1\',$2->ns(\'$3\')$4)'
+							, $res );
+					$res = 
+						preg_replace('/^output_editor2\(([^-]+)->([^,]+)(,(.*))?\)$/s'
+							, 'output_editor2($1->ns(\'$2\')$3)'
 							, $res );
 					$cmd_part[] = 
 						preg_replace('/^output_editor_[a-zA-Z0-9]+\(.*/s'
@@ -848,7 +852,7 @@ EEE;
 	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit);";
 	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
 	//for paging
-	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->$main_select_alias;";
+	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->offset = \$requested_offset;";
 
 	//var_dump($selects);
@@ -915,16 +919,23 @@ if($argc <= 1 || $argv[1] == '-') {
 
 $lib_path = explode(DIRECTORY_SEPARATOR, __DIR__);
 $path_prefix = explode(DIRECTORY_SEPARATOR, realpath($path_prefix));
+
+//echo "$options[p]\n".implode('/',$lib_path),"\n",implode('/',$path_prefix);
+
 for($i = 0; $i < min(count($lib_path), count($path_prefix)); ++$i)
 	if($lib_path[$i] != $path_prefix[$i]) break;
 
 array_splice($path_prefix, 0, $i);
 array_splice($lib_path, 0, $i);
 
+//echo "\n".implode('/',$lib_path),"\n",implode('/',$path_prefix);
+
 $library_prefix = 
 		implode(DIRECTORY_SEPARATOR, 
 			array_merge(count($path_prefix)?array_fill(0,count($path_prefix),'..'):[], $lib_path));
 if($library_prefix) $library_prefix = '/'.$library_prefix;
+
+//echo "\n$library_prefix";
 
 if(@$DOCX_MODE) 
 	ob_start();

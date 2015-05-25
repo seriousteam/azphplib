@@ -1,7 +1,6 @@
 <?php
 require_once(__DIR__.'/processor.php');
 require_once(__DIR__.'/sas_coder.php');
-
 class smap {
 	var $___base = null;
 	var $___map = [];
@@ -259,7 +258,13 @@ file reference with stamp!
 
 */
 
-function NVL($v, $def) { return $v === null || $v === ''? $def: $v; }
+function NVL($v, $def) { 
+	if($v instanceof namedString) {
+		$v->value = NVL($v->value, $def);
+		return $v;
+	}
+	return $v === null || $v === ''? $def: $v; 
+}
 function lpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_LEFT); }
 function rpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_RIGHT); }
 function replace($v, $from, $to) { return preg_replace($from, $to, $v); }
@@ -297,6 +302,10 @@ function seqCookie() {
 	$s = @$_COOKIE['seq'] + 1;
 	setcookie('seq', $s);
 	return $s;
+}
+
+function tabler_ref($table) {
+	return file_URI('//az/server/php/tabler.php', [ 'table' => $table ]);
 }
 
 function sas_PROC($v, $pname, $proc, $file, $root = '/') {
@@ -810,77 +819,107 @@ function output_editor($mode, $value, $attrs = '')
 	}
 }
 
-$default_templated_editors = [
-	':' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
-	, ':S' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
-	, ':N' => '<dfn tag vtype=N fctl name="$name" $attrs>{$H->expr("trimZ($value)")}</dfn>'
-	, ':I' => '<dfn tag vtype=I fctl name="$name" $attrs>{$H->expr("trimZ($value)")}</dfn>'
-	, ':D' => '<dfn tag vtype=D fctl name="$name" $attrs>{$H->expr("ru_date(substr($value,0,16))")}</dfn>'
-	, ':2' => '<dfn tag vtype=2 fctl name="$name" $attrs>$value</dfn>'
-	, ':3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
-	, ':T' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
-	, ':H' => '<input type=hidden name="$name" fctl $attrs value="$value">'
+function default_templated_editor($t) {
+static $a = [
+	'' => NULL
+	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
+	, 'LONGVARCHAR' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
+	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
+	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
+	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs>{$EXPR[\'ru_date(substr($value,0,16))\']}</dfn>'
+	, 'BOOL' => '<dfn tag vtype=2 fctl name="$name" $attrs>$value</dfn>'
+	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
+	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
+	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
 	, ':R' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, ':M' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
 	, ':R+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, ':M+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
 ];
-
-class templated_editors_helper {
-	var $a = null;
-	function __construct($a) { $this->a = $a; }
-	function stmt($e) { extract($this->a); return eval($e); }
-	function expr($e) { extract($this->a); return eval("return $e;"); }
+	return $a[$t];
 }
 
-$default_templated_translators = [
-	'I' => 'trimZ'
-	, 'N' => 'trimZ'
-	, 'D' => ''
-];
+class templated_editors_helper implements ArrayAccess {
+	var $a = null;
+	function __construct($a) { $this->a = $a; }
+	
+    public function offsetGet($offset) {
+    	//var_dump($offset);
+	    extract($this->a);
+	    return eval('return '.$offset.';');
+    }
+    public function offsetSet($offset, $value) {}
+    public function offsetUnset($offset) {}
+    public function offsetExists($offset) { return true; }
+}
 
-function as_chooser($v, $target = '') {
+function choose_from($v, $target) {
 	$v->rel_target = $target;
+	return $v;
+}
+
+function add_with_choose($v) {
+	$v->for_add = '+';
+	return $v;
+}
+
+function menu_choose($v) {
+	$v->menu = ':M';
 	return $v;
 }
 
 function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
+	global $Tables;
+	
 	$name = '';
 	$rel_target = @$value->rel_target;
 	$data = '';
 	
-	//TODO: get default editor from model
-	
 	if($value instanceof namedString)
 		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	
-	if($value instanceof namedString 
-	&& isset($value->rel_target) && $value->rel_target == '') {
-		global $Tables;
+	//TODO: get default editor from model
+	
+	if($template == NULL
+		&& $value instanceof namedString 
+	) {
+		
 		$table = $Tables->{$value->container->getName()};
-		if(!isset($table->fields[$name])) echo $value->name;
 		$f = $table->fields[$name];
-		$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
+		$template = default_templated_editor($f->getControlType());
+		
+		if($rel_target || $f->target) {
+			$template = default_templated_editor((@$value->menu ?: ':R') . @$value->for_add);
+			if(is_string($rel_target))
+				$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $rel_target ]);
+			else
+				if(!$rel_target)
+					$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
+			
+		} else {
+			$attrs .= ' ' . $f->getControlProps(); //NOT FOR CHOOSE!
+		}
 	}
 	
-	if($value instanceof namedString 
-	&& isset($value->rel_target) && is_array($value->rel_target)) {
-		$value = @$value->rel_target[ $value ];
+	if(is_array($rel_target)) {
+		$value = @$rel_target[ $value ];
 		$data = [];
-		foreach($value->rel_target as $k=>$v) 
+		foreach($rel_target as $k=>$v) 
 		{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
 		$rel_target = implode("\n", $data);
 	}
 	else
-		$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
+		if($rel_target)
+			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 	
-	$value = $htmlspecialchars( $value );
-	$template = '"'.addslashes($template).'"';
+	$value = htmlspecialchars( $value );
 	
-	$H = new templated_editors_helper(compact('value', 'name', 'rel_target', '$data', 'attrs', 'attrs2'));
-		
-	eval("echo $template;");
+	$EXPR = new templated_editors_helper(
+		compact('value', 'name', 'rel_target', 'data', 'attrs', 'attrs2')
+	);
+
+	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
 }
 
 

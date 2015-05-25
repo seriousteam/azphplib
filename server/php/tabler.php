@@ -87,7 +87,7 @@ style="width:100%">
 	<tr>
 	<?php 
 		ob_start(); $cnt = 0;
-		foreach($table_fields as $n=>$f) if($f->type){ ++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
+		foreach($table_fields as $n=>$f) if($f->type && !$f->hidden){ ++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
 		if($cnt>1) ob_end_flush(); else ob_end_clean();
 	?>
 </thead>
@@ -101,7 +101,7 @@ style="width:100%">
 		} 
 	?>
 >
-	<?php foreach($table_fields as $n=>$f) if($f->type) { echo '<td>'; 
+	<?php foreach($table_fields as $n=>$f) if($f->type && !$f->hidden) { echo '<td>'; 
 		if(CHOOSER_MODE){
 			if($f->Target())
 				output_html($data->{"a_id__$n"});
@@ -109,13 +109,9 @@ style="width:100%">
 				output_html($data->{"a__{$n}"});
 		} else {
 			if($f->Target())
-				output_editor('Er', $data->ns("a_id__$n"), 
-					file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ])
-					." :  add_button=N "
-					. $f->getControlProps()
-				); 
+				output_editor2($data->ns("a_id__$n"), '', " add_button=N "); 
 			else
-				output_editor($f->getControlType(), $data->ns("a__$n"), $f->getControlProps()); 
+				output_editor2($data->ns("a__$n"), '', ''); 
 		}
 	}?>
 

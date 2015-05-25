@@ -275,6 +275,45 @@ function make_dbspecific_select_values($cmd, $dialect) {
   return 'SELECT '.$cmd;
 }
 
+function lastInsertedId_oracle($table) {
+	static $s = "SELECT SYS_CONTEXT('CLIENTCONTEXT', 'lastInsertId') FROM DUAL";
+	$dbc = get_connection($table);
+	if(is_string($s)) $s = $dbc->prepare(stmt);
+	$s->execute();
+	return $s->fetchColumn();
+}
+function lastInsertedId_mysql($table) {
+	$dbc = get_connection($table);
+	return $dbc->lastInsertId();
+}
+
+function make_dbspecific_insert_values($parsed, $values_select, $autopk, $dialect) {
+	global $RE_ID;
+	$values_select = $values_select ?: $parsed->_VALUES;
+	$ii = $parsed->{'_INSERT INTO'};
+	if($autopk 
+		&& preg_match("/^\s*INSERT\s+INTO\s+($RE_ID)/si", $ii, $m)
+	) {
+		switch($dialect) {
+		case 'orcale':
+			$res = "/*lastInsertedId_oracle:m[1]*/ declare pk number; begin
+				$ii $values_select returning $autopk into pk;
+				DBMS_SESSION.SET_CONTEXT ( 'CLIENTCONTEXT', 'lastInsertId', pk ); end;
+			"; break;
+		case 'mysql':
+			$res = "/*lastInsertedId_mysql:m[1]*/ $ii $values_select"; break;
+		case 'mssql':
+			$res = "$ii output inserted.$autopk $values_select"; break;
+		case 'pgsql':
+			$res = "$ii $values_select returning $autopk"; break;
+		}
+	}
+	else
+		$res = "$ii $values_select";
+
+	return replace_dbspecific_funcs($res, $dialect);
+}
+
 //check every database if we have to have aliases in multitable update at left side if '='
 // (if field reside in two tables)
 function make_dbspecific_update($parsed, $dialect) {

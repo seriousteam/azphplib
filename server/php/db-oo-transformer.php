@@ -172,7 +172,7 @@ class _Cmd extends _PreCmd {
   var $alias = ''; //alias of root table
   var $table = ''; //root table name
   var $toplevel = true; //toplevel flag
-  
+
   static $a_num = 0;
 
   //make new parsed command
@@ -491,7 +491,7 @@ class _Cmd extends _PreCmd {
     if(!@$parsed->VALUES)
       $parsed = new parsedCommand($INSERT_STRUCT_SELECT, $s);
     if(!@$parsed->ok) {
-	var_dump($parsed);
+		var_dump($parsed);
       throw new Exception("bad insert structire: $s");
     }
     
@@ -554,17 +554,18 @@ class _Cmd extends _PreCmd {
         throw new Exception("Blacklisted function in insert: <$id>");
 
     //recompose and do not do more
+    $select = '';
     if($filter) {
       preg_match('/^\s*\((.*)\)\s*$/', $parsed->VALUES, $m); //trim spaces and brackets
       $select = make_dbspecific_select_values($m[1], $this->dialect);
       //var_dump($parsed->{'_INSERT INTO'});
-      return 
-        replace_dbspecific_funcs(
-          "{$parsed->{'_INSERT INTO'}} "
-          .str_replace('%SEL%', $select, $filter) 
-        , $this->dialect);
+      $select = str_replace('%SEL%', $select, $filter);
     }
-    return replace_dbspecific_funcs($parsed, $this->dialect);
+    global $Tables;
+    return make_dbspecific_insert_values($parsed
+    	, $select
+    	, $Tables->$table->AUTO_KEY()
+    	, $this->dialect);
   }
 
   function process_delete($s) {
