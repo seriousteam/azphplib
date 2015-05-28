@@ -93,6 +93,8 @@ class _Field {
   var $choose = false;
   
   var $ui_size = NULL;
+  
+  var $values = '';
 
   function __construct( $table = null) { 
     global $Tables;
@@ -123,6 +125,14 @@ class _Field {
 			);
   }
   function getControlType() {
+  	global $ModelDB;
+//  	var_dump($ModelDB["{$this->values}.info"]);
+  	if($this->target) { //rel to table, DL by default
+  		return @$ModelDB["{$this->target->___name}.{$this->name}.info"]['control'] ?: 'DL';
+  	}
+  	if($this->values) { //restricted values, MENU by default
+  		return @$ModelDB["{$this->values}.info"]['control'] ?: 'MENU';
+  	}
 	switch($this->type) {
 	case 'DECIMAL': return $this->precision? 'DECIMAL': 'INTEGER';
 	case 'INTEGER': return 'INTEGER';
@@ -300,8 +310,9 @@ class modelParser extends _PreCmd {
 							}
 						}
 						//parse props here
-						$props = array_map('trim', explode(' ', $fpop));
-						foreach($props as $p) 
+						//var_dump($fpop);
+						$fpop = array_map('trim', preg_split("/(?<!:)\s+/", $fpop));
+						foreach($fpop as $p) 
 							if($p === 'PK') $fld->pk = true;
 							else if(preg_match('/^PK\((\d+)\)/i', $p, $m)) $fld->pk = $m[1];
 							else if(preg_match('/^ORDER\((\d+)\)/i', $p, $m)) $fld->order = $m[1];
@@ -319,12 +330,20 @@ class modelParser extends _PreCmd {
 							else if(preg_match('/^REQUIRED$/', $p)) $fld->required = true;
 							else if(preg_match("/^VIS$/", $p))  $fld->vis = true;
 							else if(preg_match('/^HIDDEN$/', $p)) $fld->hidden = true;
-							else if(preg_match("/^SI'(\d+)'/i", $p, $m)) $fld->si_caption = $this->unescape($m[1]);
-							else if(preg_match("/^RE:'(\d+)'/i", $p, $m))  $fld->ctrl_re = $this->unescape($m[1]); 
-							else if(preg_match("/^MIN:'(\d+)'/i", $p, $m)) $fld->ctrl_min = $this->unescape($m[1]); 
-							else if(preg_match("/^MAX:'(\d+)'/i", $p, $m)) $fld->ctrl_max = $this->unescape($m[1]);							
-							else if(preg_match("/^UI_SIZE:(\d+)/i", $p, $m)) $fld->ui_size = (int)$m[1];							
-							else if(preg_match("/^='(\d+)'/", $p, $m)) $fld->expression = $this->unescape($m[1]); 
+							else if(preg_match("/^SI'(\d+)'/i", $p, $m)) 
+								$fld->si_caption = $this->unescape($m[1]);
+							else if(preg_match("/^RE:'(\d+)'/i", $p, $m))  
+								$fld->ctrl_re = $this->unescape($m[1]); 
+							else if(preg_match("/^MIN:'(\d+)'/i", $p, $m)) 
+								$fld->ctrl_min = $this->unescape($m[1]); 
+							else if(preg_match("/^MAX:'(\d+)'/i", $p, $m)) 
+								$fld->ctrl_max = $this->unescape($m[1]);							
+							else if(preg_match("/^UI_SIZE:(\d+)/i", $p, $m)) 
+								$fld->ui_size = (int)$m[1];							
+							else if(preg_match("/^VALUES:\s*($RE_ID)/i", $p, $m)) 
+								$fld->values = $m[1];							
+							else if(preg_match("/^='(\d+)'/", $p, $m)) 
+								$fld->expression = $this->unescape($m[1]); 
 						$fres[$fname] = $fld;
 					}
 				}

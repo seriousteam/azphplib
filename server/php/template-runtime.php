@@ -260,10 +260,26 @@ file reference with stamp!
 
 function NVL($v, $def) { 
 	if($v instanceof namedString) {
-		$v->value = NVL($v->value, $def);
+		$v->value = NVL((string)$v, $def);
 		return $v;
 	}
 	return $v === null || $v === ''? $def: $v; 
+}
+function tr($v, $arr = null) {
+	$nv = $v instanceof namedString? (string)$v : $v;
+	{
+		if($arr === null) {
+			
+		}
+		$nv = $nv !== null && $nv !== ''?
+			(@$arr[$nv] ?: "?$nv?") : null;
+		if($v instanceof namedString) {
+			$v->key = (string)$v;
+			$v->value = $nv;
+			$v->tr = $arr;
+		} else $v = $nv;
+	}
+	return $v;
 }
 function lpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_LEFT); }
 function rpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_RIGHT); }
@@ -831,13 +847,40 @@ static $a = [
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
-	, ':R' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, ':M' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
-	, ':R+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, ':M+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+	, 'DL' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
+	, 'DL+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
 ];
 	return $a[$t];
 }
+
+/*
+	menu:
+	1) translate internal -> external with array on show and set VALUE
+	2) user rid when save to db on edit
+	
+	bool:
+	2/3/3M -> works like menu (translate 0/1 -> yes/no on show 
+		and translate back on save)
+	two/three/threeM - do not translate at all
+	
+	also, we can use custom texts (from model!)
+	
+	2/3 is a model decision(!) (as a datatype!)
+	2 vs two, 3 vs 3M vs three vs threeM is a design decision
+	
+	so, in the model we
+	1) specify datatype 
+		DECIMAL(1) VALUES:BOOL2 (NULL/1)
+		DECIMAL(1) VALUES:BOOL3 (NULL/0/1)
+		DECIMAL(N) VALUES:varname (use model_db()->varname as array key/value pairs)
+	2) also, we use checkbox exactly for BOOL2
+	3) also, we can set "expanded from" for BOOL3 (by default) or any other translators
+		if so, we inline menu and show it (like 'three')
+	so we do not use two, 3, 3M, three, threeM vtypes
+	instead we use a+menu AND interpret "menu_expanded" attribute
+*/
 
 class templated_editors_helper implements ArrayAccess {
 	var $a = null;
@@ -858,65 +901,64 @@ function choose_from($v, $target) {
 	return $v;
 }
 
-function add_with_choose($v) {
-	$v->for_add = '+';
-	return $v;
-}
-
-function menu_choose($v) {
-	$v->menu = ':M';
-	return $v;
+function name_of_field_in_nv($value)
+{
+	if($value instanceof namedString)
+		return explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
+	return '';
 }
 
 function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
 	global $Tables;
 	
-	$name = '';
-	$rel_target = @$value->rel_target;
-	$data = '';
-	
-	if($value instanceof namedString)
-		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
-	
-	//TODO: get default editor from model
-	
-	if($template == NULL
-		&& $value instanceof namedString 
-	) {
+	$name = name_of_field_in_nv($value);
+	$rel_target = '';
+
+	if($value instanceof namedString) {
 		
 		$table = $Tables->{$value->container->getName()};
 		$f = $table->fields[$name];
-		$template = default_templated_editor($f->getControlType());
-		
-		if($rel_target || $f->target) {
-			$template = default_templated_editor((@$value->menu ?: ':R') . @$value->for_add);
-			if(is_string($rel_target))
-				$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $rel_target ]);
-			else
-				if(!$rel_target)
-					$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
-			
-		} else {
-			$attrs .= ' ' . $f->getControlProps(); //NOT FOR CHOOSE!
+
+		//we can specify control type explicitly
+		if(!$template) {
+			//if not, we take control from model
+			$template = default_templated_editor(
+				$f->getControlType()
+			);
 		}
-	}
 	
-	if(is_array($rel_target)) {
-		$value = @$rel_target[ $value ];
-		$data = [];
-		foreach($rel_target as $k=>$v) 
-		{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
-		$rel_target = implode("\n", $data);
-	}
-	else
-		if($rel_target)
+		if(@$value->rel_target || $f->target) {
+			$rel_target = file_URI('//az/server/php/chooser.php', 
+				[ 'table' => 
+						@$value->rel_target ?: $f->target->___name 
+				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
-	
+		}
+		
+		if(@$f->values) {
+			$rel_target = file_URI('//az/server/php/modeldata.php', 
+				[ 'table' => $f->values 
+				]);
+			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
+			$attrs .= ' add_button=N ';
+			$attrs2 .= ' ref=Y ';
+		}
+
+		if(@$value->tr) { // translated value --> use tr array as choose items
+			$data = [];
+			foreach($value->tr as $k=>$v) 
+			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
+			$rel_target = implode("\n", $data);
+		}
+		
+		$attrs .= $f->getControlProps();
+	}
+
 	$value = htmlspecialchars( $value );
 	
 	$EXPR = new templated_editors_helper(
-		compact('value', 'name', 'rel_target', 'data', 'attrs', 'attrs2')
+		compact('value', 'name', 'rel_target', 'attrs', 'attrs2')
 	);
 
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
