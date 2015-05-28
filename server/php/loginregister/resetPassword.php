@@ -3,14 +3,14 @@
 //if logged in redirect to members page
 if( $user->is_logged_in() ){ header('Location: memberpage.php'); } 
 
-$stmt = $db->prepare('SELECT resetToken, resetComplete FROM members WHERE resetToken = :token');
+$stmt = $db->prepare('SELECT '.RESET_TOKEN_CONST.', '.RESET_COMPL_CONST.' FROM '.DBTABLE.' WHERE '.RESET_TOKEN_CONST.' = :token');
 $stmt->execute(array(':token' => $_GET['key']));
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 //if no token from db then kill the page
-if(empty($row['resetToken'])){
+if(empty($row[RESET_TOKEN_CONST])){
 	$stop = RESET_INV_TOKEN;
-} elseif($row['resetComplete'] == 'Yes') {
+} elseif($row[RESET_COMPL_CONST] == 'Yes') {
 	$stop = RESET_ALR_CHANGED;
 }
 
@@ -18,30 +18,26 @@ if(empty($row['resetToken'])){
 if(isset($_POST['submit'])){
 
 	//basic validation
-	if(strlen($_POST['password']) < 3){
-		$error[] = 'Password is too short.';
+	if(strlen($_POST[PASSWORD_CONST]) < 3){
+		$error[] = 'Пароль слинком короткий.';
 	}
 
-	if(strlen($_POST['passwordConfirm']) < 3){
-		$error[] = 'Confirm password is too short.';
-	}
-
-	if($_POST['password'] != $_POST['passwordConfirm']){
-		$error[] = 'Passwords do not match.';
+	if($_POST[PASSWORD_CONST] != $_POST['passwordConfirm']){
+		$error[] = 'Пароли не совпадают.';
 	}
 
 	//if no errors have been created carry on
 	if(!isset($error)){
 
 		//hash the password
-		$hashedpassword = $user->password_hash($_POST['password'], PASSWORD_BCRYPT);
+		$hashedpassword = $user->password_hash($_POST[PASSWORD_CONST], PASSWORD_BCRYPT);
 
 		try {
 
-			$stmt = $db->prepare("UPDATE members SET password = :hashedpassword, resetComplete = 'Yes'  WHERE resetToken = :token");
+			$stmt = $db->prepare("UPDATE ".DBTABLE." SET ".PASSWORD_CONST." = :hashedpassword, ".RESET_COMPL_CONST." = 'Yes'  WHERE ".RESET_TOKEN_CONST." = :token");
 			$stmt->execute(array(
 				':hashedpassword' => $hashedpassword,
-				':token' => $row['resetToken']
+				':token' => $row[RESET_TOKEN_CONST]
 			));
 
 			//redirect to index page
@@ -78,7 +74,7 @@ require('layout/header.php');
 	    	} else { ?>
 
 				<form role="form" method="post" action="" autocomplete="off">
-					<h2>Change Password</h2>
+					<h2>Смена пароля</h2>
 					<hr>
 
 					<?php
@@ -103,19 +99,19 @@ require('layout/header.php');
 					<div class="row">
 						<div class="col-xs-6 col-sm-6 col-md-6">
 							<div class="form-group">
-								<input type="password" name="password" id="password" class="form-control input-lg" placeholder="Password" tabindex="1">
+								<input type="password" name="password" id="password" class="form-control input-lg" placeholder="Пароль" tabindex="1">
 							</div>
 						</div>
 						<div class="col-xs-6 col-sm-6 col-md-6">
 							<div class="form-group">
-								<input type="password" name="passwordConfirm" id="passwordConfirm" class="form-control input-lg" placeholder="Confirm Password" tabindex="1">
+								<input type="password" name="passwordConfirm" id="passwordConfirm" class="form-control input-lg" placeholder="Повторите пароль" tabindex="1">
 							</div>
 						</div>
 					</div>
 					
 					<hr>
 					<div class="row">
-						<div class="col-xs-6 col-md-6"><input type="submit" name="submit" value="Change Password" class="btn btn-primary btn-block btn-lg" tabindex="3"></div>
+						<div class="col-xs-6 col-md-6"><input type="submit" name="submit" value="Сменить пароль" class="btn btn-primary btn-block btn-lg" tabindex="3"></div>
 					</div>
 				</form>
 

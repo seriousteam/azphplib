@@ -4,7 +4,7 @@
 if(!$user->is_logged_in()){ header('Location: login.php'); } 
 
 //define page title
-$title = 'Members Page';
+$title = 'Страница для зарегистрированных пользователей';
 
 //include header template
 require('layout/header.php'); 
@@ -16,8 +16,8 @@ require('layout/header.php');
 
 	    <div class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
 			
-				<h2>Member only page - Welcome <?php echo $_SESSION['username']; ?></h2>
-				<p><a href='logout.php'>Logout</a></p>
+				<h2>Страница для зарегистрированных пользователей. Добро пожаловать. <?php echo $_SESSION['username']; ?></h2>
+				<p><a href='logout.php'>Выйти</a></p>
 				<hr>
 
 		</div>

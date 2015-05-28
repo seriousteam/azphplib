@@ -16,7 +16,7 @@ else
 {
 	if (isset($_REQUEST['activasion']))
 	{	
-		$info=my_decrypt($_REQUEST['activasion'],CRYPT_KEY);
+		$info=rm_decrypt($_REQUEST['activasion'],CRYPT_KEY);
 		$rez_arr=null;
 		parse_str($info,$rez_arr);
 		if ($rez_arr)
@@ -55,6 +55,6 @@ if($stmt->rowCount() == 1){
 	exit;
 
 } else {
-	echo "Your account could not be activated."; 
+	echo "Активация аккаунта невозможна."; 
 }
 ?>
