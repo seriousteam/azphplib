@@ -123,7 +123,8 @@ function table_db($table){
   global $main_cfg;
   global $a_table_db;
   global $default_db;
-  return $main_cfg[@$a_table_db[$table] ?: 'default_db'];
+  $tn = trim(explode(':', @$a_table_db[$table], 2)[0]);
+  return $main_cfg[$tn ?: 'default_db'];
 }
 
 if($G_ENV_LOCAL_USERS) {

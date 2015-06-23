@@ -44,8 +44,14 @@ class _XNode {
   }
 
   function __toString() {
+	  global $a_table_db;
       $tn = isset($this->table->select) ? 
-        "({$this->table->select})" : $this->table->___name;
+        "({$this->table->select})" 
+		: 
+		(
+			trim(explode(':', @$a_table_db[$this->table->___name], 2)[1])
+			?: $this->table->___name
+		);
       if($this->access_filters) {
         _XNode::filter2str($this->access_filters, $a);
         $tn = "( SELECT * FROM $tn a1 WHERE $a )"; 

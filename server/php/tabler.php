@@ -124,7 +124,6 @@ style="width:100%">
 <?php 
 $where_vals = make_manipulation_command(null, false, $statements->data);
 if( ($counters->data-1) ) ob_end_flush(); else { ?>
-<style> [main_table] THEAD { display: none; }</style>
 <?php ob_end_flush();
 $all_keys = true; foreach($pk as $kf) if(!array_key_exists($kf, $where_vals)) $all_keys = false;
 ?><div>Нет</div><?php }?>
