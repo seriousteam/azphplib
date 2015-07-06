@@ -95,6 +95,8 @@ class _Field {
   var $ui_size = NULL;
   
   var $values = '';
+  
+  var $page = '';
 
   function __construct( $table = null) { 
     global $Tables;
@@ -249,6 +251,7 @@ class modelParser extends _PreCmd {
 					$fields = explode(';', $fields);
 					$fields = array_map('trim', $fields);
 					$fields = array_filter($fields);
+					$current_page = '';
 					//var_dump($fields);
 					foreach($fields as $f) {
 						if(preg_match("/^\s*+(?<name>$RE_ID):\s*+(?<value>(.*))/", $f, $m)) { // ID: 
@@ -260,6 +263,8 @@ class modelParser extends _PreCmd {
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
 							else if($m['name'] == 'AUTO_KEY')
 								$props[ 'AUTO_KEY' ] = true;
+							else if($m['name'] == 'PAGE')
+								$current_page = $m['value'];
 							continue;
 						}
 
@@ -344,6 +349,7 @@ class modelParser extends _PreCmd {
 								$fld->values = $m[1];							
 							else if(preg_match("/^='(\d+)'/", $p, $m)) 
 								$fld->expression = $this->unescape($m[1]); 
+						$fld->page = $current_page;
 						$fres[$fname] = $fld;
 					}
 				}

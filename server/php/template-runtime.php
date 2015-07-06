@@ -848,7 +848,7 @@ static $a = [
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
 	, 'DL' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'MENU' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
+	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
 	, 'DL+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, 'MENU+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
 ];
@@ -932,21 +932,29 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 			$rel_target = file_URI('//az/server/php/chooser.php', 
 				[ 'table' => 
 						@$value->rel_target ?: $f->target->___name 
+				  , 'add_empty' => $f->required ? '' : 'Y'
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 		}
 		
 		if(@$f->values) {
+			global $ModelDB;
+			$value->value = isset($ModelDB[$f->values][(string)$value]) ?
+				$ModelDB[$f->values][(string)$value] : '';
+			
 			$rel_target = file_URI('//az/server/php/modeldata.php', 
 				[ 'table' => $f->values 
+				  , 'add_empty' => $f->required ? '' : 'Y'
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
-			$attrs .= ' add_button=N ';
+			//$attrs .= ' add_button=N ';
 			$attrs2 .= ' ref=Y ';
 		}
 
 		if(@$value->tr) { // translated value --> use tr array as choose items
 			$data = [];
+			if(!$f->required)
+				$data[] = "<li value-patch=''>?</li>";
 			foreach($value->tr as $k=>$v) 
 			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
 			$rel_target = implode("\n", $data);

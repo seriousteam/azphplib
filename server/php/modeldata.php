@@ -13,6 +13,9 @@ if(!@$_REQUEST['table']) {
 	}
 } else {
 	$t = $_REQUEST['table'];
+	if(@$_REQUEST['add_empty']) {
+		echo "<li value-patch='' rt=''>?</li>\n";
+	}
 	foreach($ModelDB[$t] as $k => $v)
 		echo '<li value-patch="'.htmlspecialchars($k).'">'.htmlspecialchars($v)."</li>\n";
 }
