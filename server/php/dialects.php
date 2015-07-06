@@ -248,12 +248,12 @@ function make_dbspecific_select($cmd, $parsed, $dialect) {
 //FIXME: we should take alias from command! not from outside
 function main_table_of_many($tables, &$main_table, &$alias, $table_requried = true) {
 	global $RE_ID;
-	if(preg_match("/^\s*($RE_ID)\s+($RE_ID)?\s*$/", $tables, $m)) { 
+	if(preg_match("/^\s*($RE_ID(?:\.$RE_ID)?)\s+($RE_ID)?\s*$/", $tables, $m)) { 
 		$main_table = $m[1];
 		$alias = $m[2];
 		return false; //one table
 	}
-	if(!preg_match("/^\s*($RE_ID)\s+($RE_ID)\s/", $tables, $m))
+	if(!preg_match("/^\s*($RE_ID(?:\.$RE_ID)?)\s+($RE_ID)\s/", $tables, $m))
 		if($table_requried)
 			throw new Exception("Can't find main table and it's alias in $tables");
 		else

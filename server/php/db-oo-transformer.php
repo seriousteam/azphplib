@@ -226,8 +226,9 @@ class _Cmd extends _PreCmd {
       throw new Exception("can not find root table: $table in $table_part_of_parsed");
     $this->table = $table;
     $this->dialect = db_dialect(table_db($table));
-    if(!$this->dialect)
+    if(!$this->dialect) {
       throw new Exception("can not find root table dialect for: $table");
+	}
   }
 
   function parse_joins($from) {
