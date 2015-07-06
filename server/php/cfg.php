@@ -123,7 +123,8 @@ function table_db($table){
   global $main_cfg;
   global $a_table_db;
   global $default_db;
-  return $main_cfg[@$a_table_db[$table] ?: 'default_db'];
+  $tn = trim(explode(':', @$a_table_db[$table], 2)[0]);
+  return $main_cfg[$tn ?: 'default_db'];
 }
 
 if($G_ENV_LOCAL_USERS) {
@@ -481,7 +482,23 @@ function get_connection($table){
   $key = serialize($db);
   if(!@$connections[$key]) {
     if($db['user'] !== '') {
-      $connections[$key] = new PDO($db['server'],
+	if($db['user'][0] === '?') {
+	    try {
+		global $CURRENT_USER, $CURRENT_PW;
+		$connections[$key] = new PDO($db['server'],
+				   $CURRENT_USER,
+				   $CURRENT_PW
+				   , array(PDO::ATTR_PERSISTENT => true)
+				   );
+	    } catch(Exception $e) {
+		$connections[$key] = new PDO($db['server'],
+				   substr($db['user'],1),
+				   $db['pass']
+				   , array(PDO::ATTR_PERSISTENT => true)
+				   );
+	    }
+	} else
+		$connections[$key] = new PDO($db['server'],
 				   $db['user'],
 				   $db['pass']
 				   , array(PDO::ATTR_PERSISTENT => true)

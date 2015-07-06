@@ -2,8 +2,11 @@
 //var_dump($_ENV);
 //var_dump($_SERVER);
 
-$fname = getenv('fullfile');
+
+$fname = getenv('fullfile') ?: getenv('PATH_INFO');
 $cdir = getenv('cache');
+
+//die("$fname / $cdir");
 
 if(!$fname) die('');
 

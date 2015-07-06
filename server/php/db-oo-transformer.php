@@ -44,8 +44,14 @@ class _XNode {
   }
 
   function __toString() {
+	  global $a_table_db;
       $tn = isset($this->table->select) ? 
-        "({$this->table->select})" : $this->table->___name;
+        "({$this->table->select})" 
+		: 
+		(
+			trim(explode(':', @$a_table_db[$this->table->___name], 2)[1])
+			?: $this->table->___name
+		);
       if($this->access_filters) {
         _XNode::filter2str($this->access_filters, $a);
         $tn = "( SELECT * FROM $tn a1 WHERE $a )"; 
@@ -220,8 +226,9 @@ class _Cmd extends _PreCmd {
       throw new Exception("can not find root table: $table in $table_part_of_parsed");
     $this->table = $table;
     $this->dialect = db_dialect(table_db($table));
-    if(!$this->dialect)
+    if(!$this->dialect) {
       throw new Exception("can not find root table dialect for: $table");
+	}
   }
 
   function parse_joins($from) {
