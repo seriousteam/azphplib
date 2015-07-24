@@ -70,8 +70,7 @@ $G_ENV_CACHE_TTL
 */
 
 $G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
-$G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?: 
-	dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
+$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
 	 // p_doc_root/az/server/php/cfg.php
 	 
 define('__ROOTDIR__', $G_P_DOC_ROOT);
@@ -82,7 +81,7 @@ define('__ROOTDIR__', $G_P_DOC_ROOT);
 $GLOBAS_STATE_VARS = [];
 
 //echo $G_P_DOC_ROOT, ' ', $_SERVER['SCRIPT_FILENAME'];
-@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doen't allow to use SetEnv
+@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doesn't allow to use SetEnv
 
 /*
 	we need setup cache configuration first

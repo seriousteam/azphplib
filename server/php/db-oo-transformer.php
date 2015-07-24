@@ -49,7 +49,7 @@ class _XNode {
         "({$this->table->select})" 
 		: 
 		(
-			trim(explode(':', @$a_table_db[$this->table->___name], 2)[1])
+			trim(@explode(':', @$a_table_db[$this->table->___name], 2)[1])
 			?: $this->table->___name
 		);
       if($this->access_filters) {

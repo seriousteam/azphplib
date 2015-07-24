@@ -152,14 +152,15 @@ class _Field {
 		.($this->ctrl_re != ''? " re=\"$this->ctrl_re\"": '')
 		.($this->required? ' required' : '')
 		.($this->ui_size > 0? " size=$this->ui_size":
-			($this->ui_size === 0? " content-resizable":''));
+			($this->ui_size === 0? " content-resizable":''))
+		. ' ';
   }
   function getControlProps() {
 	switch($this->type) {
-	case 'DECIMAL': return ($this->precision? "re=\"/^\\d{0,$this->size}(?:\\.\d{0,$this->precision})?$/\"": "maxlength=$this->size").$this->getControlXProps();
-	case 'INTEGER': return "maxlength=$this->size" . $this->getControlXProps();
+	case 'DECIMAL': return ($this->precision? " re=\"/^\\d{0,$this->size}(?:\\.\d{0,$this->precision})?$/\"": " maxlength=$this->size") . $this->getControlXProps();
+	case 'INTEGER': return " maxlength=$this->size" . $this->getControlXProps();
 	case 'CHAR': 
-	case 'VARCHAR': return "maxlength=$this->size" . $this->getControlXProps();
+	case 'VARCHAR': return " maxlength=$this->size" . $this->getControlXProps();
 	default: return $this->getControlXProps();
 	}
   }
