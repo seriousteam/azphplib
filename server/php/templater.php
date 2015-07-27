@@ -251,7 +251,9 @@ FUNC;
 		|OFFSET
 		|NEXT
 		|PREV
-		|LIMIT)
+		|LIMIT
+		|CONTROLS
+		)
 	\s*\]\]/sx', function($m) {
 		switch($m[1]) {
 			case 'OFFSET': return "[[\$requested_offset]]";
@@ -262,6 +264,11 @@ FUNC;
 			case 'PREV': return 
 				"[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]";
 			case 'LOADED': return "[[\$main_counter]]";
+			case 'CONTROLS': return <<<ST
+<button first_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), null, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
+<button prev_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
+<button next_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$main_counter > \$requested_limit? \$requested_offset + \$page_limit : '')]]"></button>
+ST;
 		}
 		echo "\t\t\$page_limit = $m[2];\n";
 		return '';

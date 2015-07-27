@@ -941,7 +941,9 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 			global $ModelDB;
 			
 			$value->value = isset($ModelDB[$f->values][(string)$value]) ?
-				$ModelDB[$f->values][(string)$value] : '';
+				$ModelDB[$f->values][(string)$value] : 
+				(@$ModelDB[$f->values]['.'] ?: '')
+			;
 			
 			$rel_target = file_URI('//az/server/php/modeldata.php', 
 				[ 'table' => $f->values 

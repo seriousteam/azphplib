@@ -7,7 +7,7 @@ $cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
 
 $table = $_REQUEST['table'];
 
-$fphpname = "$cdir/$table.table.php.t";
+$fphpname = "$cdir/$table.".(CHOOSER_MODE?'choose':'table').".php.t";
 $mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
 $mtt = $G_ENV_MODEL ? stat($G_ENV_MODEL)['mtime'] : 1;
 if($mt >= $mtt) {
@@ -57,10 +57,14 @@ echo <<<ST
 
 
 [[if(\$params->h == 'Y') { echo "<h1>";  output_html(\$table->___caption ?: \$table->___name); echo "</h1>"; }]]
+ST;
 
+ob_start(); $cnts = 0;
+
+echo <<<ST
 <div id=filter_def filter_def="[ EQ(1,1)
 ST;
-foreach($table_fields as $n=>$f) if($f->search_op) { echo ", a.$n $f->search_op ?$n\n"; }
+foreach($table_fields as $n=>$f) if($f->search_op) { ++$cnts; echo ", a.$n $f->search_op ?$n\n"; }
 echo <<<ST
 	]"
 	selfref="[[CURRENT_URI()]]" onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
@@ -75,9 +79,11 @@ ob_start(); $cnt = 0;
 		if($f->search_op) 
 			{ ++$cnt; echo " <span filter_hint=$n>"; output_html($f->caption); echo '</span>'; }
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
-	
+
+echo "</div>\n";	
+if($cnts) ob_end_flush(); else { ob_end_clean(); echo "<div><br></div>"; }
+
 echo <<<ST
-</div>
 <div style="clear:both"><!--FILTRED:-->
 [[ob_start();]]
 <table main_table>
@@ -100,8 +106,8 @@ echo <<<ST
 ST;
 if(CHOOSER_MODE){ 
 echo <<<ST
-	[[rt@tr \$data->a__table__id]]
-	[[value@tr \$data->a__$pk0]]
+	[[rt@tr \$data-:a__table__id]]
+	[[value@tr \$data-:a__$pk0]]
 	[[onclick@tr 'this.closeModal(this)']]
 	[[style@tr 'cursor: pointer']]
 	
@@ -167,12 +173,8 @@ if(!CHOOSER_MODE){
 ST;
 }
 echo <<<ST
-<button first_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), null, this)" offset="[[PAGE PREV]]">В начало</button>
-<button prev_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="[[PAGE PREV]]">&lt; Предыдущая страница</button>
-<button next_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="[[PAGE NEXT]]">Следующая страница &gt;</button>
-
+[[PAGE CONTROLS]]
 <!--FILTRED.--></div>
-
 </body>
 ST;
 
