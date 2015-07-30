@@ -4,6 +4,8 @@ require_once(__DIR__.'/rights.php');
 require_once(__DIR__.'/dialects.php');
 require_once __DIR__.'/parser-common.php';
 
+define('MAX_UI_SIZE',32); //auto content-resizable size
+
 function recaption(&$caption) {
 	$parts = explode('@@', $caption);
 	$caption = $parts[0];
@@ -141,10 +143,11 @@ class _Field {
 	case 'CHAR': return 'VARCHAR';
 	case 'DATE': return 'DATE';
 	case 'CLOB': return 'CLOB';
-	case 'VARCHAR': return $this->precision && $this->precision > 255 ? 'LONGVARCHAR' : 'VARCHAR';
+	case 'VARCHAR': return $this->size && $this->size > MAX_UI_SIZE ? 'LONGVARCHAR' : 'VARCHAR';
 	default: return 'VARCHAR';
 	}
   }
+  //TODO: keep_sp
   function getControlXProps() {
 	return 
 		($this->ctrl_min != ''? " vmin=$this->ctrl_min": '')
@@ -160,7 +163,9 @@ class _Field {
 	case 'DECIMAL': return ($this->precision? " re=\"/^\\d{0,$this->size}(?:\\.\d{0,$this->precision})?$/\"": " maxlength=$this->size") . $this->getControlXProps();
 	case 'INTEGER': return " maxlength=$this->size" . $this->getControlXProps();
 	case 'CHAR': 
-	case 'VARCHAR': return " maxlength=$this->size" . $this->getControlXProps();
+	case 'VARCHAR': return 
+		
+		" maxlength=$this->size" . $this->getControlXProps();
 	default: return $this->getControlXProps();
 	}
   }
@@ -271,7 +276,7 @@ class modelParser extends _PreCmd {
 
 						if(!preg_match("/\s*+(?<name>$RE_ID)\s++
 									(?<rel>@@?\s*+)?(?<type>(?<local>$RE_ID)(?<haspart>\.(?<part>$RE_ID)?)?)(?:\s*:\s*+'(?<relcond>\d++)')?
-									(?:\(\s*+(?<size>\d++)(?:\s*,\s*+(?<prec>\d++))?\s*\))?
+									(?:\(\s*+(?<size>\d++|$RE_ID)(?:\s*,\s*+(?<prec>\d++|$RE_ID) )?\s*\))?
 									(?<other>.*)/x", $f, $m))
 								throw new Exception("strange field definition <<$f>>");
 						$fname = $m['name'];

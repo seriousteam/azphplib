@@ -320,8 +320,8 @@ function seqCookie() {
 	return $s;
 }
 
-function tabler_ref($table) {
-	return file_URI('//az/server/php/tabler.php', [ 'table' => $table ]);
+function tabler_ref($table, $link = "") {
+	return file_URI('//az/server/php/tabler.php', [ 'table' => $table, 'link' => $link ]);
 }
 
 function sas_PROC($v, $pname, $proc, $file, $root = '/') {

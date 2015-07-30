@@ -6,8 +6,9 @@ require_once(__DIR__.'/template-runtime.php');
 $cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
 
 $table = $_REQUEST['table'];
+$link = @$_REQUEST['link'];
 
-$fphpname = "$cdir/$table.".(CHOOSER_MODE?'choose':'table').".php.t";
+$fphpname = "$cdir/$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t";
 $mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
 $mtt = $G_ENV_MODEL ? stat($G_ENV_MODEL)['mtime'] : 1;
 if($mt >= $mtt) {
@@ -15,12 +16,16 @@ if($mt >= $mtt) {
 	goto end;
 }
 
+//$link_filter = '';
+//if($link) $link_filter = " $link = ? ";
+
 ob_start();
 
 global $Tables;
 $table = $Tables->{$table};
 $pk = $table->PK(true);
 $pk0 = $table->PK();
+$pk_s = implode(',', array_map(function($a){ return "a.$a";}, $pk));
 
 $sql_fields[] = $table->ID('a')." AS a__table__id";
 $table_fields = $table->fields;
@@ -38,7 +43,6 @@ $table_fields = $table->fields;
 	if(!isset($table_fields[$n = $table->PK()]))
 		$sql_fields[] = "a.$n AS a__$n";
 	$sql_fields = implode(', ', $sql_fields);
-
 	
 echo <<<ST
 [[PROLOG global \$Tables; \$table = \$Tables->{\$params->table};]]
@@ -91,7 +95,7 @@ echo <<<ST
 	<tr>
 ST;
 	ob_start(); $cnt = 0;
-	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page){ 
+	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page && $n != $link){ 
 	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
@@ -101,7 +105,7 @@ echo <<<ST
 
 <tr>
 [[@tr \$data : SAMPLE AND SELECT *, $sql_fields FROM $table->___name]]
-[[cmd@tr make_manipulation_command(\$data, \$counters-:data, \$statements-:data)]]
+[[cmd@tr \$data.{CMD $pk_s}]]
 
 ST;
 if(CHOOSER_MODE){ 
@@ -116,13 +120,19 @@ ST;
 echo '[[$@tr $data.{SAMPLE}]]';
 
 foreach($table_fields as $n=>$f) 
-		if($f->type && !$f->hidden && !$f->page) { echo "\n<td>"; 
+		if($f->type && !$f->hidden && !$f->page && $n != $link) { echo "\n<td>"; 
 		if(CHOOSER_MODE){
 			if($f->Target())
 				echo "[[\$data.a.$n._id_]]";
 			else
 				echo "[[\$data.a.$n]]";
 		} else {
+			if($f->type=='SUBTABLE') {
+				echo "<button type=button onclick='this.setDN(toggle)' display_next></button>";
+				echo <<<ST
+				<div subtable ref=Y>"[[tabler_ref('$f->size','$f->precision')]]&cmd=*WHERE $f->precision = %3F".setURLParam('args\\[\\]',findRid(this))</div>
+ST;
+			} else
 			if($f->Target())
 				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
 			else
@@ -138,8 +148,14 @@ echo <<<ST
 	<div extended_form cmd="@this.UT('TR').previousElementSibling">
 ST;
 	foreach($table_fields as $n=>$f) 
-		if($f->type && !$f->hidden && $f->page) { ++$cnt;
+		if($f->type && !$f->hidden && $f->page && $n != $link) { ++$cnt;
 			echo "<div ctrl_container><label>"; output_html($f->caption ?: $n); echo "</label>";
+			if($f->type=='SUBTABLE') {
+				echo "<button type=button onclick='this.setDN(toggle)' display_next></button>";
+				echo <<<ST
+				<div subtable ref=Y>"[[tabler_ref('$f->size','$f->precision')]]&cmd=*WHERE $f->precision = ?".setURLParam('args[]',findRid(this))</div>
+ST;
+			} else
 			if($f->Target())
 				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
 			else
