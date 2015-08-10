@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__.'/auth.php';
+require_once __DIR__.'/auth.php';;
 require_once __DIR__.'/WinFsStreamWrapper.php';
 $ccp="UTF-8";
 if (isset($_REQUEST['current_cp'])) $ccp=$_REQUEST['current_cp'];
@@ -10,9 +10,14 @@ $ed_simple="0";
 if (isset($_REQUEST['ed_simple'])) $ed_simple=$_REQUEST['ed_simple'];
 ini_set("display_errors", 1);
 $editFileVars="current_cp=$ccp&synt_hl=$curhl&ed_simple=$ed_simple";
+$title=@$_GET["dir"];
+$title=$title?basename($title):"root";
+if(is_dir(@$_GET["dir"])) $title=mb_strtoupper($title);
+$extension=mb_strtolower(pathinfo(@$_GET["dir"],PATHINFO_EXTENSION));
 $outtext=<<<HTHEAD
 <html>
 <head>
+<title>$title</title>
 <meta charset="$ccp">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 <style type="text/css" media="screen">    
@@ -87,23 +92,15 @@ if ($_SERVER['REQUEST_METHOD']=='GET')
 	else header("Location: $url?dir=$get");
 	if (is_dir($win_suff.$get))
 	{
-		$lgout="<span username>".$_SESSION['name']."</span><button logout title=\"Sign out\" onclick=\"window.open('http://".$_SERVER['HTTP_HOST'].
-			$_SERVER['SCRIPT_NAME']."?action=logout')\"></button>";
+		$lgout="<div bottombuttons><span>Signed in as </span><span username onclick=\"window.open('http://".$_SERVER['HTTP_HOST'].
+			$_SERVER['SCRIPT_NAME']."?action=logout')\">".$_SESSION['name']."</span></div>";
 		$outtext.= <<<HTTT
 <div buttons>
-<div leftside>
-<button newfile onclick="create(1);" title="New File"></button>
-<button newdir onclick="create(0);"  title="New Dir"></button>
 <button delete onclick="deleteFile();" title="Delete Choosen"></button>
-<button copy onclick="copyFiles();" title="Copy Choosen"></button>
-<button paste onclick="pasteFiles();" title="Insert Copy"></button>
+<button copy onclick="pasteFiles();" title="Copy Choosen"></button>
 <button grep onclick="window.open('grep.php'+location.search);" title="Grep"></button>
 <input autofocus filter placeholder=Filter type="text" name="fltxt" value="" onchange="filterContent();" title="Filter Files and Folders">
 <input type="submit" value="" style="border: none;background:transparent;" onclick="filterContent();">
-</div>
-<div rightside>
-$lgout
-</div>
 </div>
 <div style="clear: both;" container>
 HTTT;
@@ -115,7 +112,7 @@ HTTT;
 			$file_tst=true;
 			$dir_tst=true;
 			$link=ru_realpath($get."/".$ddr);			
-			$checkbox="<input type='checkbox' name='chbt' data-url='$link'>";
+			$checkbox="<input type='checkbox' name='chbt' data-url='$link' onclick='copyFiles()'>";
 			if ($ddr=="..")	
 			{
 				$checkbox="";
@@ -130,8 +127,9 @@ HTTT;
 			if (is_dir($win_suff.$get."/".$ddr))
 			{
 				if ($ddr!="."&&$dir_tst)
-					if($ddr=="..")
-						$dirs="<div folder upfolder><a href='dir.php?dir=$link'></a></div>".$dirs;
+					if($ddr=="..") {
+                        $upfolder = "dir.php?dir=$link";
+                    }
 					else
 						$dirs.="<div folder>$checkbox<a href='dir.php?dir=$link'>$ddr</a></div>";
 			}
@@ -146,8 +144,16 @@ HTTT;
 				if ($ddr!="."&&$file_tst&&$dir_tst) 
 					$files.="<div file>$checkbox<a href='dir.php?dir=$link&$editFileVars'>$ddr</a></div>";	
 			}		
-		}		
-		$outtext.= $dirs.$files;
+		}
+       $subbuttons= <<<UPFOLDER
+<div subbuttons>
+<button upfolder type="button" onclick='window.open("$upfolder","_self")'></button>
+<button newfile onclick="create(1);" title="New File"></button>
+<button newdir onclick="create(0);"  title="New Dir"></button>
+</div>
+UPFOLDER;
+		$outtext.= $subbuttons.$dirs.$files.$lgout;
+        
 	}
 	else 
 	{
@@ -156,7 +162,7 @@ HTTT;
 		if ($backurl=="") $backurl=mb_substr($get,0,mb_strripos($get,"\\"));
 		$url.="?dir=".$backurl;
 		$simple_ed_ch="";
-		$text_st="<div style='clear: both;height: 96%;'><textarea name='teditor' id='teditor'>";
+		$text_st="<div style='clear: both;'><textarea name='teditor' id='teditor'>";
 		$text_end="</textarea></div>";
 		$hlset=$curhl;
 		switch($curhl)
@@ -173,18 +179,86 @@ HTTT;
 		}
 		if (isset($_REQUEST['ed_simple']))
 		{
-			if ($_REQUEST['ed_simple']!="0")
+			if ($_REQUEST['ed_simple']=="0")
 			{
 				$simple_ed_ch="checked";
-				$text_st='<div><pre id="editor" >';//style="clear: both;"
+				$text_st=<<<EDSTRT
+<textarea name='hltxt' id='hltxt'>
+EDSTRT;
 				$text_end=<<<EDTXT
-</pre>
-</div>
-<script src="src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+</textarea>
+  <link rel=stylesheet href="cm/doc/docs.css">
+  <link rel="stylesheet" href="cm/lib/codemirror.css">
+  <link rel="stylesheet" href="cm/addon/fold/foldgutter.css">
+  <link rel=stylesheet href="mfm.css">
+                  
+  <script src="cm/lib/codemirror.js"></script>
+  <script src="cm/addon/fold/foldcode.js"></script>
+  <script src="cm/addon/fold/foldgutter.js"></script>
+  <script src="cm/addon/fold/brace-fold.js"></script>
+  <script src="cm/addon/fold/xml-fold.js"></script>
+  <script src="cm/addon/fold/markdown-fold.js"></script>
+  <script src="cm/addon/fold/comment-fold.js"></script>
+  <script src="cm/addon/selection/active-line.js"></script>
+<script src="cm/addon/edit/matchbrackets.js"></script>
+<script src="cm/addon/search/search.js"></script>
+<script src="cm/addon/search/match-highlighter.js"></script>
+	<script src="cm/mode/htmlmixed/htmlmixed.js"></script>
+	<script src="cm/mode/xml/xml.js"></script>
+	<script src="cm/mode/javascript/javascript.js"></script>
+	<script src="cm/mode/css/css.js"></script>
+	<script src="cm/mode/clike/clike.js"></script>
+	<script src="cm/mode/php/php.js"></script>
+	<script src="cm/mode/scheme/scheme.js"></script>
+
+<script id="tscript"></script>
 <script>
-    var editor = ace.edit("editor");
-    //editor.setTheme("ace/theme/twilight");
-    editor.getSession().setMode("ace/mode/$hlset");
+  var te = document.getElementById("hltxt");
+  window.editor = CodeMirror.fromTextArea(te, {
+    mode: {
+    "js":"javascript",
+    "php":"php",
+    "css":"css",
+    "htm":"htmlmixed",
+    "html":"htmlmixed",
+    "xml":"xml"
+    }["$extension"]||"scheme",
+    lineNumbers: true,
+    lineWrapping: true,
+	styleActiveLine: true,
+    //foldGutter: true,
+	matchBrackets: true,
+    viewportMargin:1000000,
+    highlightSelectionMatches:false,
+    gutters: ["CodeMirror-linenumbers"/*, "CodeMirror-foldgutter"*/]
+  });
+  
+  //var pending;
+	editor.on("change", function() {
+		//clearTimeout(pending);
+		//pending = setTimeout(update, 400);
+        document.querySelector("[savebutton]").setAttribute("changes",1);
+        if(editor.historySize().undo)
+            document.querySelector("[undobutton]").setAttribute("changes",1);
+        else {
+            document.querySelector("[undobutton]").removeAttribute("changes");
+            document.querySelector("[savebutton]").removeAttribute("changes");
+        }
+	});
+  /*
+  function looksLikeScheme(code) {
+		return !/^\s*\(\s*function\b/.test(code) && /^\s*[;\(]/.test(code);
+  }
+  function update() {
+		editor.setOption("mode", looksLikeScheme(editor.getValue()) ? "scheme" : "javascript");
+  }*/
+  function spotMode(o) {
+    var off = o && o.getAttribute("spotmode")!=null;
+    if(off){o.removeAttribute("spotmode")}
+    else {o.setAttribute("spotmode",1)}
+    editor.setOption("readOnly",off?false:"nocursor");
+    editor.setOption("highlightSelectionMatches",off?false:{showToken:/\w/});
+  }
 </script>
 EDTXT;
 			}
@@ -216,22 +290,26 @@ $outtext.=<<<HTTXT
 	setGlobVar("hashtext","$hashcont");
 	startTextTimer();
 </script>
+<div mfmedit>
 <div style="float:left;margin-bottom:3px;">
-<input type="submit" value="Save" onclick="saveFile();">
-<a href="$url">Exit</a><br>
+<button savebutton type="submit" value="" onclick="saveFile(this);"></button>
+<button exitbutton type="button" onclick='window.open("$url","_self")'></button>
+<button undobutton type=button onclick='editor.execCommand("undo")'></button>
+<button spotbutton type=button onclick='spotMode(this)'></button>
 </div>
-<div style="float:right;margin-bottom:3px;">
-<label title="Another user modify time check">Check time(s)</label>
+<div style="float:right;padding-right:2em"> 
+<!--label title="Another user modify time check">Check time(s)</label>
 <select name="seltime" onchange="onChangeTimer();" title="Another user modify time check">
 $refresh
-</select>
-<select name="lang" onchange="changeLang();" title="Syntax hightlight">
+</select--!>
+<!--select name="lang" onchange="changeLang();" title="Syntax hightlight">
 $hllist
 </select>
 <select name="codepg" onchange="changeCP()"; title="Code page">
 $cplist
 </select>
-<input title="On\Off hightlight code" type="checkbox" name="simple_ed" $simple_ed_ch onclick="changeEdit();">Hightlight</div>
+<input title="On\Off hightlight code" type="checkbox" name="simple_ed" $simple_ed_ch onclick="changeEdit();">Hightlight--!></div>
+</div>
 $text_st
 HTTXT;
 
