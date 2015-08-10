@@ -195,8 +195,8 @@ class parsedCommand
     //    $r .= " $k $v";
     // }
     foreach($this->parts  as $k) {
-	if(isset($this->$k) && $this->$k!=='')
-	$r .= " $k {$this->$k}";
+		if(isset($this->$k) && $this->$k!=='')
+			$r .= " $k {$this->$k}";
     }
     $r .= $this->post;
     return $r;

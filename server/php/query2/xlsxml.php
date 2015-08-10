@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__.'/processor.php');
+require_once(__DIR__.'/../processor.php');
 
 function query_to_xlsxml($stmt, $args = [], $captions = []) {
 

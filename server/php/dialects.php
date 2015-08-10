@@ -248,12 +248,12 @@ function make_dbspecific_select($cmd, $parsed, $dialect) {
 //FIXME: we should take alias from command! not from outside
 function main_table_of_many($tables, &$main_table, &$alias, $table_requried = true) {
 	global $RE_ID;
-	if(preg_match("/^\s*($RE_ID)\s+($RE_ID)?\s*$/", $tables, $m)) { 
+	if(preg_match("/^\s*($RE_ID(?:\.$RE_ID)?)\s+($RE_ID)?\s*$/", $tables, $m)) { 
 		$main_table = $m[1];
 		$alias = $m[2];
 		return false; //one table
 	}
-	if(!preg_match("/^\s*($RE_ID)\s+($RE_ID)\s/", $tables, $m))
+	if(!preg_match("/^\s*($RE_ID(?:\.$RE_ID)?)\s+($RE_ID)\s/", $tables, $m))
 		if($table_requried)
 			throw new Exception("Can't find main table and it's alias in $tables");
 		else
@@ -273,6 +273,45 @@ function make_dbspecific_insert_from_select($parsed, $sel, $dialect) {
 function make_dbspecific_select_values($cmd, $dialect) {
   if($dialect == 'oracle') return 'SELECT '.$cmd.' FROM DUAL';
   return 'SELECT '.$cmd;
+}
+
+function lastInsertedId_oracle($table) {
+	static $s = "SELECT SYS_CONTEXT('CLIENTCONTEXT', 'lastInsertId') FROM DUAL";
+	$dbc = get_connection($table);
+	if(is_string($s)) $s = $dbc->prepare(stmt);
+	$s->execute();
+	return $s->fetchColumn();
+}
+function lastInsertedId_mysql($table) {
+	$dbc = get_connection($table);
+	return $dbc->lastInsertId();
+}
+
+function make_dbspecific_insert_values($parsed, $values_select, $autopk, $dialect) {
+	global $RE_ID;
+	$values_select = $values_select ?: $parsed->_VALUES;
+	$ii = $parsed->{'_INSERT INTO'};
+	if($autopk 
+		&& preg_match("/^\s*INSERT\s+INTO\s+($RE_ID)/si", $ii, $m)
+	) {
+		switch($dialect) {
+		case 'orcale':
+			$res = "/*lastInsertedId_oracle:m[1]*/ declare pk number; begin
+				$ii $values_select returning $autopk into pk;
+				DBMS_SESSION.SET_CONTEXT ( 'CLIENTCONTEXT', 'lastInsertId', pk ); end;
+			"; break;
+		case 'mysql':
+			$res = "/*lastInsertedId_mysql:m[1]*/ $ii $values_select"; break;
+		case 'mssql':
+			$res = "$ii output inserted.$autopk $values_select"; break;
+		case 'pgsql':
+			$res = "$ii $values_select returning $autopk"; break;
+		}
+	}
+	else
+		$res = "$ii $values_select";
+
+	return replace_dbspecific_funcs($res, $dialect);
 }
 
 //check every database if we have to have aliases in multitable update at left side if '='

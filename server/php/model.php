@@ -4,6 +4,8 @@ require_once(__DIR__.'/rights.php');
 require_once(__DIR__.'/dialects.php');
 require_once __DIR__.'/parser-common.php';
 
+define('MAX_UI_SIZE',32); //auto content-resizable size
+
 function recaption(&$caption) {
 	$parts = explode('@@', $caption);
 	$caption = $parts[0];
@@ -56,6 +58,7 @@ class Table {
 	return @$this->table_props['DEFAULT_FILTER'];
   }
   function TRIGGER_VAR() { return @$this->table_props['TRIGGER_VAR']; }
+  function AUTO_KEY() { return @$this->table_props['AUTO_KEY'] ? $this->PK() : ''; }
 }
 
 class _Field {
@@ -87,7 +90,15 @@ class _Field {
   
   var $expression = '';
   
+  var $hidden = false;
+  
   var $choose = false;
+  
+  var $ui_size = NULL;
+  
+  var $values = '';
+  
+  var $page = '';
 
   function __construct( $table = null) { 
     global $Tables;
@@ -118,31 +129,43 @@ class _Field {
 			);
   }
   function getControlType() {
+  	global $ModelDB;
+//  	var_dump($ModelDB["{$this->values}.info"]);
+  	if($this->target) { //rel to table, DL by default
+  		return @$ModelDB["{$this->target->___name}.{$this->name}.info"]['control'] ?: 'DL';
+  	}
+  	if($this->values) { //restricted values, MENU by default
+  		return @$ModelDB["{$this->values}.info"]['control'] ?: 'MENU';
+  	}
 	switch($this->type) {
-	case 'DECIMAL': return $this->precision? 'En': 'Ei';
-	case 'INTEGER': return 'Ei';
-	case 'CHAR': return 'E';
-	case 'DATE': return 'Ed';
-	case 'CLOB': return 'Et';
-	case 'VARCHAR': return $this->precision && $this->precision > 255 ? 'Es' : 'E';
-	default: return 'E';
+	case 'DECIMAL': return $this->precision? 'DECIMAL': 'INTEGER';
+	case 'INTEGER': return 'INTEGER';
+	case 'CHAR': return 'VARCHAR';
+	case 'DATE': return 'DATE';
+	case 'CLOB': return 'CLOB';
+	case 'VARCHAR': return $this->size && $this->size > MAX_UI_SIZE ? 'LONGVARCHAR' : 'VARCHAR';
+	default: return 'VARCHAR';
 	}
   }
+  //TODO: keep_sp
   function getControlXProps() {
 	return 
 		($this->ctrl_min != ''? " vmin=$this->ctrl_min": '')
 		.($this->ctrl_max != ''? " vmax=$this->ctrl_max": '')
 		.($this->ctrl_re != ''? " re=\"$this->ctrl_re\"": '')
-		.($this->required? ' required' : '');
+		.($this->required? ' required' : '')
+		.($this->ui_size > 0? " size=$this->ui_size":
+			($this->ui_size === 0? " content-resizable":''))
+		. ' ';
   }
   function getControlProps() {
 	switch($this->type) {
-	case 'DECIMAL': return ($this->precision? "re=\"/\\d{0,$this->size}(?:\\.\d{0,$this->precision})?/\"": "re=\"/\\d{0,$this->size}/\"").$this->getControlXProps();
-	case 'INTEGER': return "re=\"/\\d{0,$this->size}/\"" . $this->getControlXProps();
-	case 'CHAR': return $this->getControlXProps()?: "re=\"/.{,$this->size}/\"";
-	case 'DATE': return $this->getControlXProps();
-	case 'CLOB': return $this->getControlXProps();
-	case 'VARCHAR': return ($this->precision && $this->precision > 255 ? '' : 'content-resizable').$this->getControlXProps();
+	case 'DECIMAL': return ($this->precision? " re=\"/^\\d{0,$this->size}(?:\\.\d{0,$this->precision})?$/\"": " maxlength=$this->size") . $this->getControlXProps();
+	case 'INTEGER': return " maxlength=$this->size" . $this->getControlXProps();
+	case 'CHAR': 
+	case 'VARCHAR': return 
+		
+		" maxlength=$this->size" . $this->getControlXProps();
 	default: return $this->getControlXProps();
 	}
   }
@@ -234,6 +257,7 @@ class modelParser extends _PreCmd {
 					$fields = explode(';', $fields);
 					$fields = array_map('trim', $fields);
 					$fields = array_filter($fields);
+					$current_page = '';
 					//var_dump($fields);
 					foreach($fields as $f) {
 						if(preg_match("/^\s*+(?<name>$RE_ID):\s*+(?<value>(.*))/", $f, $m)) { // ID: 
@@ -243,12 +267,16 @@ class modelParser extends _PreCmd {
 								$props[ 'DEFAULT_FILTER' ] = $this->unescape($m[1]);
 							else if($m['name'] == 'TRIGGER_VAR')
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
+							else if($m['name'] == 'AUTO_KEY')
+								$props[ 'AUTO_KEY' ] = true;
+							else if($m['name'] == 'PAGE')
+								$current_page = $m['value'];
 							continue;
 						}
 
 						if(!preg_match("/\s*+(?<name>$RE_ID)\s++
 									(?<rel>@@?\s*+)?(?<type>(?<local>$RE_ID)(?<haspart>\.(?<part>$RE_ID)?)?)(?:\s*:\s*+'(?<relcond>\d++)')?
-									(?:\(\s*+(?<size>\d++)(?:\s*,\s*+(?<prec>\d++))?\s*\))?
+									(?:\(\s*+(?<size>\d++|$RE_ID)(?:\s*,\s*+(?<prec>\d++|$RE_ID) )?\s*\))?
 									(?<other>.*)/x", $f, $m))
 								throw new Exception("strange field definition <<$f>>");
 						$fname = $m['name'];
@@ -293,8 +321,9 @@ class modelParser extends _PreCmd {
 							}
 						}
 						//parse props here
-						$props = array_map('trim', explode(' ', $fpop));
-						foreach($props as $p) 
+						//var_dump($fpop);
+						$fpop = array_map('trim', preg_split("/(?<!:)\s+/", $fpop));
+						foreach($fpop as $p) 
 							if($p === 'PK') $fld->pk = true;
 							else if(preg_match('/^PK\((\d+)\)/i', $p, $m)) $fld->pk = $m[1];
 							else if(preg_match('/^ORDER\((\d+)\)/i', $p, $m)) $fld->order = $m[1];
@@ -311,11 +340,22 @@ class modelParser extends _PreCmd {
 								}
 							else if(preg_match('/^REQUIRED$/', $p)) $fld->required = true;
 							else if(preg_match("/^VIS$/", $p))  $fld->vis = true;
-							else if(preg_match("/^SI'(\d+)'/i", $p, $m)) $fld->si_caption = $this->unescape($m[1]);
-							else if(preg_match("/^RE:'(\d+)'/i", $p, $m))  $fld->ctrl_re = $this->unescape($m[1]); 
-							else if(preg_match("/^MIN:'(\d+)'/i", $p, $m)) $fld->ctrl_min = $this->unescape($m[1]); 
-							else if(preg_match("/^MAX:'(\d+)'/i", $p, $m)) $fld->ctrl_max = $this->unescape($m[1]);							
-							else if(preg_match("/^='(\d+)'/", $p, $m)) $fld->expression = $this->unescape($m[1]); 
+							else if(preg_match('/^HIDDEN$/', $p)) $fld->hidden = true;
+							else if(preg_match("/^SI'(\d+)'/i", $p, $m)) 
+								$fld->si_caption = $this->unescape($m[1]);
+							else if(preg_match("/^RE:'(\d+)'/i", $p, $m))  
+								$fld->ctrl_re = $this->unescape($m[1]); 
+							else if(preg_match("/^MIN:'(\d+)'/i", $p, $m)) 
+								$fld->ctrl_min = $this->unescape($m[1]); 
+							else if(preg_match("/^MAX:'(\d+)'/i", $p, $m)) 
+								$fld->ctrl_max = $this->unescape($m[1]);							
+							else if(preg_match("/^UI_SIZE:(\d+)/i", $p, $m)) 
+								$fld->ui_size = (int)$m[1];							
+							else if(preg_match("/^VALUES:\s*($RE_ID)/i", $p, $m)) 
+								$fld->values = $m[1];							
+							else if(preg_match("/^='(\d+)'/", $p, $m)) 
+								$fld->expression = $this->unescape($m[1]); 
+						$fld->page = $current_page;
 						$fres[$fname] = $fld;
 					}
 				}
@@ -474,6 +514,12 @@ QQ
 	}
 }
 
+$TablesGenerated = false;
+$cached_tables = cached('ini', 'all', 
+	function($a) {
+		global $G_ENV_MODEL;
+		global $TablesGenerated;
+		$TablesGenerated = true;
 new modelParser(
 $G_ENV_MODEL ? 
 		"TABLE dual ( f VARCHAR(1) PK) \n".
@@ -492,10 +538,19 @@ $G_ENV_MODEL ?
 	QUERY UnnamedPersons 'SELECT * FROM Persons WHERE fio = ''-'' ' (=Persons)
 MP
 );
+	global $Tables;
+	return serialize($Tables);
+});
+
+if(!$TablesGenerated) {
+	$Tables = unserialize($cached_tables);
+}
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 //append_information_schema_to_model('public');
 
 print_actual_model();
+
+var_dump($Tables);
 

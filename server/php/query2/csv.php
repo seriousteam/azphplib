@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__.'/processor.php');
+require_once(__DIR__.'/../processor.php');
 
 function query_to_csv($stmt, $args = [], $captions = []) {
   header('Content-type: text/csv');
@@ -20,4 +20,4 @@ function query_to_csv($stmt, $args = [], $captions = []) {
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 
-query_to_csv( main_argument(),  main_subarguments());
+query_to_csv( main_argumenODt(),  main_subarguments());

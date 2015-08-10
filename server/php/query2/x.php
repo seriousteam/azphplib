@@ -1,9 +1,9 @@
 <?php
-require_once(__DIR__.'/db-oo.php');
-require_once(__DIR__.'/xml-query.php');
-require_once(__DIR__.'/query2html.php');
-require_once(__DIR__.'/query2csv.php');
-require_once(__DIR__.'/query2xlsxml.php');
+require_once(__DIR__.'/../db-oo.php');
+require_once(__DIR__.'/../xml-query.php');
+require_once(__DIR__.'/../html.php');
+require_once(__DIR__.'/../csv.php');
+require_once(__DIR__.'/../xlsxml.php');
 
 /*
 	query2x query_to_xml:out.xml -

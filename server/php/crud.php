@@ -47,6 +47,14 @@ try {
 
 //$SQL_EMULATION = TRUE;
 
+/*
+returning
+PGSQL INSERT INTO ..... RETURNING output_expression AS output_name
+MSSQL
+ORACLE
+MYSQL
+*/
+
 switch($mode) {
 case 'C':
 	$vals = $fieldvals + $def_vals;
@@ -59,8 +67,10 @@ case 'C':
 		}
 	}
 	
-	$ss = Insert($table->___name, $vals);
-	//echo $ss->queryString;
+	$st = Insert($table->___name, $vals, $ss);
+	//echo $st->queryString;
+	if( $table->AUTO_KEY() && $ss !== NULL )
+		$vals[$table->AUTO_KEY()] = $ss;
 	
 	foreach($pk as $e)
 		$d[] = $vals[$e];

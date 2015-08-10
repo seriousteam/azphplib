@@ -6,6 +6,7 @@ if(@$force_toplevel)
 	define('TOPLEVEL_FILE', realpath($force_toplevel));
 else 
 	define('TOPLEVEL_FILE', @end(debug_backtrace())['file']?:__FILE__);
+
 require_once (__DIR__.'/dialects.php');
 
 /*
@@ -52,22 +53,27 @@ $CURRENT_ROLES =
 	path to configuration elements
 */
 
-$G_ENV_MAIN_CFG = getenv('MAIN_CFG');
-$G_ENV_TABLE_DB_MAPPING = getenv('TABLE_DB_MAPPING');
-$G_ENV_LIB_MAPPING = getenv('LIB_MAPPING');
-$G_ENV_LOCAL_USERS = getenv('LOCAL_USERS');
-$G_ENV_LOCAL_ROLES = getenv('LOCAL_ROLES');
-$G_ENV_MODEL = getenv('MODEL');
-$G_ENV_LOAD_MODEL = getenv('LOAD_MODEL');
+/*
 
-$G_ENV_CACHE = getenv('CACHE');
-$G_ENV_CACHE_TTL = getenv('CACHE_TTL');
+$G_ENV_MAIN_CFG
+$G_ENV_TABLE_DB_MAPPING
+$G_ENV_LIB_MAPPING
+$G_ENV_LOCAL_USERS
+$G_ENV_LOCAL_ROLES
+$G_ENV_MODEL
+$G_ENV_LOAD_MODEL
+$G_ENV_MODEL_DATA;
+
+$G_ENV_CACHE
+$G_ENV_CACHE_TTL
+
+*/
 
 $G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
-$G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?: 
-	preg_match('#(.*)/(az)/.*#', $_SERVER['SCRIPT_FILENAME'], $m) ? $m[1] :
-	dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
+$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
 	 // p_doc_root/az/server/php/cfg.php
+	 
+define('__ROOTDIR__', $G_P_DOC_ROOT);
 
 // $G_ENV_URI_PREFIX <--> $G_P_DOC_ROOT
 // so, $G_ENV_URI_PREFIX/path equals to $G_P_DOC_ROOT/path
@@ -75,7 +81,7 @@ $G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?:
 $GLOBAS_STATE_VARS = [];
 
 //echo $G_P_DOC_ROOT, ' ', $_SERVER['SCRIPT_FILENAME'];
-@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doen't allow to use SetEnv
+@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doesn't allow to use SetEnv
 
 /*
 	we need setup cache configuration first
@@ -116,7 +122,8 @@ function table_db($table){
   global $main_cfg;
   global $a_table_db;
   global $default_db;
-  return $main_cfg[@$a_table_db[$table] ?: 'default_db'];
+  $tn = trim(explode(':', @$a_table_db[$table], 2)[0]);
+  return $main_cfg[$tn ?: 'default_db'];
 }
 
 if($G_ENV_LOCAL_USERS) {
@@ -474,11 +481,31 @@ function get_connection($table){
   $key = serialize($db);
   if(!@$connections[$key]) {
     if($db['user'] !== '') {
-      $connections[$key] = new PDO($db['server'],
+	if($db['user'][0] === '?') {
+	    try {
+		global $CURRENT_USER, $CURRENT_PW;
+		$connections[$key] = new PDO($db['server'],
+				   $CURRENT_USER,
+				   $CURRENT_PW
+				   , array(PDO::ATTR_PERSISTENT => true)
+				   );
+	    } catch(Exception $e) {
+		$connections[$key] = new PDO($db['server'],
+				   substr($db['user'],1),
+				   $db['pass']
+				   , array(PDO::ATTR_PERSISTENT => true)
+				   );
+	    }
+	} else
+		$connections[$key] = new PDO($db['server'],
 				   $db['user'],
-				   $db['pass']);
+				   $db['pass']
+				   , array(PDO::ATTR_PERSISTENT => true)
+				   );
    } else
-      $connections[$key] = new PDO($db['server']);
+      $connections[$key] = new PDO($db['server']
+			,null, null, array(PDO::ATTR_PERSISTENT => true)
+		);
     $connections[$key]->dialect = db_dialect($db);
     prepareDB( $connections[$key]);
     $connections[$key]->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -527,6 +554,7 @@ function rm_decrypt($string,$key) {
 set_exception_handler(function ($exception) {
   echo "Exception: " , $exception->getMessage(), "\n";
 });
+
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 

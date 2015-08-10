@@ -44,8 +44,14 @@ class _XNode {
   }
 
   function __toString() {
+	  global $a_table_db;
       $tn = isset($this->table->select) ? 
-        "({$this->table->select})" : $this->table->___name;
+        "({$this->table->select})" 
+		: 
+		(
+			trim(@explode(':', @$a_table_db[$this->table->___name], 2)[1])
+			?: $this->table->___name
+		);
       if($this->access_filters) {
         _XNode::filter2str($this->access_filters, $a);
         $tn = "( SELECT * FROM $tn a1 WHERE $a )"; 
@@ -172,7 +178,7 @@ class _Cmd extends _PreCmd {
   var $alias = ''; //alias of root table
   var $table = ''; //root table name
   var $toplevel = true; //toplevel flag
-  
+
   static $a_num = 0;
 
   //make new parsed command
@@ -220,8 +226,9 @@ class _Cmd extends _PreCmd {
       throw new Exception("can not find root table: $table in $table_part_of_parsed");
     $this->table = $table;
     $this->dialect = db_dialect(table_db($table));
-    if(!$this->dialect)
+    if(!$this->dialect) {
       throw new Exception("can not find root table dialect for: $table");
+	}
   }
 
   function parse_joins($from) {
@@ -491,7 +498,7 @@ class _Cmd extends _PreCmd {
     if(!@$parsed->VALUES)
       $parsed = new parsedCommand($INSERT_STRUCT_SELECT, $s);
     if(!@$parsed->ok) {
-	var_dump($parsed);
+		var_dump($parsed);
       throw new Exception("bad insert structire: $s");
     }
     
@@ -554,17 +561,18 @@ class _Cmd extends _PreCmd {
         throw new Exception("Blacklisted function in insert: <$id>");
 
     //recompose and do not do more
+    $select = '';
     if($filter) {
       preg_match('/^\s*\((.*)\)\s*$/', $parsed->VALUES, $m); //trim spaces and brackets
       $select = make_dbspecific_select_values($m[1], $this->dialect);
       //var_dump($parsed->{'_INSERT INTO'});
-      return 
-        replace_dbspecific_funcs(
-          "{$parsed->{'_INSERT INTO'}} "
-          .str_replace('%SEL%', $select, $filter) 
-        , $this->dialect);
+      $select = str_replace('%SEL%', $select, $filter);
     }
-    return replace_dbspecific_funcs($parsed, $this->dialect);
+    global $Tables;
+    return make_dbspecific_insert_values($parsed
+    	, $select
+    	, $Tables->$table->AUTO_KEY()
+    	, $this->dialect);
   }
 
   function process_delete($s) {
