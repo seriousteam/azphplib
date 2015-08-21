@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__.'/auth.php';;
+require_once __DIR__.'/auth.php';
 require_once __DIR__.'/WinFsStreamWrapper.php';
 $ccp="UTF-8";
 if (isset($_REQUEST['current_cp'])) $ccp=$_REQUEST['current_cp'];
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD']=='GET')
 <div buttons>
 <button delete onclick="deleteFile();" title="Delete Choosen"></button>
 <button copy onclick="pasteFiles();" title="Copy Choosen"></button>
-<button grep onclick="window.open('grep.php'+location.search);" title="Grep"></button>
+<button grep onclick="window.open('grep.php'+location.search+'&$editFileVars&keys='+encodeURIComponent('-H -n -D skip -r -I --color=always'));" title="Grep"></button>
 <input autofocus filter placeholder=Filter type="text" name="fltxt" value="" onchange="filterContent();" title="Filter Files and Folders">
 <input type="submit" value="" style="border: none;background:transparent;" onclick="filterContent();">
 </div>
@@ -177,6 +177,8 @@ UPFOLDER;
 			$hlset="c_cpp";
 			break;
 		}
+		$go_txt_line=0;
+		if (isset($_REQUEST['text_goto'])) $go_txt_line=$_REQUEST['text_goto'];
 		if (isset($_REQUEST['ed_simple']))
 		{
 			if ($_REQUEST['ed_simple']=="0")
@@ -259,6 +261,10 @@ EDSTRT;
     editor.setOption("readOnly",off?false:"nocursor");
     editor.setOption("highlightSelectionMatches",off?false:{showToken:/\w/});
   }
+  
+  window.editor.setCursor($go_txt_line-1,0);
+  window.editor.focus();
+  
 </script>
 EDTXT;
 			}

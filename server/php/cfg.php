@@ -479,33 +479,39 @@ function get_connection($table){
   static $connections = array();
   $db = table_db($table);
   $key = serialize($db);
+  $dsn = $db['server'];
+  $params = array(PDO::ATTR_PERSISTENT => true);
+  if(db_dialect($db)==='mssql') {
+	  //PDO persistent connections dont work in MS SQL
+	  $dsn .= ';ConnectionPooling=1';
+	  $params[PDO::ATTR_PERSISTENT] = false;
+  }
   if(!@$connections[$key]) {
     if($db['user'] !== '') {
 	if($db['user'][0] === '?') {
 	    try {
 		global $CURRENT_USER, $CURRENT_PW;
-		$connections[$key] = new PDO($db['server'],
+		$connections[$key] = new PDO($dsn,
 				   $CURRENT_USER,
-				   $CURRENT_PW
-				   , array(PDO::ATTR_PERSISTENT => true)
+				   $CURRENT_PW,
+				   $params				  
 				   );
 	    } catch(Exception $e) {
-		$connections[$key] = new PDO($db['server'],
+		$connections[$key] = new PDO($dsn,
 				   substr($db['user'],1),
-				   $db['pass']
-				   , array(PDO::ATTR_PERSISTENT => true)
+				   $db['pass'],
+				   $params
 				   );
 	    }
 	} else
-		$connections[$key] = new PDO($db['server'],
+		$connections[$key] = new PDO($dsn,
 				   $db['user'],
-				   $db['pass']
-				   , array(PDO::ATTR_PERSISTENT => true)
+				   $db['pass'],
+				   $params
 				   );
    } else
-      $connections[$key] = new PDO($db['server']
-			,null, null, array(PDO::ATTR_PERSISTENT => true)
-		);
+      $connections[$key] = new PDO($dsn,null, null,$params);
+  
     $connections[$key]->dialect = db_dialect($db);
     prepareDB( $connections[$key]);
     $connections[$key]->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
