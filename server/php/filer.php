@@ -4,6 +4,7 @@ require_once(__DIR__.'/db-oo.php');
 
 $tname = $_REQUEST['table'];
 $fld = $_REQUEST['fld'];
+$name_field = @$_REQUEST['name_field'];
 
 $key = $_REQUEST['key'];
 
@@ -26,7 +27,10 @@ function checkrights_cmd($cmd, $args) {
   if(preg_match("/^\s*SELECT\s.*?\sFROM\s(.*)/si",$cmd, $m))
 	$cmd2 = "SELECT 1 FROM $m[1]";
   else
-	$cmd2 = "SELECT 1 FROM $table a1 WHERE ". (explode(' WHERE ', $cmd, 2)[1]);
+  if(preg_match("/^\s*UPDATE\s+(\S+)\s+(\S+)\s+SET\s+[^=]+=\s*NULL\s+WHERE\s(.*)/si",$cmd, $m))
+	$cmd2 = "SELECT 1 FROM $m[1] $m[2] WHERE $m[3]";
+  else
+	  die($cmd);
 
   $dbh = get_connection($table);
   //die($cmd2);

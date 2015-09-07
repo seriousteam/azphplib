@@ -31,7 +31,7 @@ class Table {
   function Props($p) { 
 	$this->table_props =$p;
 	return $this;
-  }
+   }
   function PK($many = false) {
 	$ret = [];
 	foreach($this->fields as $k => $v)
@@ -143,6 +143,16 @@ class _Field {
 	case 'CHAR': return 'VARCHAR';
 	case 'DATE': return 'DATE';
 	case 'CLOB': return 'CLOB';
+	case 'SUBTABLE': return 'SUBTABLE';
+	case 'FILE': 
+		switch((string)$this->size) {
+			case 'image': return 'FILE_IMAGE';
+			case 'video': return 'FILE_VIDEO';
+			case 'sound': return 'FILE_SOUND';
+			case 'pdf': return 'FILE_PDF';
+			default: return 'FILE';
+		}
+	case 'ACTION': return 'ACTION';
 	case 'VARCHAR': return $this->size && $this->size > MAX_UI_SIZE ? 'LONGVARCHAR' : 'VARCHAR';
 	default: return 'VARCHAR';
 	}
@@ -164,7 +174,6 @@ class _Field {
 	case 'INTEGER': return " maxlength=$this->size" . $this->getControlXProps();
 	case 'CHAR': 
 	case 'VARCHAR': return 
-		
 		" maxlength=$this->size" . $this->getControlXProps();
 	default: return $this->getControlXProps();
 	}

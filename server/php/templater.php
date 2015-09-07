@@ -165,6 +165,7 @@ class sharing {
 function templater_take_zones($text, $file) {
 	global $library_prefix;
 	echo '<',"?php\n";
+	echo "define('__TEMPLATE_FILE__',".phpQuote($file).");\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
 	$text = templater_replace_zones( $text, $zones, $entries);
 	$zones['_main_'] = $text;
@@ -538,8 +539,8 @@ EEE;
 					if($m[1]==='CALL') $op = 'call_template'; else $op = 'template_reference';
 					if($m[1]==='CREF') $perm = 'TRUE'; else $perm = 'FALSE';
 					$res = "$op('".$m['id']."',"
-						.phpQuote(@$m['file']).","
-						.phpQuote(@$m['cmd']).", \$command_args,\$call_params, __FILE__, $perm);"; 
+						.phpDQuote(@$m['file']).","
+						.phpDQuote(@$m['cmd']).", \$command_args,\$call_params, __TEMPLATE_FILE__, $perm);"; 
 			} else if(preg_match("/^\s*[{}]\s*$/si", $cmd, $m)){
 				$res = $cmd;
 			} else {

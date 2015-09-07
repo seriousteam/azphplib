@@ -267,7 +267,14 @@ function make_dbspecific_insert_from_select($parsed, $sel, $dialect) {
 	// in select part we have processed everyting before!
 	switch($dialect) {
 	}
-	return $parsed->{'_INSERT INTO'}.' '.$sel; //nothing to do here!
+	global $RE_ID;
+	$ii = $parsed->{'INSERT INTO'};
+	$ii = preg_replace_callback("/^\s*($RE_ID)/"
+		, function ($m) {return _XNode::tableName($m[1]);}
+		, $ii
+	);
+	
+	return "INSERT INTO $ii $sel"; //nothing to do here!
 }
 
 function make_dbspecific_select_values($cmd, $dialect) {
@@ -290,26 +297,29 @@ function lastInsertedId_mysql($table) {
 function make_dbspecific_insert_values($parsed, $values_select, $autopk, $dialect) {
 	global $RE_ID;
 	$values_select = $values_select ?: $parsed->_VALUES;
-	$ii = $parsed->{'_INSERT INTO'};
-	if($autopk 
-		&& preg_match("/^\s*INSERT\s+INTO\s+($RE_ID)/si", $ii, $m)
-	) {
+	$tbl = '';
+	$ii = $parsed->{'INSERT INTO'};
+	$ii = preg_replace_callback("/^\s*($RE_ID)/"
+		, function ($m) use(&$tbl) {return _XNode::tableName($tbl = $m[1]);}
+		, $ii
+	);
+	if($autopk) {
 		switch($dialect) {
 		case 'orcale':
-			$res = "/*lastInsertedId_oracle:m[1]*/ declare pk number; begin
-				$ii $values_select returning $autopk into pk;
+			$res = "/*lastInsertedId_oracle:$tbl*/ declare pk number; begin
+				INSERT INTO $ii $values_select returning $autopk into pk;
 				DBMS_SESSION.SET_CONTEXT ( 'CLIENTCONTEXT', 'lastInsertId', pk ); end;
 			"; break;
 		case 'mysql':
-			$res = "/*lastInsertedId_mysql:m[1]*/ $ii $values_select"; break;
+			$res = "/*lastInsertedId_mysql:$tbl*/ INSERT INTO $ii $values_select"; break;
 		case 'mssql':
-			$res = "$ii output inserted.$autopk $values_select"; break;
+			$res = "INSERT INTO $ii output inserted.$autopk $values_select"; break;
 		case 'pgsql':
-			$res = "$ii $values_select returning $autopk"; break;
+			$res = "INSERT INTO $ii $values_select returning $autopk"; break;
 		}
 	}
 	else
-		$res = "$ii $values_select";
+		$res = "INSERT INTO $ii $values_select";
 
 	return replace_dbspecific_funcs($res, $dialect);
 }
@@ -350,7 +360,7 @@ function make_dbspecific_update($parsed, $dialect) {
 	} else {
 		switch($dialect) {
 		case 'mssql': 
-			if($alias)
+			if($alias) 
 				$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
 			break;
 		}
