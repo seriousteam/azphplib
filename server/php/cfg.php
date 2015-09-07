@@ -479,39 +479,82 @@ function get_connection($table){
   static $connections = array();
   $db = table_db($table);
   $key = serialize($db);
+  $dsn = $db['server'];
+  $params = array(PDO::ATTR_PERSISTENT => true);
+  if(db_dialect($db)==='mssql') {
+	  //PDO persistent connections dont work in MS SQL
+	  $dsn .= ';ConnectionPooling=1';
+	  $params[PDO::ATTR_PERSISTENT] = false;
+  }
   if(!@$connections[$key]) {
     if($db['user'] !== '') {
 	if($db['user'][0] === '?') {
 	    try {
 		global $CURRENT_USER, $CURRENT_PW;
-		$connections[$key] = new PDO($db['server'],
+		$connections[$key] = new PDO($dsn,
 				   $CURRENT_USER,
-				   $CURRENT_PW
-				   , array(PDO::ATTR_PERSISTENT => true)
+				   $CURRENT_PW,
+				   $params				  
 				   );
 	    } catch(Exception $e) {
-		$connections[$key] = new PDO($db['server'],
+		$connections[$key] = new PDO($dsn,
 				   substr($db['user'],1),
-				   $db['pass']
-				   , array(PDO::ATTR_PERSISTENT => true)
+				   $db['pass'],
+				   $params
 				   );
 	    }
 	} else
-		$connections[$key] = new PDO($db['server'],
+		$connections[$key] = new PDO($dsn,
 				   $db['user'],
-				   $db['pass']
-				   , array(PDO::ATTR_PERSISTENT => true)
+				   $db['pass'],
+				   $params
 				   );
    } else
-      $connections[$key] = new PDO($db['server']
-			,null, null, array(PDO::ATTR_PERSISTENT => true)
-		);
+      $connections[$key] = new PDO($dsn,null, null,$params);
+  
     $connections[$key]->dialect = db_dialect($db);
     prepareDB( $connections[$key]);
     $connections[$key]->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $connections[$key]->setAttribute(PDO::ATTR_ORACLE_NULLS, PDO::ATTR_ORACLE_NULLS);
   }
   return $connections[$key];
+}
+
+function rm_encrypt($string,$key) {
+  srand((double) microtime() * 1000000); //for sake of MCRYPT_RAND
+  $key = md5($key); //to improve variance
+  /* Open module, and create IV */
+  $td = mcrypt_module_open('des', '','cfb', '');
+  $key = substr($key, 0, mcrypt_enc_get_key_size($td));
+  $iv_size = mcrypt_enc_get_iv_size($td);
+  $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+  /* Initialize encryption handle */
+   if (mcrypt_generic_init($td, $key, $iv) != -1) {
+      /* Encrypt data */
+      $c_t = mcrypt_generic($td, $string);
+      mcrypt_generic_deinit($td);
+      mcrypt_module_close($td);
+       $c_t = $iv.$c_t;
+       return $c_t;
+   } //end if
+}
+
+function rm_decrypt($string,$key) {
+   $key = md5($key); //to improve variance
+  /* Open module, and create IV */
+  $td = mcrypt_module_open('des', '','cfb', '');
+  $key = substr($key, 0, mcrypt_enc_get_key_size($td));
+  $iv_size = mcrypt_enc_get_iv_size($td);
+  $iv = substr($string,0,$iv_size);
+  $string = substr($string,$iv_size);
+  /* Initialize encryption handle */
+   if (mcrypt_generic_init($td, $key, $iv) != -1) {
+      /* Encrypt data */
+      $c_t = mdecrypt_generic($td, $string);
+      mcrypt_generic_deinit($td);
+      mcrypt_module_close($td);
+       return $c_t;
+   } //end if
 }
 
 set_exception_handler(function ($exception) {
