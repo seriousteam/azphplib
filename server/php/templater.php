@@ -89,7 +89,7 @@ library reference (relative to $G_JSLIB_PATH) - cached permanently
 
 [[CACHED]] - take this template from cache and end processing (use all args as a key!)
 
-attribute table:
+attribute table: 
 	$attrdef->table = 'atable';
 	$attrdef->filter = ''; //filter to get records from atable (may depends from :adm, :period, :dt, :prefix)
 	$attrdef->fixed = []; //fixed val for inserted values

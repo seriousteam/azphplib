@@ -4,36 +4,112 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title>Editor</title>
+  <script src="src-min/ace.js" type="text/javascript" charset="utf-8"></script>
   <style type="text/css" media="screen">
-    body {
-        overflow: hidden;
-    }
-    
-    #editor { 
-        margin: 0;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-    }
+	body[mfmeditor] {margin:0;padding:0}
+	[editor-menu] 
+	{
+		position:fixed;
+		height:3em;
+		width:100%;
+		top:0;
+		left:0;
+		background-color:red;
+		text-align:right;
+		z-index:1000;
+	}
+	.ace-tm .ace_gutter {
+		background-color:transparent;
+	}
+	.ace_gutter-cell:before {
+		font-size:200%;
+		content:" ";
+		vertical-align:middle;
+	}
+	.ace_gutter-cell {
+		padding-left:10px;
+		padding-right:0px;
+		font-size:50%;
+		vertical-align:middle; 
+	}
+	.ace_gutter-cell:after {
+		content:"";
+		vertical-align:middle;
+	}
   </style>
-</head>
-<body>
-
-<pre id="editor">function foo(items) {
-    var i;
-    for (i = 0; i &lt; items.length; i++) {
-        alert("Ace Rocks " + items[i]);
-    }
-}</pre>
-    
-<script src="src-min/ace.js" type="text/javascript" charset="utf-8"></script>
-<script>
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/twilight");
+  
+  <script>
+  function init() {
+	var editor = ace.edit("editor");
+    //editor.setTheme("ace/theme/twilight");
     editor.getSession().setMode("ace/mode/javascript");
-</script>
-
+	editor.getSession().setFoldStyle("manual");
+	editor.renderer.setHScrollBarAlwaysVisible(false);
+	editor.renderer.setVScrollBarAlwaysVisible(false);
+	editor.setOption("wrap", "free");
+	editor.setOption("maxLines", 10000000);
+	/*
+	function height(e)
+	{
+		var base = e.renderer.textToScreenCoordinates(0,0).pageY;
+		var first = e.renderer.textToScreenCoordinates(1,0).pageY;
+		var last = e.renderer.textToScreenCoordinates(Number.MAX_VALUE,0).pageY;
+		//return  (first-base)*e.getSession().getDocument().getLength();
+		return last - base + (first - base);
+	;
+	}
+	editor.on("change", function() {
+		var length = height(editor);
+		if((editor.oldlength || 0)!=length ) {
+			editor.oldlength = length;
+			document.getElementById("editor").style.height = length+'px';
+			editor.resize();
+		}
+	})
+	//document.getElementById("editor").style.height = height(editor)+'px';
+	//editor.resize();
+	*/
+	editor.setFontSize(20);
+	
+	
+	editor.textInput.getElement().disabled=true;
+	editor.textInput.getElement().disabled=false;
+  }
+  </script>
+</head>
+<body onload="init()" mfmeditor>
+<div editor-window id="editor">function foo(items) {
+    var i;    for (i = 0; i &lt; items.length; i++) {
+        alert("Ace Rocks " + items[i]);   }
+function init() {
+	var editor = ace.edit("editor");
+    //editor.setTheme("ace/theme/twilight");
+    editor.getSession().setMode("ace/mode/javascript");
+	editor.getSession().setFoldStyle("manual");
+	function height(e)
+	{
+		var base = e.renderer.textToScreenCoordinates(0,0).pageY;
+		var first = e.renderer.textToScreenCoordinates(1,0).pageY;
+		var last = e.renderer.textToScreenCoordinates(Number.MAX_VALUE,0).pageY;
+		//return  (first-base)*e.getSession().getDocument().getLength();
+		return last - base + (first - base);
+	;
+	}
+	editor.on("change", function() {
+		var length = height(editor);
+		if((editor.oldlength || 0)!=length ) {
+			editor.oldlength = length;
+			document.getElementById("editor").style.height = length+'px';
+			editor.resize();
+		}
+	})
+	editor.setFontSize(20);
+	document.getElementById("editor").style.height = height(editor)+'px';
+	editor.resize();
+	
+	editor.textInput.getElement().disabled=true;
+	editor.textInput.getElement().disabled=false;
+  }
+}</div>
 </body>
 </html>
