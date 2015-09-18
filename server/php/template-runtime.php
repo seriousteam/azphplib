@@ -977,6 +977,10 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 		//we can specify control type explicitly
 		if(!$template) {
 			//if not, we take control from model
+			if(!is_object($f)) {
+				var_dump($f, $name, $value, $table);
+				die('!!!!');
+			}
 			$template = default_templated_editor(
 				$f->getControlType()
 			);

@@ -219,7 +219,7 @@ class dbspecific_select {
 		$this->cmd = $cmd;
 		$this->select = $select;
 		$this->parsed = $parsed;
-		main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
+		//main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
 	}
 	function __toString() { return $this->cmd->doToString($this->select); }
 }
