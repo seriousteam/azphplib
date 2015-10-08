@@ -66,17 +66,21 @@ ST;
 echo <<<ST
 <div id=filter_def filter_def="[ EQ(1,1)
 ST;
+$cnts = 0;
 foreach($table_fields as $n=>$f) if($f->search_op) { ++$cnts; echo ", a.$n $f->search_op ?$n\n"; }
 echo <<<ST
 	]"
-	selfref="[[CURRENT_URI()]]" onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
-> 
+	selfref="[[CURRENT_URI()]]"
 ST;
+if(!CHOOSER_MODE) echo <<<ST
+	onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
+ST;
+echo "\n>";
 
 ob_start(); $cnts = 0;
 echo '<input filter_ctrl onkeyup="applyFuncFilterT(this)"';
 
-foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"\n'; ++$cnts; }
+foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo "\"\n"; ++$cnts; }
 
 echo ' style="width:100%">';
 
@@ -93,15 +97,14 @@ echo <<<ST
 <div style="clear:both"><!--FILTRED:-->
 [[ob_start();]]
 <table tabler onrefresh="refreshNoRowStatus(this)">
-<thead>
-	<tr>
 ST;
 	ob_start(); $cnt = 0;
+echo "<thead><tr>";
 	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page && $n != $link){ 
 	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
+echo '<th><th></thead>';
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
-echo '<th><th></thead>';
 
 echo <<<ST
 
@@ -130,7 +133,7 @@ foreach($table_fields as $n=>$f)
 				echo "[[\$data.a.$n]]";
 		} else {
 			if($f->Target())
-				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
+				echo "[[\$data.a.$n._id_~e:]]"; 
 			else
 				echo "[[\$data.a.$n~e:]]"; 
 		}
@@ -147,7 +150,7 @@ ST;
 		if($f->type && !$f->hidden && $f->page && $n != $link) { ++$cnt;
 			echo "<div ctrl_container><label>"; output_html($f->caption ?: $n); echo "</label>";
 			if($f->Target())
-				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
+				echo "[[\$data.a.$n._id_~e:]]"; 
 			else
 				echo "[[\$data.a.$n~e:]]"; 
 			echo "\n";
@@ -156,13 +159,15 @@ ST;
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 echo <<<ST
 
-<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del>x</button>
+<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del><span>x</span></button>
 ST;
 }
 
+echo "</tr>\n<tfoot>\n";
+if(CHOOSER_MODE && $_REQUEST['add_empty'])
+	echo "<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>";
 echo <<<ST
-</tr>
-<tfoot><tr if_no_rows><td colspan=100>
+<tr if_no_rows><td colspan=100>
 </table>
 [[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
 [[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]

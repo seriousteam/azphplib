@@ -129,7 +129,7 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'mssql' => "DATEADD$1month, $4 $3 $2 $5",// --chage order
 				'mysql' => "$1 ($2) + INTERVAL $4 MONTH$5",
 				],
-		'NOW' => [ //with timezone, if possible!
+		'NOW()' => [ //with timezone, if possible!
 				'pgsql' => "CURRENT_TIMESTAMP",
 				'oracle' => "CURRENT_TIMESTAMP",
 				'mssql' => "CURRENT_TIMESTAMP",
@@ -273,6 +273,7 @@ function make_dbspecific_insert_from_select($parsed, $sel, $dialect) {
 		, function ($m) {return _XNode::tableName($m[1]);}
 		, $ii
 	);
+	$ii = preg_replace("/(\(|,)\s*($RE_ID)/", '$1 "$2"', $ii);
 	
 	return "INSERT INTO $ii $sel"; //nothing to do here!
 }
@@ -303,6 +304,9 @@ function make_dbspecific_insert_values($parsed, $values_select, $autopk, $dialec
 		, function ($m) use(&$tbl) {return _XNode::tableName($tbl = $m[1]);}
 		, $ii
 	);
+	
+	$ii = preg_replace("/(\(|,)\s*($RE_ID)/", '$1 "$2"', $ii);
+	
 	if($autopk) {
 		switch($dialect) {
 		case 'orcale':
@@ -327,21 +331,29 @@ function make_dbspecific_insert_values($parsed, $values_select, $autopk, $dialec
 //check every database if we have to have aliases in multitable update at left side if '='
 // (if field reside in two tables)
 function make_dbspecific_update($parsed, $dialect) {
+	global $RE_ID;
+	
 	$ret = $parsed;
+	
+	//replace filed= ==> "field"=
+	$set = preg_replace("/(^|,)\s*($RE_ID)\s*=/", '$1 "$2"=', $parsed->SET);
+	//TODO: quote WHERE and EXPRESSION in set and FROM (they are aliased!)
+	
 	if(main_table_of_many($parsed->UPDATE, $main_table, $alias)) {
 		switch($dialect) {
 		case 'pgsql':
-		  $ret = "UPDATE $main_table xx SET $parsed->SET FROM $parsed->UPDATE WHERE xx.* IS NOT DISTINCT FROM $alias.*"
+		  $ret = "UPDATE $main_table xx SET $set FROM $parsed->UPDATE WHERE xx.* IS NOT DISTINCT FROM $alias.*"
 		    .(@$parsed->WHERE? " AND ( $parsed->WHERE )":'');
 		  break;
 		case 'oracle':
 		  //UPDATE t SET f = v WHERE c ==> UPDATE (SELECT a1.*, v AS xx__f WHERE c) SET f = xx__f
 		  // NOTE: this KEEP order of placeholders (should be SET before WHERE)
-		  $lst = preg_split("/(?:^|,)\s*($RE_ID)\s*=/", $parsed->SET, 
+		  $lst = preg_split("/(?:^|,) \"($RE_ID)\"=/", $set, 
 				    null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
+		  $set = [];
 		  do{
 		    $f = current($lst);
-		    $set[] =  "$f = xx_$f";
+		    $set[] =  "\"$f\" = xx_$f";
 		    $exprs[] = next($lst) ." AS xx_$f";
 		  }while(next($lst));
 		  $set = strlist($set);
@@ -349,26 +361,31 @@ function make_dbspecific_update($parsed, $dialect) {
 		  $ret = "UPDATE (SELECT $alias.*, $exprs FROM $parsed->UPDATE $parsed->_WHERE) SET $set";
 		  break;
 		case 'mssql': 
-			$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
+			$ret = "UPDATE $alias SET $set FROM $parsed->UPDATE $parsed->_WHERE"; 
 			break;
 		case 'mysql': 
 		  // we need return aliases back!
-		  $parsed->SET = preg_replace("/(^|,)\s*($RE_ID)\s*=/", "$1 $alias.$2 =", $parsed->SET);
-		  $ret = "$parsed->_UPDATE$parsed->_SET$parsed->_WHERE"; 
+		  $set = preg_replace("/(^|,)\s*(\"$RE_ID\")\s*=/", "$1 $alias.$2 =", $set);
+		  $ret = "$parsed->_UPDATE SET $set $parsed->_WHERE"; 
 		  break;
 		}
 	} else {
 		switch($dialect) {
 		case 'mssql': 
 			if($alias) 
-				$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
+				$ret = "UPDATE $alias SET $set FROM $parsed->UPDATE $parsed->_WHERE"; 
 			break;
+			default:
+			$ret = "$parsed->_UPDATE SET $set $parsed->_WHERE";
 		}
 	}
 	return replace_dbspecific_funcs($ret, $dialect);
 }
 function make_dbspecific_delete($parsed, $dialect) {
 	$ret = $parsed;
+
+	//TODO: quote WHERE and FROM (they are aliased!)
+	
 	if(main_table_of_many($from = $parsed->{'DELETE FROM'}, $main_table, $alias)) {
 		switch($dialect) {
 		case 'pgsql':

@@ -165,7 +165,6 @@ class sharing {
 function templater_take_zones($text, $file) {
 	global $library_prefix;
 	echo '<',"?php\n";
-	echo "define('__TEMPLATE_FILE__',".phpQuote($file).");\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
 	$text = templater_replace_zones( $text, $zones, $entries);
 	$zones['_main_'] = $text;
@@ -222,11 +221,14 @@ function templater_take_one_zone($name, $text, $file) {
 	global $RE_ID;
 	
 	$escape_mode = preg_match('/\.js$/', $file) ? 'js' : 'html'; //
+	
+	$qfile = phpQuote($file);
 
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
 global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+\$TEMPLATE_FILE = $qfile;
 
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
@@ -304,7 +306,8 @@ ST;
 			//find position in 'to_process'
 			//var_dump($tag, $attribute, $command, $to_process);
 			if(!$tag) { // to line start
-				$before = strrchr($to_process, '\n') ?: '';
+				$before = strrchr($to_process, '\n') ?: strlen($to_process);
+				$before = substr($to_process, -$before);
 				$to_process = 
 					$before . $command . '</>' . substr($to_process, strlen($before));
 			} else {
@@ -364,7 +367,7 @@ ST;
 	$text = implode($repos);
 	//echo $text;
 	//add closing tags
-	preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
+	$text = preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
 	do {
 		$text = preg_replace('#<<:>>
 				(<(\S+?)(?:\s|>) [^<]*+
@@ -400,8 +403,8 @@ ST;
 	} while($textp !== $text);
 	
 	//join joined tags
-	//echo $text;
-	$text = preg_replace('#\[\[}\]\]\s*+\[\[/\*\+\*/\]\]\s*+\[\[{\]\]#sx', '', $text);
+	//var_dump($text);
+	$text = preg_replace('#\[\[}\]\]\s*\[\[/\*\+\*/\]\]\s*\[\[{]]#sx', '', $text);
 	
 	//convert default call zones to explicit call by name
 	$text = preg_replace("/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si",
@@ -540,7 +543,7 @@ EEE;
 					if($m[1]==='CREF') $perm = 'TRUE'; else $perm = 'FALSE';
 					$res = "$op('".$m['id']."',"
 						.phpDQuote(@$m['file']).","
-						.phpDQuote(@$m['cmd']).", \$command_args,\$call_params, __TEMPLATE_FILE__, $perm);"; 
+						.phpDQuote(@$m['cmd']).", \$command_args,\$call_params, \$TEMPLATE_FILE, $perm);"; 
 			} else if(preg_match("/^\s*[{}]\s*$/si", $cmd, $m)){
 				$res = $cmd;
 			} else {

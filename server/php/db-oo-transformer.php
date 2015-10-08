@@ -453,7 +453,7 @@ class _Cmd extends _PreCmd {
 		$alias = count($path)>1? array_shift($path) : key($roots);
 		//$alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
 	    
-		if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
+		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $alias, $mi)) {
 			   
 			    $level = (int)(@$mi[1]?:0);
 	    $alias = @$mi[2] ?: 'a';	    
