@@ -9,8 +9,8 @@ $table = $_REQUEST['table'];
 $link = @$_REQUEST['link'];
 
 $fphpname = "$cdir/$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t";
-$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
-$mtt = $G_ENV_MODEL ? stat($G_ENV_MODEL)['mtime'] : 1;
+$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
+$mtt = $G_ENV_MODEL ? filemtime($G_ENV_MODEL) : 1;
 if($mt >= $mtt) {
 	//valid cache
 	goto end;
@@ -102,7 +102,8 @@ ST;
 echo "<thead><tr>";
 	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page && $n != $link){ 
 	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
-echo '<th><th></thead>';
+if(!CHOOSER_MODE) echo '<th><th>';
+echo '</thead>';
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
 

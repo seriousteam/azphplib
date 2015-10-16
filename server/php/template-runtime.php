@@ -443,8 +443,8 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 
 		//die($fphpname);
 
-		$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
-		$mtt = stat($file)['mtime'];
+		$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
+		$mtt = filemtime($file);
 
 		//echo 'X', $fname, $mt, ' ', $mtt;
 
