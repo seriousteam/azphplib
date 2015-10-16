@@ -89,7 +89,7 @@ library reference (relative to $G_JSLIB_PATH) - cached permanently
 
 [[CACHED]] - take this template from cache and end processing (use all args as a key!)
 
-attribute table:
+attribute table: 
 	$attrdef->table = 'atable';
 	$attrdef->filter = ''; //filter to get records from atable (may depends from :adm, :period, :dt, :prefix)
 	$attrdef->fixed = []; //fixed val for inserted values
@@ -163,6 +163,7 @@ class sharing {
 }
 
 function templater_take_zones($text, $file) {
+	$fileq = phpQuote($file);
 	global $library_prefix;
 	echo '<',"?php\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
@@ -174,6 +175,7 @@ function templater_take_zones($text, $file) {
 
 \$functions['$k'] = function(\$cmd, \$args = null, \$params = null) {
 	global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+	\$TEMPLATE_FILE = $fileq;
 
 	if(\$params === null) \$params = new smap;
 	\$call_params = new smap(\$params); 
@@ -217,6 +219,7 @@ function unescape_template_command($cmd) {
 }
 
 function templater_take_one_zone($name, $text, $file) {
+	$fileq = phpQuote($file);
 	global $error_count;
 	global $RE_ID;
 	
@@ -226,6 +229,7 @@ function templater_take_one_zone($name, $text, $file) {
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
 global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+\$TEMPLATE_FILE = $fileq;
 
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
@@ -538,8 +542,8 @@ EEE;
 					if($m[1]==='CALL') $op = 'call_template'; else $op = 'template_reference';
 					if($m[1]==='CREF') $perm = 'TRUE'; else $perm = 'FALSE';
 					$res = "$op('".$m['id']."',"
-						.phpQuote(@$m['file']).","
-						.phpQuote(@$m['cmd']).", \$command_args,\$call_params, __FILE__, $perm);"; 
+						.phpDQuote(@$m['file']).","
+						.phpDQuote(@$m['cmd']).", \$command_args,\$call_params, \$TEMPLATE_FILE, $perm);"; 
 			} else if(preg_match("/^\s*[{}]\s*$/si", $cmd, $m)){
 				$res = $cmd;
 			} else {

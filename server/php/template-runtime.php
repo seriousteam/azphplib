@@ -8,7 +8,7 @@ class smap {
 		$this->___base = $base;
 		$this->___map = $arr;
 	}
-	function __destruct() { 
+	function __destruct() {
 		if($this->___base) $this->___base->clear();
 	}
 	function __get($name) { 
@@ -266,11 +266,8 @@ function NVL($v, $def) {
 	return $v === null || $v === ''? $def: $v; 
 }
 function tr($v, $arr = null) {
-	$nv = $v instanceof namedString? (string)$v : $v;
+	$nv = (string)$v;
 	{
-		if($arr === null) {
-			
-		}
 		$nv = $nv !== null && $nv !== ''?
 			(@$arr[$nv] ?: "?$nv?") : null;
 		if($v instanceof namedString) {
@@ -416,11 +413,10 @@ function load_template($file) {
 }
 
 $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
-//  echo $LOCALIZED_URI;
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
-	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
-
+	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
+	
 	if(!$file) $file = __FILE__;
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
@@ -434,11 +430,34 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 				$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //go up
 				$f = substr($f,3);
 			}
+			if($CURRENT_TEMPLATE_URI === '/') $CURRENT_TEMPLATE_URI = '';
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
+	
 
-	$file = realpath($file);
+	if($G_ENV_CACHE_DIR && dirname($file) !== $G_ENV_CACHE_DIR ) {
+		$droot = $_SERVER['DOCUMENT_ROOT'];
+
+		$fphpname = "$G_ENV_CACHE_DIR/".urlencode( substr($file, strlen($droot)+1 ) );
+
+		//die($fphpname);
+
+		$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
+		$mtt = stat($file)['mtime'];
+
+		//echo 'X', $fname, $mt, ' ', $mtt;
+
+		if($mt < $mtt) {
+			//echo 'y';
+			//file_put_contents($fphpname, file_get_contents($fname));
+			system("php -f ".
+				__DIR__."/templater.php -- -c $file -p$G_ENV_CACHE_DIR > $fphpname");
+		}
+
+		$file = $fphpname;
+	} else
+		$file = realpath($file);
 
 	$funcs = load_template($file);
 
@@ -838,6 +857,12 @@ function output_editor($mode, $value, $attrs = '')
 function default_templated_editor($t) {
 static $a = [
 	'' => NULL
+	, 'V' => '$value'
+	, 'SPAN' => '<span $attrs>$value</span>'
+	, 'NAMED_SPAN' => '<span name="$name" $attrs>$value</span>'
+	, 'TAG' => '<$name $attrs>$value</$name>'
+	, 'TAGV' => '<$name $attrs value="$value" />'
+
 	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
 	, 'LONGVARCHAR' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
 	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
@@ -851,6 +876,31 @@ static $a = [
 	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
 	, 'DL+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, 'MENU+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+	, 'SUBTABLE' =>
+					'<button type=button onclick="this.setDN(toggle)" display_next></button>
+					<div subtable ref=Y>"/az/server/php/tabler.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
+				'
+	, 'FILE' =>
+		'<span lobload=filer accept="" filetypes="*">
+			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
+				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
+			></a>
+		</span>'
+	, 'FILE_IMAGE' =>
+		'<span lobload=filer accept="image/*" filetypes="*">
+			<img src="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
+				href="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
+				onrefresh="var e = this; e.setA(\'src\', 
+						e.A(\'src\').setURLParam(\'key\\\\[\\\\]\', findRid(e)))"
+			>
+		</span>'
+	, 'FILE_PDF' =>
+		'<span lobload=filer accept="application/pdf" filetypes="pdf">
+			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
+				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
+			></a>
+		</span>'
+
 ];
 	return $a[$t];
 }
@@ -934,16 +984,24 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 	global $Tables;
 	
 	$name = name_of_field_in_nv($value);
+	$size = '';
+	$precision = '';
 	$rel_target = '';
+	$table_name = '';
 
 	if($value instanceof namedString) {
 		
 		$table = $Tables->{$value->container->getName()};
+		$table_name = $table->___name;
 		$f = $table->fields[$name];
 
 		//we can specify control type explicitly
 		if(!$template) {
 			//if not, we take control from model
+			if(!is_object($f)) {
+				var_dump($f, $name, $value, $table);
+				die('!!!!');
+			}
 			$template = default_templated_editor(
 				$f->getControlType()
 			);
@@ -985,12 +1043,14 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 		}
 		
 		$attrs .= $f->getControlProps();
+		$size = $f->size;
+		$precision = $f->precision;
 	}
 
 	$value = htmlspecialchars( $value );
 	
 	$EXPR = new templated_editors_helper(
-		compact('value', 'name', 'rel_target', 'attrs', 'attrs2')
+		compact('value', 'name', 'rel_target', 'attrs', 'attrs2', 'size', 'precision')
 	);
 
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");

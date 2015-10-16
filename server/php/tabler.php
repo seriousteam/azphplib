@@ -63,8 +63,6 @@ echo <<<ST
 [[if(\$params->h == 'Y') { echo "<h1>";  output_html(\$table->___caption ?: \$table->___name); echo "</h1>"; }]]
 ST;
 
-ob_start(); $cnts = 0;
-
 echo <<<ST
 <div id=filter_def filter_def="[ EQ(1,1)
 ST;
@@ -72,25 +70,29 @@ foreach($table_fields as $n=>$f) if($f->search_op) { ++$cnts; echo ", a.$n $f->s
 echo <<<ST
 	]"
 	selfref="[[CURRENT_URI()]]" onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
-><input filter_ctrl onkeyup="applyFuncFilterT(this)" 
+> 
 ST;
-foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"\n'; }
+
+ob_start(); $cnts = 0;
+echo '<input filter_ctrl onkeyup="applyFuncFilterT(this)"';
+
+foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"\n'; ++$cnts; }
 
 echo ' style="width:100%">';
 
-ob_start(); $cnt = 0;
+	ob_start(); $cnt = 0;
 	foreach($table_fields as $n=>$f) 
 		if($f->search_op) 
 			{ ++$cnt; echo " <span filter_hint=$n>"; output_html($f->caption); echo '</span>'; }
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
+if($cnts) ob_end_flush(); else { ob_end_clean(); }
 echo "</div>\n";	
-if($cnts) ob_end_flush(); else { ob_end_clean(); echo "<div><br></div>"; }
 
 echo <<<ST
 <div style="clear:both"><!--FILTRED:-->
 [[ob_start();]]
-<table main_table>
+<table tabler onrefresh="refreshNoRowStatus(this)">
 <thead>
 	<tr>
 ST;
@@ -99,7 +101,7 @@ ST;
 	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
-echo '</thead>';
+echo '<th><th></thead>';
 
 echo <<<ST
 
@@ -127,12 +129,6 @@ foreach($table_fields as $n=>$f)
 			else
 				echo "[[\$data.a.$n]]";
 		} else {
-			if($f->type=='SUBTABLE') {
-				echo "<button type=button onclick='this.setDN(toggle)' display_next></button>";
-				echo <<<ST
-				<div subtable ref=Y>"[[tabler_ref('$f->size','$f->precision')]]&cmd=*WHERE $f->precision = %3F".setURLParam('args\\[\\]',findRid(this))</div>
-ST;
-			} else
 			if($f->Target())
 				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
 			else
@@ -145,17 +141,11 @@ if(!CHOOSER_MODE){
 echo <<<ST
 	
 <td><button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
-	<div extended_form cmd="@this.UT('TR').previousElementSibling">
+	<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
 ST;
 	foreach($table_fields as $n=>$f) 
 		if($f->type && !$f->hidden && $f->page && $n != $link) { ++$cnt;
 			echo "<div ctrl_container><label>"; output_html($f->caption ?: $n); echo "</label>";
-			if($f->type=='SUBTABLE') {
-				echo "<button type=button onclick='this.setDN(toggle)' display_next></button>";
-				echo <<<ST
-				<div subtable ref=Y>"[[tabler_ref('$f->size','$f->precision')]]&cmd=*WHERE $f->precision = ?".setURLParam('args[]',findRid(this))</div>
-ST;
-			} else
 			if($f->Target())
 				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
 			else
@@ -172,20 +162,25 @@ ST;
 
 echo <<<ST
 </tr>
+<tfoot><tr if_no_rows><td colspan=100>
 </table>
 [[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
-[[if( \$data.{COUNT} ) ob_end_flush(); else { ob_end_flush(); echo '<div>Нет</div>'; }]]
+[[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
+
 ST;
 if(!CHOOSER_MODE){
 	echo <<<ST
 	
-<button type=button onclick="makeChoose(this, null, '')" add=suspend unlocked=Y
+<button type=button onclick="startAddRow(this)" add=suspend unlocked=Y
 		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span>
 	</button>
-<button row_counter type=button style="float: right" 
+<button type=button onclick="this.setDN(toggle)" display_next inline_next></button>
+<span>
+<button row_counter type=button
 	onclick="var e = this; X.XHR('GET','[[make_counting_command(\$statements->data)]]').done(function(t) { e.setV(e.V().replace(/\?|\d+/, t)); })"
 >[[@button \$data.{COUNT}~?]]Число записей: ?</button>
+</span>
 ST;
 }
 echo <<<ST

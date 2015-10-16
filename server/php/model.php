@@ -22,8 +22,9 @@ class Table {
 	  foreach($f as $k => $fld)
 	    {
 			if(array_key_exists($k, $this->fields)) {
-				foreach($fld as $n=>$v)
-					$this->fields->$n = $v;
+				foreach($fld as $n=>$v)					
+					$this->fields[$k]->$n = $v;
+				
 			} else $this->fields[$k] = $fld;
 		}
 	return $this;
@@ -31,7 +32,7 @@ class Table {
   function Props($p) { 
 	$this->table_props =$p;
 	return $this;
-  }
+   }
   function PK($many = false) {
 	$ret = [];
 	foreach($this->fields as $k => $v)
@@ -128,7 +129,6 @@ class _Field {
 					, $this->sources, $this->targets)
 			);
   }
-  
   function getControlType() {
   	global $ModelDB;
 //  	var_dump($ModelDB["{$this->values}.info"]);
@@ -270,8 +270,6 @@ class modelParser extends _PreCmd {
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
 							else if($m['name'] == 'AUTO_KEY')
 								$props[ 'AUTO_KEY' ] = true;
-							else if($m['name'] == 'DICT')
-								$props[ 'DICT' ] = true;
 							else if($m['name'] == 'PAGE')
 								$current_page = $m['value'];
 							continue;
