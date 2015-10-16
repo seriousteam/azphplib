@@ -22,8 +22,9 @@ class Table {
 	  foreach($f as $k => $fld)
 	    {
 			if(array_key_exists($k, $this->fields)) {
-				foreach($fld as $n=>$v)
-					$this->fields->$n = $v;
+				foreach($fld as $n=>$v)					
+					$this->fields[$k]->$n = $v;
+				
 			} else $this->fields[$k] = $fld;
 		}
 	return $this;

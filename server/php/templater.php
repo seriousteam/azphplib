@@ -364,7 +364,7 @@ ST;
 	$text = implode($repos);
 	//echo $text;
 	//add closing tags
-	preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
+	$text = preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
 	do {
 		$text = preg_replace('#<<:>>
 				(<(\S+?)(?:\s|>) [^<]*+
@@ -385,17 +385,20 @@ ST;
 		//echo '====',$text;
 	} while($textp !== $text);
 	//var_dump($text);
+	//var_dump($escape_mode);
 	
 	do {
-		$text = preg_replace('#<<\{\}>> (\{ [^{]*+(?:(?-1)[^{]*+)*? \}) #sx', 
+		
+		$text = preg_replace('#<<\{\}>> (\{ [^{}]*+(?:(?-1)[^{}]*+)*? \}) #sx', 
+						'[[{]]$1[[}]]', $textp = $text);
+	} while($textp !== $text);
+	//var_dump($text);
+	do {
+		$text = preg_replace('#<<\[\]>> (\[ [^[\]]*+(?:(?-1)[^[\]]*+)*? \]) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	do {
-		$text = preg_replace('#<<\[\]>> (\[ [^[]*+(?:(?-1)[^[]*+)*? \]) #sx', 
-						'[[{]]$1[[}]]', $textp = $text);
-	} while($textp !== $text);
-	do {
-		$text = preg_replace('#<<\(\)>> (\( [^(]*+(?:(?-1)[^(]*+)*? \)) #sx', 
+		$text = preg_replace('#<<\(\)>> (\( [^()]*+(?:(?-1)[^()]*+)*? \)) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	
@@ -484,7 +487,7 @@ CTX;
 }, $text);
 	//generate commands
 	$text = preg_replace_callback('/(?<=\[\[).*?(?=\]\])/s', 
-		function($m) use(&$selects, &$attributes, $escape_mode){
+		function($m) use(&$selects, &$attributes, &$escape_mode){
 			global $RE_ID;
 			$cmd = $m[0];
 			//var_dump($cmd);

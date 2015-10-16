@@ -785,7 +785,7 @@ function output_html($res) {
 	return $res;
 }
 function output_js($res) {
-	echo addslashes($res);
+	echo json_encode($res, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 	return $res;
 }
 
@@ -864,7 +864,7 @@ static $a = [
 	, 'TAGV' => '<$name $attrs value="$value" />'
 
 	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
-	, 'LONGVARCHAR' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
+	, 'LONGVARCHAR' => '<dfn tag=TEXTAREA vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
 	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs>{$EXPR[\'ru_date(substr($value,0,16))\']}</dfn>'
@@ -874,8 +874,8 @@ static $a = [
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
 	, 'DL' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
-	, 'DL+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'MENU+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU+' => '<button type=button tag add fctl onclick="setWithMenu(this)" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
 	, 'SUBTABLE' =>
 					'<button type=button onclick="this.setDN(toggle)" display_next></button>
 					<div subtable ref=Y>"/az/server/php/tabler.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
@@ -977,6 +977,10 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 		//we can specify control type explicitly
 		if(!$template) {
 			//if not, we take control from model
+			if(!is_object($f)) {
+				var_dump($f, $name, $value, $table);
+				die('!!!!');
+			}
 			$template = default_templated_editor(
 				$f->getControlType()
 			);
