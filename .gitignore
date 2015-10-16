@@ -1,4 +1,5 @@
 lib/
+lib-0/
 *.orig
 server/php/forwarder/frez/*
 !server/php/forwarder/frez/empty.file
