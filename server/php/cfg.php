@@ -487,8 +487,8 @@ function get_connection($table){
 	  $params[PDO::ATTR_PERSISTENT] = false;
   }
   if(!@$connections[$key]) {
-    if($db['user'] !== '') {
-	if($db['user'][0] === '?') {
+    if(isset($db['user'])) {
+	if(@$db['user'][0] === '?') {
 	    try {
 		global $CURRENT_USER, $CURRENT_PW;
 		$connections[$key] = new PDO($dsn,
@@ -513,6 +513,7 @@ function get_connection($table){
       $connections[$key] = new PDO($dsn,null, null,$params);
   
     $connections[$key]->dialect = db_dialect($db);
+    $connections[$key]->subdialect = @$db['subdialect'];
     prepareDB( $connections[$key]);
     $connections[$key]->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $connections[$key]->setAttribute(PDO::ATTR_ORACLE_NULLS, PDO::ATTR_ORACLE_NULLS);
