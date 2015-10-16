@@ -94,8 +94,6 @@ $main_cfg = array(
 		  'default_db' => array(
 					'dialect' => '',
 					'server' => '',
-					'user' => '',
-					'pass' => ''
 					)
 		  );
 
@@ -503,12 +501,13 @@ function get_connection($table){
 				   $params
 				   );
 	    }
-	} else
+	} else {
 		$connections[$key] = new PDO($dsn,
 				   $db['user'],
 				   $db['pass'],
 				   $params
 				   );
+	}
    } else
       $connections[$key] = new PDO($dsn,null, null,$params);
   
