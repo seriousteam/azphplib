@@ -63,6 +63,7 @@ class _PreCmd {
   var $cmd = '';
   var $strings = [];
   var $selects = [];
+  var $paramscount = 0;
 
   function unescape($d) { return str_replace("''","'",substr($this->strings[(int)$d], 1,-1)); }
   static function escape($s, $quote = true) { 
@@ -96,6 +97,8 @@ class _PreCmd {
     $cmd = preg_replace('/(?<=^)\s*+#.*+(?:\R|$)/m','', $cmd); //replace '#' comment
     $cmd = preg_replace('#/\*.*?\*/#s','', $cmd); //replace '/* */' comment
     
+    $this->paramscount = substr_count($cmd, '?');
+
     global $RE_ID;
     $cmd = preg_replace("/(?<!\\s|[.a-zA-Z0-9_])$RE_ID/"," $0", $cmd); //start all ids from space!
     //$cmd = preg_replace("/$RE_ID(?!\\s|[.a-zA-Z0-9_])/","$0 ", $cmd); //end all ids with space!
@@ -213,7 +216,8 @@ class parsedCommandSmart extends parsedCommand {
   var $params = 0;
   function __construct($parts, $cmd, $pre=null) {
     $this->pre = $pre ? $pre->preprocess($cmd) : new _PreCmd($cmd);
-    $this->params = substr_count($this->pre->cmd, '?');
+    //$this->params = substr_count($this->pre->cmd, '?');
+    $this->params = $this->pre->paramscount;
     parent::__construct($parts, $this->pre->cmd);
   }
   function __toString() { return $this->pre->doToString(parent::__toString()); }

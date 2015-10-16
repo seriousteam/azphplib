@@ -163,6 +163,7 @@ class sharing {
 }
 
 function templater_take_zones($text, $file) {
+	$fileq = phpQuote($file);
 	global $library_prefix;
 	echo '<',"?php\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
@@ -174,6 +175,7 @@ function templater_take_zones($text, $file) {
 
 \$functions['$k'] = function(\$cmd, \$args = null, \$params = null) {
 	global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+	\$TEMPLATE_FILE = $fileq;
 
 	if(\$params === null) \$params = new smap;
 	\$call_params = new smap(\$params); 
@@ -217,18 +219,17 @@ function unescape_template_command($cmd) {
 }
 
 function templater_take_one_zone($name, $text, $file) {
+	$fileq = phpQuote($file);
 	global $error_count;
 	global $RE_ID;
 	
 	$escape_mode = preg_match('/\.js$/', $file) ? 'js' : 'html'; //
 	
-	$qfile = phpQuote($file);
-
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
 global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
-\$TEMPLATE_FILE = $qfile;
+\$TEMPLATE_FILE = $fileq;
 
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
@@ -388,17 +389,20 @@ ST;
 		//echo '====',$text;
 	} while($textp !== $text);
 	//var_dump($text);
+	//var_dump($escape_mode);
 	
 	do {
-		$text = preg_replace('#<<\{\}>> (\{ [^{]*+(?:(?-1)[^{]*+)*? \}) #sx', 
+		
+		$text = preg_replace('#<<\{\}>> (\{ [^{}]*+(?:(?-1)[^{}]*+)*? \}) #sx', 
+						'[[{]]$1[[}]]', $textp = $text);
+	} while($textp !== $text);
+	//var_dump($text);
+	do {
+		$text = preg_replace('#<<\[\]>> (\[ [^[\]]*+(?:(?-1)[^[\]]*+)*? \]) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	do {
-		$text = preg_replace('#<<\[\]>> (\[ [^[]*+(?:(?-1)[^[]*+)*? \]) #sx', 
-						'[[{]]$1[[}]]', $textp = $text);
-	} while($textp !== $text);
-	do {
-		$text = preg_replace('#<<\(\)>> (\( [^(]*+(?:(?-1)[^(]*+)*? \)) #sx', 
+		$text = preg_replace('#<<\(\)>> (\( [^()]*+(?:(?-1)[^()]*+)*? \)) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	
@@ -487,7 +491,7 @@ CTX;
 }, $text);
 	//generate commands
 	$text = preg_replace_callback('/(?<=\[\[).*?(?=\]\])/s', 
-		function($m) use(&$selects, &$attributes, $escape_mode){
+		function($m) use(&$selects, &$attributes, &$escape_mode){
 			global $RE_ID;
 			$cmd = $m[0];
 			//var_dump($cmd);
@@ -524,10 +528,10 @@ EEE;
 					echo '<link rel="stylesheet" href="',file_URI('//az/lib/d3c.css', null, null),'">',"\\n";
 					echo '<script type="text/javascript" src="',file_URI('//az/lib/d3c.js', null, null),'"></script>',"\\n";
 EEE;
-			} else if(preg_match("/^QE\s+(.*)$/i", $cmd, $m)) {
+			} else if(preg_match("/^QE$/i", $cmd, $m)) {
 				$res = sharing::load('d3');
 				$res .= <<<EEE
-				echo qe_control_model('$m[1]');
+				echo qe_control_model();
 				echo '<script type="text/javascript" src="',file_URI('//az/lib/qe.js', null, null),'"></script>',"\\n";
 				echo '<link rel="stylesheet" href="',file_URI('//az/lib/qe.css', null, null),'">',"\\n";
 EEE;

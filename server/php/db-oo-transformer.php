@@ -414,6 +414,8 @@ class _Cmd extends _PreCmd {
         // select to array here
         $old_num = _XNode::$a_num; //keep old alias numeration
             $a = $this->process_select($m['select'], $paths);
+            $a->table = $this->table;
+            $a->alias = $this->alias;
         _XNode::$a_num = $old_num;
         if(!$paths)
           throw new Exception("Uncorrelated array subselect: $a->stmt");

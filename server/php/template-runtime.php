@@ -168,7 +168,7 @@ function at_group_end() {
 
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	global $SELECT_STRUCT, $RE_ID;
-	
+
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
 	
 	if($page) {
@@ -787,7 +787,7 @@ function output_html($res) {
 	return $res;
 }
 function output_js($res) {
-	echo addslashes($res);
+	echo json_encode($res, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 	return $res;
 }
 
@@ -866,7 +866,7 @@ static $a = [
 	, 'TAGV' => '<$name $attrs value="$value" />'
 
 	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
-	, 'LONGVARCHAR' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
+	, 'LONGVARCHAR' => '<dfn tag=TEXTAREA vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
 	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs>{$EXPR[\'ru_date(substr($value,0,16))\']}</dfn>'
@@ -876,8 +876,8 @@ static $a = [
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
 	, 'DL' => '<a tag=A fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
-	, 'DL+' => '<button tag add fctl name="$name" $attrs onclick=setWithMenu(this)>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'MENU+' => '<button tag add fctl name="$name" $attrs onclick=setWithMenu(this)>+</button><menu mctl ref=Y  $attrs2>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2>$rel_target</menu>'
 	, 'SUBTABLE' =>
 					'<button type=button onclick="this.setDN(toggle)" display_next $attrs></button>
 					<div subtable ref=Y>"/az/server/php/tabler.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
@@ -959,7 +959,28 @@ function name_of_field_in_nv($value)
 		return explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	return '';
 }
-
+function get_filter_control($f)
+{
+	$descr = [];
+	$ct = $f->getControlType();
+	$descr['mc'] = $ct;
+	if($ct=='DL' && @$f->target) {
+		$descr['rel_target'] = file_URI('//az/server/php/chooser.php', 
+				[ 'table' => $f->target->___name 
+				  , 'add_empty' => ''
+				]);
+		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+	} else
+	if($ct=='MENU' && @$f->values) {
+		$descr['rel_target'] = file_URI('//az/server/php/modeldata.php', 
+			[ 'table' => $f->values 
+			  , 'add_empty' => ''
+			]);
+		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+		$descr['ref'] = 'Y';
+	}
+	return $descr;
+}
 function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
 	global $Tables;
@@ -979,6 +1000,10 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 		//we can specify control type explicitly
 		if(!$template) {
 			//if not, we take control from model
+			if(!is_object($f)) {
+				var_dump($f, $name, $value, $table);
+				die('!!!!');
+			}
 			$template = default_templated_editor(
 				$f->getControlType()
 			);
@@ -1137,13 +1162,15 @@ function csv_file_output($file_name, $templ) {
 	}
 }
 
-function qe_control_model($params) {
+function qe_control_model() {
 	global $Tables;
 	$tbls = [];
 	foreach($Tables as $name=>$table) {
 		$fields = [];
 		$pk = "['".implode("','", $table->PK(true))."']";
-		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk}";
+		$dict = @$table->table_props["DICT"] ? ",dict:true" : "";
+		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk$dict}";
+		
 		foreach($table->fields as $fld_name=>$props) {
 			$properties = [];
 			$properties[] = "$:{name: '$fld_name'}";
@@ -1153,12 +1180,17 @@ function qe_control_model($params) {
 			$properties[] = "sicaption:'{$props->si_caption}'";
 			$properties[] = 'visibility:' .($props->vis ? 'true' : 'false');
 			$properties[] = "type:'{$props->type}'";
+			$ctrl = get_filter_control($props);
+			$ctrl = array_map( function($k,$v) {
+				return "$k:\"$v\"";
+			},array_keys($ctrl),array_values($ctrl) );
+			$properties[] = 'ctrl:{'.implode(',',$ctrl).'}';
 			$fields[] = $fld_name.':{'.implode(',', $properties).'}';
 		}
 		;
 		$tbls[]=$name.': {'.implode(',', $fields).'}';					
 	}
-	return "<script>var qe_params={".$params."};var qe_model={".implode(',', $tbls)."}</script>";
+	return "<script>var QEMODEL={".implode(',', $tbls)."}</script>";
 }
 
 function make_request($url, $srv = 'http://localhost') {

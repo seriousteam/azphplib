@@ -219,7 +219,7 @@ class dbspecific_select {
 		$this->cmd = $cmd;
 		$this->select = $select;
 		$this->parsed = $parsed;
-		main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
+		//main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
 	}
 	function __toString() { return $this->cmd->doToString($this->select); }
 }
@@ -485,8 +485,10 @@ function prepareDB(&$db)
 	if ($dbtype=="mysql")
 	{
 		$db->exec ("SET NAMES 'utf8'");
-		$db->exec ("SET SESSION time_zone = '+00:00'");
-		$db->exec ("SET SESSION sql_mode='STRICT_ALL_TABLES,PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,ONLY_FULL_GROUP_BY,NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_BACKSLASH_ESCAPES'");
+		if($db->subdialect != 'sphinxql') {
+			$db->exec ("SET SESSION time_zone = '+00:00'");
+			$db->exec ("SET SESSION sql_mode='STRICT_ALL_TABLES,PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,ONLY_FULL_GROUP_BY,NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_BACKSLASH_ESCAPES'");
+		}
 	}
 	// for ms sql 
 	if ($dbtype=="mssql")

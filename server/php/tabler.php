@@ -118,7 +118,7 @@ if(CHOOSER_MODE){
 echo <<<ST
 	[[rt@tr \$data-:a__table__id]]
 	[[value@tr \$data-:a__$pk0]]
-	[[onclick@tr 'this.closeModal(this)']]
+	[[onclick@tr 'blockEvent(event);this.closeModal(this)']]
 	[[style@tr 'cursor: pointer']]
 	
 ST;
@@ -195,8 +195,11 @@ echo <<<ST
 </body>
 ST;
 
+$phppath = __DIR__."/../../../../php/php.exe";
+if(!file_exists($phppath)) $phppath = "php";
+
 file_put_contents($fphpname.'.s', ob_get_clean());
-	system("php -f ".
+	system("$phppath -f ".
 		__DIR__."/templater.php -- -c $fphpname.s -p$cdir > $fphpname");
 
 	//unlink($fphpname.'.s');

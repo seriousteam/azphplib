@@ -2,7 +2,6 @@
 //var_dump($_ENV);
 //var_dump($_SERVER);
 
-
 $fname = getenv('fullfile') ?: getenv('PATH_INFO');
 $cdir = getenv('cache');
 
@@ -21,10 +20,13 @@ $mtt = filemtime($fname);
 
 //echo 'X', $fname, $mt, ' ', $mtt;
 
+$phppath = __DIR__."/../../../../php/php.exe";
+if(!file_exists($phppath)) $phppath = "php";
+
 if($mt < $mtt) {
 	//echo 'y';
 	//file_put_contents($fphpname, file_get_contents($fname));
-	system("php -f ".
+	system("$phppath -f ".
 		__DIR__."/templater.php -- -c $fname -p$cdir > $fphpname");
 }
 
