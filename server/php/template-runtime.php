@@ -168,7 +168,7 @@ function at_group_end() {
 
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	global $SELECT_STRUCT, $RE_ID;
-	
+
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
 	
 	if($page) {
@@ -957,7 +957,28 @@ function name_of_field_in_nv($value)
 		return explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	return '';
 }
-
+function get_filter_control($f)
+{
+	$descr = [];
+	$ct = $f->getControlType();
+	$descr['mc'] = $ct;
+	if($ct=='DL' && @$f->target) {
+		$descr['rel_target'] = file_URI('//az/server/php/chooser.php', 
+				[ 'table' => $f->target->___name 
+				  , 'add_empty' => ''
+				]);
+		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+	} else
+	if($ct=='MENU' && @$f->values) {
+		$descr['rel_target'] = file_URI('//az/server/php/modeldata.php', 
+			[ 'table' => $f->values 
+			  , 'add_empty' => ''
+			]);
+		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+		$descr['ref'] = 'Y';
+	}
+	return $descr;
+}
 function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
 	global $Tables;
@@ -1107,13 +1128,15 @@ function csv_file_output($file_name, $templ) {
 	}
 }
 
-function qe_control_model($params) {
+function qe_control_model() {
 	global $Tables;
 	$tbls = [];
 	foreach($Tables as $name=>$table) {
 		$fields = [];
 		$pk = "['".implode("','", $table->PK(true))."']";
-		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk}";
+		$dict = @$table->table_props["DICT"] ? ",dict:true" : "";
+		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk$dict}";
+		
 		foreach($table->fields as $fld_name=>$props) {
 			$properties = [];
 			$properties[] = "$:{name: '$fld_name'}";
@@ -1123,12 +1146,17 @@ function qe_control_model($params) {
 			$properties[] = "sicaption:'{$props->si_caption}'";
 			$properties[] = 'visibility:' .($props->vis ? 'true' : 'false');
 			$properties[] = "type:'{$props->type}'";
+			$ctrl = get_filter_control($props);
+			$ctrl = array_map( function($k,$v) {
+				return "$k:\"$v\"";
+			},array_keys($ctrl),array_values($ctrl) );
+			$properties[] = 'ctrl:{'.implode(',',$ctrl).'}';
 			$fields[] = $fld_name.':{'.implode(',', $properties).'}';
 		}
 		;
 		$tbls[]=$name.': {'.implode(',', $fields).'}';					
 	}
-	return "<script>var qe_params={".$params."};var qe_model={".implode(',', $tbls)."}</script>";
+	return "<script>var QEMODEL={".implode(',', $tbls)."}</script>";
 }
 
 function make_request($url, $srv = 'http://localhost') {
