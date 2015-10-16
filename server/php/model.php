@@ -270,6 +270,8 @@ class modelParser extends _PreCmd {
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
 							else if($m['name'] == 'AUTO_KEY')
 								$props[ 'AUTO_KEY' ] = true;
+							else if($m['name'] == 'DICT')
+								$props[ 'DICT' ] = true;
 							else if($m['name'] == 'PAGE')
 								$current_page = $m['value'];
 							continue;
