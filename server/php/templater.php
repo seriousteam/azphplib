@@ -224,7 +224,7 @@ function templater_take_one_zone($name, $text, $file) {
 	global $RE_ID;
 	
 	$escape_mode = preg_match('/\.js$/', $file) ? 'js' : 'html'; //
-
+	
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
@@ -307,7 +307,8 @@ ST;
 			//find position in 'to_process'
 			//var_dump($tag, $attribute, $command, $to_process);
 			if(!$tag) { // to line start
-				$before = strrchr($to_process, '\n') ?: '';
+				$before = strrchr($to_process, '\n') ?: strlen($to_process);
+				$before = substr($to_process, -$before);
 				$to_process = 
 					$before . $command . '</>' . substr($to_process, strlen($before));
 			} else {
@@ -406,8 +407,8 @@ ST;
 	} while($textp !== $text);
 	
 	//join joined tags
-	//echo $text;
-	$text = preg_replace('#\[\[}\]\]\s*+\[\[/\*\+\*/\]\]\s*+\[\[{\]\]#sx', '', $text);
+	//var_dump($text);
+	$text = preg_replace('#\[\[}\]\]\s*\[\[/\*\+\*/\]\]\s*\[\[{]]#sx', '', $text);
 	
 	//convert default call zones to explicit call by name
 	$text = preg_replace("/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si",

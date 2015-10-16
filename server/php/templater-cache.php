@@ -15,8 +15,8 @@ $fphpname = "$cdir/".urlencode( substr($fname, strlen($droot)+1 ) );
 
 //die($fphpname);
 
-$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
-$mtt = stat($fname)['mtime'];
+$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
+$mtt = filemtime($fname);
 
 //echo 'X', $fname, $mt, ' ', $mtt;
 

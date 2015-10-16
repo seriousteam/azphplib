@@ -286,7 +286,7 @@ function isNZ($v) { return preg_match('/^0*$/', $v)? '' : $v; }
 function toTitle($v) { return $v? mb_substr($v,0,1, 'UTF-8').'.' : $v; }
 function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? FALSE : TRUE); }
 function subRE($v, $re, $np = 0) { return preg_match($re, $v, $m)? $m[$np] : ''; }
-function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d\s*/', '', $v); }
+function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d(\.\d+)?\s*/', '', $v); }
 function ROLES() { global $CURRENT_ROLES_ARRAY; return "('".implode("','",$CURRENT_ROLES_ARRAY)."')"; }
 function HASROLE($role) { global $CURRENT_ROLES_ARRAY; if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; return ''; }
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
@@ -443,8 +443,8 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 
 		//die($fphpname);
 
-		$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
-		$mtt = stat($file)['mtime'];
+		$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
+		$mtt = filemtime($file);
 
 		//echo 'X', $fname, $mt, ' ', $mtt;
 
@@ -602,6 +602,8 @@ function make_manipulation_command($data, $counter, $stmt = NULL, $with_pk = '')
 			if(isset($data->{'a__'.$e}))
 				$d[] = $data->{'a__'.$e};
 			else {
+				if(!isset($where_vals[$e]))
+					var_dump($counter, $where_vals);
 				$d[] = $where_vals[$e];
 			}
 		}
@@ -872,12 +874,12 @@ static $a = [
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
-	, 'DL' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'DL' => '<a tag=A fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
-	, 'DL+' => '<button type=button tag add fctl onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'MENU+' => '<button type=button tag add fctl onclick="setWithMenu(this)" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2>$rel_target</menu>'
 	, 'SUBTABLE' =>
-					'<button type=button onclick="this.setDN(toggle)" display_next></button>
+					'<button type=button onclick="this.setDN(toggle)" display_next $attrs></button>
 					<div subtable ref=Y>"/az/server/php/tabler.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
 				'
 	, 'FILE' =>
@@ -1054,6 +1056,38 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 	);
 
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
+}
+
+
+function to_attr_struct($val, $name, $cmd, $afield, &$db
+	, $name_translator = null, $add_translator_to_def = '') {
+	if($name===NULL) {
+		$db = new stdClass;
+		$db->attr_fileld = $afield;
+		$db->ins_cmd = $cmd;
+		$db->vals = new stdClass;
+		$db->cmds = new stdClass;
+		$db->name_translator = $name_translator ? $GLOBALS[$name_translator] : null;
+		$db->add_translator_to_def = $add_translator_to_def;
+		return;
+	}
+	$db->vals->$name = $val;
+	$db->cmds->$name = $cmd;
+}
+
+function output_attr_ctrl($name, $vfield, $tag, $attrs, $db) {
+	$pname = $name;
+	if($db->name_translator) 
+		$name = $db->name_translator[$name];
+	$rcmd = @$db->cmds->$name ? 
+		$db->cmds->$name 
+		: $db->ins_cmd;
+	$add_to_def = '';
+	if($db->add_translator_to_def)
+		$add_to_def = "def-$db->add_translator_to_def='$pname'";
+	echo "<$tag $attrs name=$vfield def-$db->attr_fileld='$name' $add_to_def cmd='$rcmd'>";
+	output_html(@$db->vals->$name);
+	echo "</$tag>";
 }
 
 
