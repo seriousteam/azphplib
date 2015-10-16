@@ -520,10 +520,10 @@ EEE;
 					echo '<link rel="stylesheet" href="',file_URI('//az/lib/d3c.css', null, null),'">',"\\n";
 					echo '<script type="text/javascript" src="',file_URI('//az/lib/d3c.js', null, null),'"></script>',"\\n";
 EEE;
-			} else if(preg_match("/^QE\s+(.*)$/i", $cmd, $m)) {
+			} else if(preg_match("/^QE$/i", $cmd, $m)) {
 				$res = sharing::load('d3');
 				$res .= <<<EEE
-				echo qe_control_model('$m[1]');
+				echo qe_control_model();
 				echo '<script type="text/javascript" src="',file_URI('//az/lib/qe.js', null, null),'"></script>',"\\n";
 				echo '<link rel="stylesheet" href="',file_URI('//az/lib/qe.css', null, null),'">',"\\n";
 EEE;
