@@ -17,9 +17,11 @@ if(!@$_REQUEST['table']) {
 		echo "<li value-patch='' rt=''>?</li>\n";
 	}
 	foreach($ModelDB[$t] as $k => $v)
-		if($k == '.')
-			echo '<li value-patch="">'.htmlspecialchars($v)."</li>\n";
-		else
+		if($k == '.') {
+			$vnull = @$ModelDB[$t.'.info']['.'];
+			echo '<li value-patch="'.$vnull.'">'.htmlspecialchars($v)."</li>\n";
+		} else
 			echo '<li value-patch="'.htmlspecialchars($k).'">'.htmlspecialchars($v)."</li>\n";
 }
+//			var_dump($ModelDB);
 

@@ -93,8 +93,6 @@ $main_cfg = array(
 		  'default_db' => array(
 					'dialect' => '',
 					'server' => '',
-					'user' => '',
-					'pass' => ''
 					)
 		  );
 
@@ -114,7 +112,7 @@ if($G_ENV_TABLE_DB_MAPPING) {
   /*
     table_name = db_name
    */
-  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING);
+  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING, true);
 }
 
 function table_db($table){
@@ -500,12 +498,13 @@ function get_connection($table){
 				   $params
 				   );
 	    }
-	} else
+	} else {
 		$connections[$key] = new PDO($dsn,
 				   $db['user'],
 				   $db['pass'],
 				   $params
 				   );
+	}
    } else
       $connections[$key] = new PDO($dsn,null, null,$params);
   
@@ -594,3 +593,4 @@ XCFG
 
 var_dump($main_cfg);
 var_dump($local_objects_rights);
+var_dump($a_table_db);

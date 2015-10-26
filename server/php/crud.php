@@ -10,11 +10,12 @@ foreach($commands as $command) {
 $table = $command['table'];
 $key_vals = sas_coder_DecodeValList(sas_coder_DecodeValList($command['key_vals'])[0]);
 $fieldvals = sas_coder_DecodeMap(@$command['fieldvals']);
-$def_vals = @$command['def_vals'] == '-' ?  '-' :
-	sas_coder_DecodeMap(@$command['def_vals']);
+$def_vals = @$command['def_vals'] == '-' ? $command['def_vals'] 
+	: sas_coder_DecodeMap(@$command['def_vals']);
 
 if($key_vals) {
 	if($fieldvals) {
+		//todo: if we have dev_vals and fieldvals[some_key]==='', we convert to delete 
 		$mode = 'U';
 	} else {
 		if($def_vals == '-')
