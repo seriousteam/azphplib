@@ -968,6 +968,9 @@ function get_filter_control($f)
 				  , 'add_empty' => ''
 				]);
 		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+		$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+				[ 'table' => $f->target->___name ]);
+		$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';	
 	} else
 	if($ct=='MENU' && @$f->values) {
 		$descr['rel_target'] = file_URI('//az/server/php/modeldata.php', 
@@ -976,6 +979,9 @@ function get_filter_control($f)
 			]);
 		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
 		$descr['ref'] = 'Y';
+		$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+				[ 'table' => $f->target->___name ]);
+		$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';
 	}
 	return $descr;
 }
@@ -1170,7 +1176,6 @@ function make_request($url, $srv = 'http://localhost') {
 		$opts = stream_context_create();
 	return file_get_contents('http://localhost/'.$url, false, $opts);
 }
-
 /*TODO
 1) make attribute table description
 	it defines:
