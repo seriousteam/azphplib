@@ -1,10 +1,9 @@
 <?php
 
 mb_internal_encoding("UTF-8");
+define('REPLACED_TOPLEVEL', defined('TOPLEVEL_FILE'));
 
-if(@$force_toplevel)
-	define('TOPLEVEL_FILE', realpath($force_toplevel));
-else 
+if(!REPLACED_TOPLEVEL)
 	define('TOPLEVEL_FILE', @end(debug_backtrace())['file']?:__FILE__);
 
 require_once (__DIR__.'/dialects.php');
@@ -349,7 +348,7 @@ function add_role_to_context($role) {
 }
 
 // uri after striping our prefix (normalized in some sence)
-$LOCALIZED_URI = (PHP_SAPI == 'cli' && !isset($force_toplevel))? 
+$LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)? 
 	$_SERVER['argv'][0]
 	:
 	( substr_compare($_SERVER['REQUEST_URI'], $G_ENV_URI_PREFIX, 0, strlen($G_ENV_URI_PREFIX)) == 0?
@@ -420,8 +419,7 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 
 $CFG_STDIN_CONTENT = null;
 function main_argument($str = true) {
-	global $force_toplevel;
-  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
+  if(PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL) {
     $arg = @$_SERVER['argv'][1] ?: '-';
     if($arg === '-')
       if($str) {
@@ -447,8 +445,7 @@ function main_argument($str = true) {
 }
 
 function main_subarguments($str = true) {
-	global $force_toplevel;
-  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
+  if(PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL) {
     $arg = $_SERVER['argv'][1] ?: '-';
 	$args = [];
     if($arg === '-' && $str) {

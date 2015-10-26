@@ -2,19 +2,17 @@
 if(!defined('CHOOSER_MODE')) define('CHOOSER_MODE', '');
 
 require_once(__DIR__.'/template-runtime.php');
-
-$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
+require_once(__DIR__.'/generator.php');
 
 $table = $_REQUEST['table'];
 $link = @$_REQUEST['link'];
 
-$fphpname = "$cdir/$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t";
-$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
-$mtt = $G_ENV_MODEL ? filemtime($G_ENV_MODEL) : 1;
-if($mt >= $mtt) {
-	//valid cache
-	goto end;
-}
+$cache = new TemplaterCache("$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t");
+
+$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
+
+if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
+
 
 //$link_filter = '';
 //if($link) $link_filter = " $link = ? ";
@@ -107,6 +105,7 @@ echo '</thead>';
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
 
+
 echo <<<ST
 
 <tr>
@@ -195,17 +194,11 @@ echo <<<ST
 </body>
 ST;
 
-$phppath = __DIR__."/../../../../php/php.exe";
-if(!file_exists($phppath)) $phppath = "php";
+$cache->gen_from_ob( ob_get_clean() );
 
-file_put_contents($fphpname.'.s', ob_get_clean());
-	system("$phppath -f ".
-		__DIR__."/templater.php -- -c $fphpname.s -p$cdir > $fphpname");
-
-	//unlink($fphpname.'.s');
 end:;
 
-require $fphpname;
+while(@!include $cache->file()) {}
 
 if(__FILE__ != TOPLEVEL_FILE) return $functions;
 
