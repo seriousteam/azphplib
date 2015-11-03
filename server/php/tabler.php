@@ -189,7 +189,7 @@ if(!CHOOSER_MODE){
 ST;
 }
 echo <<<ST
-[[PAGE CONTROLS]]
+<div>[[PAGE CONTROLS]]</div>
 <!--FILTRED.--></div>
 </body>
 ST;
