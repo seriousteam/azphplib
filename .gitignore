@@ -1,4 +1,3 @@
-lib/
 lib-0/
 *.orig
 server/php/forwarder/frez/*

@@ -1,0 +1,11 @@
+application: azlib-1-00
+version: 1
+runtime: php55
+api_version: 1
+
+handlers:
+- url: /stylesheets
+  static_dir: stylesheets
+
+- url: /.*
+  script: phpinfo.php
