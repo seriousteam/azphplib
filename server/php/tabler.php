@@ -1,4 +1,5 @@
 <?php
+//http://213.208.189.135/az/server/php/tabler.php?table=enrf_stages
 if(!defined('CHOOSER_MODE')) define('CHOOSER_MODE', '');
 
 require_once(__DIR__.'/template-runtime.php');
@@ -53,7 +54,7 @@ echo <<<ST
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 [[LIB]]
-<link rel="stylesheet" href="/ais/form.css">
+<link rel="stylesheet" href="/az/lib/bullfinch.css">
 </head>
 <body>
 
