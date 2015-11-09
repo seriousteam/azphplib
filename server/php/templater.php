@@ -684,7 +684,7 @@ EEE;
 								$res = "ctx::\$current = $res";
 							}
 							else if(preg_match("/^\\?:($RE_ID)/s", $c, $m)) {
-								$res = "if(\$$m[1] = !$res) goto $m[1]";
+								$res = "if(\$$m[1] = !($res)) goto $m[1]";
 							}
 							else if(preg_match('/^\?(.+)/s', $c, $m)) {
 								if($m[1][0] === "'")
@@ -860,9 +860,37 @@ if($argc <= 1 || $argv[1] == '-') {
 	$options = getopt("p::");
 	$path_prefix = @$options['p'] ?: __DIR__;
 } else {
-	$options = getopt("c:p::");
+	$options = getopt("c:p::",array("docx::"));
 	$path_prefix = @$options['p'] ?: dirname($options['c']);
-	$text = file_get_contents($file = $options['c']);
+	if(array_key_exists("docx",$options)) {
+		$DOCX_MODE = true;
+		$zip = new ZipArchive;
+		if ($zip->open($file = $options['c']) === TRUE) {
+			$text = $zip->getFromName('word/document.xml');
+			$text = preg_replace_callback('/\[\[(.*?)\]\]/xsi',function($m) {
+				$t = preg_replace('/<(.*?)>/xsi','',$m[1]);
+				$t = '[['.html_entity_decode($t, ENT_HTML5 | ENT_QUOTES).']]';
+				return $t;
+			},$text);
+			$zip->close();
+			/*
+			tempnam("tmp","zip");
+			copy(__DIR__.'/sample.xlsx', $file);
+			$zip = new ZipArchive;
+			$zip->open($file);
+			readfile($file);
+			unlink($file);
+			*/
+			//$text = file_get_contents( "$file.tmp",$zip->getFromName('word/document.xml') );
+			//exec("$php -f $templater -- -c $file.tmp",$output);
+			//if(zip->open("$file.tmp"))
+		} else {
+			die('Failed to open docx archive');
+		}
+		
+	} else {
+		$text = file_get_contents($file = $options['c']);
+	}
 }
 
 $lib_path = explode(DIRECTORY_SEPARATOR, __DIR__);
@@ -878,7 +906,42 @@ $library_prefix =
 			array_merge(count($path_prefix)?array_fill(0,count($path_prefix),'..'):[], $lib_path));
 if($library_prefix) $library_prefix = '/'.$library_prefix;
 
+if(@$DOCX_MODE) 
+	ob_start();
+
 templater_take_zones($text, $file);
+
+if(@$DOCX_MODE) {
+	$templ = ob_get_clean();
+	$tmp = tempnam("tmp","zip");
+	copy("$file", $tmp);
+	$zip = new ZipArchive;
+	$zip->open($tmp);
+	$zip->addFromString('word/document.xml', $templ);
+	$zip->close();
+	echo '<'.'?php ob_start();'.'?'.'>';
+	echo $templ;
+	echo '<'.'?php $filled = ob_get_clean(); ?'.'>';
+	echo '<'.'?php ob_start();'.'?'.'>';
+	readfile($tmp);
+	echo '<'.'?php';
+	$filename = substr($file,0,strlen($file)-2);
+	echo <<<XXX
+	\$archive = ob_get_clean();
+	\$tmp = tempnam("tmp","docx");
+	file_put_contents(\$tmp,\$archive);
+	\$zip = new ZipArchive;
+	\$zip->open(\$tmp);
+	\$zip->addFromString('word/document.xml', \$filled);
+	\$zip->close();
+	header('Content-type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+	header('Content-Disposition: attachment; filename="$filename"');
+	readfile(\$tmp);
+	unlink(\$tmp);
+XXX;
+	echo '?'.'>';
+	unlink($tmp);
+}
 
 return;
 

@@ -24,11 +24,25 @@ $page_limit = 20;
 	$counters = new stdClass;
 	$statements = new stdClass;
 	$sql_fields[] = $table->ID('a')." AS a__table__id";
-	foreach($table->fields as $n=>$f) if($f->type){
+	$table_fields = $table->fields;
+	if(CHOOSER_MODE) {
+		$has_choose = false;
+		foreach($table_fields as $f) if($f->choose) $has_choose = true;
+		if($has_choose) {
+			$tf = [];
+			foreach($table_fields as $n=>$f) 
+				if($f->choose) $tf[$n] = $f;
+			$table_fields =  $tf;
+		}
+	}
+	if(!isset($table_fields[$n = $table->PK()]))
+		$sql_fields[] = "a.$n AS a__$n";
+	foreach($table_fields as $n=>$f) if($f->type){
 		$sql_fields[] = "a.$n AS a__$n";
 		if($t = $f->Target("a.$n")) 
 			$sql_fields[] = "$t AS a_id__$n";
 	}
+		
 	$sql_fields = implode(', ', $sql_fields);
 	$qcmd = merge_queries("SELECT $sql_fields FROM $table->___name a", $cmd, $args, $requested_offset, $requested_limit, $page_limit);
 	$rowsets['data'] = process_query($qcmd, $args);
@@ -50,16 +64,16 @@ $page_limit = 20;
 
 <div id=filter_def
 	filter_def="[ EQ(1,1)
-		<?php foreach($table->fields as $n=>$f) if($f->search_op) { echo ", a.$n $f->search_op ?$n"; }?>
+		<?php foreach($table_fields as $n=>$f) if($f->search_op) { echo ", a.$n $f->search_op ?$n"; }?>
 	]"
 	selfref="<?php output_html(CURRENT_URI());?>"
 	onrefresh="restoreFuncFilter(this, def, <?php output_html(seqCookie());?>)"
 >
 <input filter_ctrl onkeyup="applyFuncFilterT(this)" 
-	<?php foreach($table->fields as $n=>$f) if($f->search_op) { echo "filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"'; } ?>
+	<?php foreach($table_fields as $n=>$f) if($f->search_op) { echo "filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"'; } ?>
 style="width:100%">
 	<?php  ob_start(); $cnt = 0;
-		foreach($table->fields as $n=>$f) 
+		foreach($table_fields as $n=>$f) 
 			if($f->search_op) 
 				{ ++$cnt; echo " <span filter_hint=$n>"; output_html($f->caption); echo '</span>'; }
 		if($cnt>1) ob_end_flush(); else ob_end_clean();
@@ -73,7 +87,7 @@ style="width:100%">
 	<tr>
 	<?php 
 		ob_start(); $cnt = 0;
-		foreach($table->fields as $n=>$f) if($f->type){ ++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
+		foreach($table_fields as $n=>$f) if($f->type){ ++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
 		if($cnt>1) ob_end_flush(); else ob_end_clean();
 	?>
 </thead>
@@ -87,7 +101,7 @@ style="width:100%">
 		} 
 	?>
 >
-	<?php foreach($table->fields as $n=>$f) if($f->type) { echo '<td>'; 
+	<?php foreach($table_fields as $n=>$f) if($f->type) { echo '<td>'; 
 		if(CHOOSER_MODE){
 			if($f->Target())
 				output_html($data->{"a_id__$n"});

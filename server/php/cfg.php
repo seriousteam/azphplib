@@ -180,6 +180,37 @@ if($local_users === 'local user not found') {
 
 function local_user($user) { global $local_users; return @$local_users[$user]; }
 
+/*
+#comment
+#internal rules: allow, all, +, deny, none, -
+let `rule-name` = `rule_def`
+[`ROLE` !`PRIORITY`! ]
+	.r: all
+	.d: all
+	.u: all
+	.c: all
+	table `table_name`
+		.r: all
+		.d: all
+		.u: all
+		.c: all
+		`field_name`:
+			.r: !`PRIORITY`! all
+			.d: $`rule-name`
+			.u: all
+			.c: all
+		`field_name`: =`like_field`
+			.r: !`PRIORITY`! all
+			.d: $`rule-name`
+			.u: all
+			.c: all
+# SQL can use $USER $ROLES $ROLES_CSV
+# and reference current table fields with alias 'a1'
+# for SQL we can define multyline statement i.e.
+# 	.r: .
+#		EXISTS(SELECT ......)
+#		.
+*/
 function cfg_parse_roles($a) {
 	$defs = [];
 	$r = array();
@@ -187,10 +218,13 @@ function cfg_parse_roles($a) {
 	$table =& $role['.default'];
 	$fld =& $table['.default'];
 	$fld = array( '.level' => 10 ); //FIXME: constant (and .default too)
-	foreach(array_map('trim',$a) as $l) { if(!$l || $l[0] == '#') continue;
+	$a = array_map('trim',$a);
+	reset($a);
+	while (list(, $l) = each($a))
+	{ 	 if(!$l || $l[0] == '#') continue;
 	     if(preg_match('/^\s*let\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*)/', $l, $m)) {
-		$defs[$m[1]] = $m[2];
-		continue;
+			$defs[$m[1]] = $m[2];
+			continue;
 	     }
 	     if(preg_match('/^\[\s*([^!]+)(\s+!([0-9]+)!)?\s*\]$/i', $l, $m)) //[role]
 	       { 	@$role =& $r[$m[1]] ?: array();
@@ -206,8 +240,8 @@ function cfg_parse_roles($a) {
 				continue; 
 	       }
 	     if(preg_match('/^([.a-z$0-9_]+)\s*:\s*(.*)/i', $l, $m)) { //field or right
-				if($m[2] == '') { //field
-					@$fld =& $table[$m[1]] ?: $table[$m[1]] = array(); 
+				if($m[2] == '' || $m[2][0] == '=' ) { //field
+					@$fld =& $table[$m[1]] ?: $table[$m[1]] = ($m[2] ? $table[substr($m[2],1)] : array()); 
 					continue; 
 				}
 	     }
@@ -218,6 +252,14 @@ function cfg_parse_roles($a) {
 	     if(preg_match('/^(all|allow|\+)$/i', $m[2])) $m[2] = '';
 	     else if(preg_match('/^(deny|none|-)$/i', $m[2])) $m[2] = '-';
 		 //var_dump($l, $m);
+		 if($m[2] == '.') {
+			$m[2] = [];
+			while(list(,$nl) = each($a)) {
+				if($nl == '.') break;
+				$m[2][] = $nl;
+			}
+			$m[2] = implode("\n", $m[2]);
+		 }
 	     $fld[$m[1]] = $m[2];
 		 if($pri) $fld[$m[1].'.level'] = $pri;
 	}
@@ -237,7 +279,7 @@ if($G_ENV_LOCAL_ROLES)
       .c : filter
       object.verb : 
 --
-    filter::= sql | all | allow | none | deny | -
+    filter::= sql | all | allow | + | none | deny | -
 	or filter ::= !number! filter
 
 	where number is a role/rule precedence

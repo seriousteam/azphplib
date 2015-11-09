@@ -76,15 +76,18 @@ class _XPath {
       ;
   }
   function __get($name) {
-    if($name==='join') {
+   /* if($name==='join') {
       //accessed left and right fields, but in different nodes!
       // this is for check rights especially
       // $this->___rel_to_node = _XNode::$ext['a']->{$this->___node->table->fields[$this->___name]->target->PK()}; 
       //now, we use direct link generation and dont check access to linked key fields
+      //$this->___node->alias.rel = _XNode::$ext['a']->alias.id
+      //$this->___node->alias.rel = _XNode::$ext['a']->alias.rel.id
       $this->___rel_to_node = $this->___node->table->fields[$this->___name]
         ->getCondition($this->___node->alias, _XNode::$ext['a']->alias);
       return $this;
-    }
+    }*/
+    //if($this->___rel_to_node) return $this;
     if($name === 'PK')
       $name = $this->___node->table->PK(); //one only
       if(!isset($this->___node->table->fields[$this->___name]))
@@ -125,7 +128,7 @@ const _SQL_FUNC_KWD =
   TRIM|RTRIM|LTRIM|LEFT|RIGHT|
   ASC|DESC|COALESCE|
   ABS|SIGN|ROUND|TRUNC|SQRT|EXP|POWER|LN|
-  NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|
+  NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|DATE_PART|
   MONTHS_BETWEEN|DAYS_BETWEEN|ADD_DAYS|ADD_MONTHS|
   DISTINCT|
   TRUE|FALSE|
@@ -402,42 +405,63 @@ class _Cmd extends _PreCmd {
     $ret->subselects = $subselects;
    return $ret;
   }
+  function process_path($p, &$tree, &$externals) {
+	global $RE_ID;
+	    //echo "\n^^^^$p", preg_match(_SQL_FUNC_KWD, $m[0])?"-F-":'-I-';
+			   if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
+			   $path = explode('.', $p);
+			   $alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
+	    $roots = $tree->roots;
+			   if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
+			   
+			    $level = (int)(@$mi[1]?:0);
+	    $alias = @$mi[2] ?: 'a';	    
+	    if($level + 1 >= count($tree->stack)) $roots = null;
+	    else $roots = $tree->stack[$level];
+	   }
+	    //echo "\n^^^^$p in $alias ";
+			   if(!$roots)
+			     { $externals[] = $alias.'.'.implode('.', $path); return '?'; }
+			   if(!@$roots[$alias]) {
+	      $r = 'stack level: '.count($tree->stack).' roots: ';
+	     
+	      foreach($roots as $a => $v) 
+		if(is_object($v))
+		  $r .= "$a => {$v->table->___name} ";
+	      throw new Exception("alias '$alias' not found in $r (source:$m[0])");
+	   }
+	   $node = $roots[$alias];
+	foreach($path as $key=>$name) {		
+		if($name==='join') {
+			 //accessed left and right fields, but in different nodes!
+			// this is for check rights especially			
+			//now, we use direct link generation and dont check access to linked key fields
+			//$node = new _XPath($node, $name);
+			$joinpath =  array_splice( $path, $key+1 );
+			
+			if(count($joinpath) && !preg_match("/^ext([0-9]*)(_$RE_ID)?/", $joinpath[0], $mi))
+				array_unshift($joinpath, 'ext');
+				
+			$rel_node =  $this->process_path( implode('.', $joinpath), $tree, $externals );			
+
+			$node->___rel_to_node = $node->___node->table->fields[$node->___name]
+			->getCondition($node->___node->alias, count($joinpath) ? explode('.', $rel_node->alias)[0] : _XNode::$ext['a']->alias);
+			
+			break;
+		}
+	       $node = $node->$name;
+	}
+	//record name in last node as accessed from commend
+	$node->add_ro_filter();
+	return $node;
+  }
   function process_ids($s, &$tree, &$externals = null) {
     global $RE_ID, $RE_PATH;
     if(!$s) return $s;
     
     $ret = preg_replace_callback($RE_PATH,
-			    function($m) use(&$tree, &$externals) { 
-                    global $RE_ID;
-                    //echo "\n^^^^$m[0]", preg_match(_SQL_FUNC_KWD, $m[0])?"-F-":'-I-';
-				   if(preg_match(_SQL_FUNC_KWD, $m[0])) return $m[0];
-				   $path = explode('.', $m[0]);
-				   $alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
-                    $roots = $tree->roots;
-				   if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
-				    $level = (int)(@$mi[1]?:0);
-                    $alias = @$mi[2] ?: 'a';
-                    if($level + 1 >= count($tree->stack)) $roots = null;
-                    else $roots = $tree->stack[$level];
-                   }
-                    //echo "\n^^^^$m[0] in $alias ";
-				   if(!$roots)
-				     { $externals[] = $alias.'.'.implode('.', $path); return '?'; }
-				   if(!@$roots[$alias]) {
-                      $r = 'stack level: '.count($tree->stack).' roots: ';
-                      foreach($roots as $a => $v) 
-                        if(is_object($v))
-                          $r .= "$a => {$v->table->___name} ";
-                      throw new Exception("alias '$alias' not found in $r (source:$m[0])");
-                   }
-                   $node = $roots[$alias];
-				   foreach($path as $name)
-				       $node = $node->$name;
-                   //record name in last node as accessed from commend
-				   $node->add_ro_filter();
-				   return $node;
-			  },
-			  ' '.$s);
+			function($m) use(&$tree, &$externals) { return $this->process_path($m[0], $tree, $externals); },
+			' '.$s);
     //process subselects here! it's has only side effect
     preg_match_all('/\(%([0-9]+)\)/', $s, $subs);
     foreach($subs[1] as $sn)
@@ -496,10 +520,8 @@ class _Cmd extends _PreCmd {
       // and later concat it with original select 
       // or with converted VALUES to SELECT values FROM dual 
       _XNode::filter2str($filter, $filter_str);
-      $filter = 'SELECT * FROM ('
-	.make_dbspecific_select_values(
-				       strlist(function($f) { return "NULL AS $f";}, $fields)
-				       , $this->dialect)
+      $filter = 'SELECT * FROM (SELECT '
+				       . strlist($fields) . ' FROM '.$table
 	.' WHERE 1=0 UNION ALL %SEL%) a1 WHERE ' //FIXME: filter out dummy record! or require it for filter definition
 	. $filter_str;
       // this we have packed strings, so it's safe to replace %SEL% as string
