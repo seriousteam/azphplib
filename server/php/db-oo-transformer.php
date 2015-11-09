@@ -1,6 +1,6 @@
 <?php
 
-require_once(__DIR__.'/cfg.php');
+require_once(__DIR__.'/cfg.php'); 
 require_once(__DIR__.'/rights.php');
 require_once(__DIR__.'/dialects.php');
 require_once(__DIR__.'/model.php');
@@ -18,6 +18,11 @@ class _XNode {
     $n = ++_XNode::$a_num;
     $this->alias = "a$n";
     $this->table = $table;
+    if(!$table) {
+    	debug_print_backtrace();
+  		var_dump($this);
+  		die('');
+    }
   }
 
   function addChild($name, $table) {
@@ -42,10 +47,24 @@ class _XNode {
     if($dst !== null) $dst = "( $dst ) AND ( $a )";
     else $dst = $a;
   }
+  
+  static function tableName($table_name) {
+	global $a_table_db;
+	return	
+			trim(@explode(':', @$a_table_db[$table_name], 2)[1])
+			?: $table_name
+	;
+  }
 
   function __toString() {
+  	if(!$this->table) {
+  		var_dump($this);
+  		die('');
+  	}
       $tn = isset($this->table->select) ? 
-        "({$this->table->select})" : $this->table->___name;
+        "({$this->table->select})" 
+		: _XNode::tableName($this->table->___name)
+		;
       if($this->access_filters) {
         _XNode::filter2str($this->access_filters, $a);
         $tn = "( SELECT * FROM $tn a1 WHERE $a )"; 
@@ -70,16 +89,31 @@ class _XPath {
     $this->___name = $name;
   }
   function __toString() {
+	if($this->___name == '_id_') {
+		return $this->___node->table->ID($this->___node->alias);
+	}
     return
-        $this->___rel_to_node ? $this->___rel_to_node
-        : $this->___node->alias .'.'. $this->___name
-      ;
+        $this->___rel_to_node 
+			?: (
+			@$this->___node->table->fields[$this->___name]->type == "SUBTABLE"
+			||
+			@$this->___node->table->fields[$this->___name]->type == "ACTION"
+			?
+			"NULL":
+			(
+			@$this->___node->table->fields[$this->___name]->type == "FILE" ?
+				$this->___node->alias .'.'. $this->___node->table->PK()
+			:
+			$this->___node->alias .'.'. $this->___name
+			)
+      );
   }
   function __get($name) {
    /* if($name==='join') {
       //accessed left and right fields, but in different nodes!
       // this is for check rights especially
-      // $this->___rel_to_node = _XNode::$ext['a']->{$this->___node->table->fields[$this->___name]->target->PK()}; 
+      // $this->___rel_to_node = 
+      //    _XNode::$ext['a']->{$this->___node->table->fields[$this->___name]->target->PK()}; 
       //now, we use direct link generation and dont check access to linked key fields
       //$this->___node->alias.rel = _XNode::$ext['a']->alias.id
       //$this->___node->alias.rel = _XNode::$ext['a']->alias.rel.id
@@ -128,7 +162,7 @@ const _SQL_FUNC_KWD =
   TRIM|RTRIM|LTRIM|LEFT|RIGHT|
   ASC|DESC|COALESCE|
   ABS|SIGN|ROUND|TRUNC|SQRT|EXP|POWER|LN|
-  NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|DATE_PART|
+  NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|
   MONTHS_BETWEEN|DAYS_BETWEEN|ADD_DAYS|ADD_MONTHS|
   DISTINCT|
   TRUE|FALSE|
@@ -169,7 +203,7 @@ class _Cmd extends _PreCmd {
   var $alias = ''; //alias of root table
   var $table = ''; //root table name
   var $toplevel = true; //toplevel flag
-  
+
   static $a_num = 0;
 
   //make new parsed command
@@ -217,8 +251,9 @@ class _Cmd extends _PreCmd {
       throw new Exception("can not find root table: $table in $table_part_of_parsed");
     $this->table = $table;
     $this->dialect = db_dialect(table_db($table));
-    if(!$this->dialect)
+    if(!$this->dialect) {
       throw new Exception("can not find root table dialect for: $table");
+	}
   }
 
   function parse_joins($from) {
@@ -328,8 +363,10 @@ class _Cmd extends _PreCmd {
     
     $parsed = new parsedCommand($SELECT_STRUCT, $s);
     //var_dump($parsed);
-    if(!$parsed->ok)
+    if(!$parsed->ok) {
+		debug_print_backtrace ();
       throw new Exception("bad select structire: $s");
+	}
     
    
     $select = $parsed->SELECT;
@@ -377,6 +414,8 @@ class _Cmd extends _PreCmd {
         // select to array here
         $old_num = _XNode::$a_num; //keep old alias numeration
             $a = $this->process_select($m['select'], $paths);
+            $a->table = $this->table;
+            $a->alias = $this->alias;
         _XNode::$a_num = $old_num;
         if(!$paths)
           throw new Exception("Uncorrelated array subselect: $a->stmt");
@@ -407,41 +446,49 @@ class _Cmd extends _PreCmd {
   }
   function process_path($p, &$tree, &$externals) {
 	global $RE_ID;
+		
 	    //echo "\n^^^^$p", preg_match(_SQL_FUNC_KWD, $m[0])?"-F-":'-I-';
-			   if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
-			   $path = explode('.', $p);
-			   $alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
-	    $roots = $tree->roots;
-			   if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
+		if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
+		$path = explode('.', $p);
+		$roots = $tree->roots;
+		reset($roots);
+		$alias = count($path)>1? array_shift($path) : key($roots);
+		//$alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
+	    
+		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $alias, $mi)) {
 			   
 			    $level = (int)(@$mi[1]?:0);
 	    $alias = @$mi[2] ?: 'a';	    
 	    if($level + 1 >= count($tree->stack)) $roots = null;
 	    else $roots = $tree->stack[$level];
-	   }
+		}
 	    //echo "\n^^^^$p in $alias ";
 			   if(!$roots)
 			     { $externals[] = $alias.'.'.implode('.', $path); return '?'; }
-			   if(!@$roots[$alias]) {
+		if(!@$roots[$alias]) {
 	      $r = 'stack level: '.count($tree->stack).' roots: ';
-	     
+		 
 	      foreach($roots as $a => $v) 
 		if(is_object($v))
 		  $r .= "$a => {$v->table->___name} ";
-	      throw new Exception("alias '$alias' not found in $r (source:$m[0])");
+	      throw new Exception("alias '$alias' not found in $r (source:$p)");
 	   }
 	   $node = $roots[$alias];
 	foreach($path as $key=>$name) {		
 		if($name==='join') {
+			//var_dump(_XNode::$ext);
 			 //accessed left and right fields, but in different nodes!
 			// this is for check rights especially			
 			//now, we use direct link generation and dont check access to linked key fields
 			//$node = new _XPath($node, $name);
+			//echo '<pre>';
+			
 			$joinpath =  array_splice( $path, $key+1 );
+			//var_dump($joinpath);
 			
 			if(count($joinpath) && !preg_match("/^ext([0-9]*)(_$RE_ID)?/", $joinpath[0], $mi))
 				array_unshift($joinpath, 'ext');
-				
+			
 			$rel_node =  $this->process_path( implode('.', $joinpath), $tree, $externals );			
 
 			$node->___rel_to_node = $node->___node->table->fields[$node->___name]
@@ -478,7 +525,7 @@ class _Cmd extends _PreCmd {
     if(!@$parsed->VALUES)
       $parsed = new parsedCommand($INSERT_STRUCT_SELECT, $s);
     if(!@$parsed->ok) {
-	var_dump($parsed);
+		var_dump($parsed);
       throw new Exception("bad insert structire: $s");
     }
     
@@ -541,17 +588,18 @@ class _Cmd extends _PreCmd {
         throw new Exception("Blacklisted function in insert: <$id>");
 
     //recompose and do not do more
+    $select = '';
     if($filter) {
       preg_match('/^\s*\((.*)\)\s*$/', $parsed->VALUES, $m); //trim spaces and brackets
       $select = make_dbspecific_select_values($m[1], $this->dialect);
       //var_dump($parsed->{'_INSERT INTO'});
-      return 
-        replace_dbspecific_funcs(
-          "{$parsed->{'_INSERT INTO'}} "
-          .str_replace('%SEL%', $select, $filter) 
-        , $this->dialect);
+      $select = str_replace('%SEL%', $select, $filter);
     }
-    return replace_dbspecific_funcs($parsed, $this->dialect);
+    global $Tables;
+    return make_dbspecific_insert_values($parsed
+    	, $select
+    	, $Tables->$table->AUTO_KEY()
+    	, $this->dialect);
   }
 
   function process_delete($s) {
@@ -622,7 +670,7 @@ class _Cmd extends _PreCmd {
     // here we can update some fields only if another fields is in some state (null or not null)
     // for example, for stages fields, related to stage updatable 
     // if a stage enter guard is not null and a stage complete guard is null
-    // more general, we can use expressions, but it's too complex for now
+    // more general, we can use essions, but it's too complex for now
     // doing inserts we can easely force record creation in initial stage with all guards equal to null
     // but! guards can be in another table, so only sql expression can check them here,
     // because we have not chance to add path with filters - too late

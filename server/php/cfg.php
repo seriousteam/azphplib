@@ -1,11 +1,11 @@
 <?php
 
 mb_internal_encoding("UTF-8");
+define('REPLACED_TOPLEVEL', defined('TOPLEVEL_FILE'));
 
-if(@$force_toplevel)
-	define('TOPLEVEL_FILE', realpath($force_toplevel));
-else 
+if(!REPLACED_TOPLEVEL)
 	define('TOPLEVEL_FILE', @end(debug_backtrace())['file']?:__FILE__);
+
 require_once (__DIR__.'/dialects.php');
 
 /*
@@ -52,22 +52,27 @@ $CURRENT_ROLES =
 	path to configuration elements
 */
 
-$G_ENV_MAIN_CFG = getenv('MAIN_CFG');
-$G_ENV_TABLE_DB_MAPPING = getenv('TABLE_DB_MAPPING');
-$G_ENV_LIB_MAPPING = getenv('LIB_MAPPING');
-$G_ENV_LOCAL_USERS = getenv('LOCAL_USERS');
-$G_ENV_LOCAL_ROLES = getenv('LOCAL_ROLES');
-$G_ENV_MODEL = getenv('MODEL');
-$G_ENV_LOAD_MODEL = getenv('LOAD_MODEL');
+/*
 
-$G_ENV_CACHE = getenv('CACHE');
-$G_ENV_CACHE_TTL = getenv('CACHE_TTL');
+$G_ENV_MAIN_CFG
+$G_ENV_TABLE_DB_MAPPING
+$G_ENV_LIB_MAPPING
+$G_ENV_LOCAL_USERS
+$G_ENV_LOCAL_ROLES
+$G_ENV_MODEL
+$G_ENV_LOAD_MODEL
+$G_ENV_MODEL_DATA;
+
+$G_ENV_CACHE
+$G_ENV_CACHE_TTL
+
+*/
 
 $G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
-$G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?: 
-	preg_match('#(.*)/(prg|z|az)/.*#', $_SERVER['SCRIPT_FILENAME'], $m) ? $m[1] :
-	dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
+$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
 	 // p_doc_root/az/server/php/cfg.php
+	 
+define('__ROOTDIR__', $G_P_DOC_ROOT);
 
 // $G_ENV_URI_PREFIX <--> $G_P_DOC_ROOT
 // so, $G_ENV_URI_PREFIX/path equals to $G_P_DOC_ROOT/path
@@ -75,7 +80,7 @@ $G_P_DOC_ROOT = getenv('P_DOC_ROOT') ?:
 $GLOBAS_STATE_VARS = [];
 
 //echo $G_P_DOC_ROOT, ' ', $_SERVER['SCRIPT_FILENAME'];
-@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doen't allow to use SetEnv
+@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doesn't allow to use SetEnv
 
 /*
 	we need setup cache configuration first
@@ -88,8 +93,6 @@ $main_cfg = array(
 		  'default_db' => array(
 					'dialect' => '',
 					'server' => '',
-					'user' => '',
-					'pass' => ''
 					)
 		  );
 
@@ -109,14 +112,15 @@ if($G_ENV_TABLE_DB_MAPPING) {
   /*
     table_name = db_name
    */
-  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING);
+  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING, true);
 }
 
 function table_db($table){
   global $main_cfg;
   global $a_table_db;
   global $default_db;
-  return $main_cfg[@$a_table_db[$table] ?: 'default_db'];
+  $tn = trim(explode(':', @$a_table_db[$table], 2)[0]);
+  return $main_cfg[$tn ?: 'default_db'];
 }
 
 if($G_ENV_LOCAL_USERS) {
@@ -344,7 +348,7 @@ function add_role_to_context($role) {
 }
 
 // uri after striping our prefix (normalized in some sence)
-$LOCALIZED_URI = (PHP_SAPI == 'cli' && !isset($force_toplevel))? 
+$LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)? 
 	$_SERVER['argv'][0]
 	:
 	( substr_compare($_SERVER['REQUEST_URI'], $G_ENV_URI_PREFIX, 0, strlen($G_ENV_URI_PREFIX)) == 0?
@@ -352,6 +356,13 @@ $LOCALIZED_URI = (PHP_SAPI == 'cli' && !isset($force_toplevel))?
 	  : $_SERVER['REQUEST_URI']
 	)
 	;
+
+//echo $LOCALIZED_URI;
+
+$lu = explode('?', $LOCALIZED_URI, 2);
+
+if(@$lu[1]) $LOCALIZED_URI = $lu[0] . '?' . str_replace('/', '%4F', $lu[1]);
+
 	
 /*
 	$LOCALIZED_URI - URI pointed current rendered page
@@ -373,6 +384,10 @@ if($G_ENV_LIB_MAPPING) {
     //path/to/resource.js = "https://resour.ce/absolute/path.js"
    */
   $a_lib_map = cached_ini($G_ENV_LIB_MAPPING);
+}
+$a_mfm_users = array();
+if($G_ENV_MFM_USERS) {
+    $a_mfm_users = cached_ini($G_ENV_MFM_USERS);
 }
 function extern_path($path){
   global $a_lib_map;
@@ -404,8 +419,7 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 
 $CFG_STDIN_CONTENT = null;
 function main_argument($str = true) {
-	global $force_toplevel;
-  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
+  if(PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL) {
     $arg = @$_SERVER['argv'][1] ?: '-';
     if($arg === '-')
       if($str) {
@@ -431,8 +445,7 @@ function main_argument($str = true) {
 }
 
 function main_subarguments($str = true) {
-	global $force_toplevel;
-  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
+  if(PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL) {
     $arg = $_SERVER['argv'][1] ?: '-';
 	$args = [];
     if($arg === '-' && $str) {
@@ -461,14 +474,42 @@ function get_connection($table){
   static $connections = array();
   $db = table_db($table);
   $key = serialize($db);
+  $dsn = $db['server'];
+  $params = array(PDO::ATTR_PERSISTENT => true);
+  if(db_dialect($db)==='mssql') {
+	  //PDO persistent connections dont work in MS SQL
+	  $dsn .= ';ConnectionPooling=1';
+	  $params[PDO::ATTR_PERSISTENT] = false;
+  }
   if(!@$connections[$key]) {
-    if($db['user'] !== '') {
-      $connections[$key] = new PDO($db['server'],
+    if(isset($db['user'])) {
+	if(@$db['user'][0] === '?') {
+	    try {
+		global $CURRENT_USER, $CURRENT_PW;
+		$connections[$key] = new PDO($dsn,
+				   $CURRENT_USER,
+				   $CURRENT_PW,
+				   $params				  
+				   );
+	    } catch(Exception $e) {
+		$connections[$key] = new PDO($dsn,
+				   substr($db['user'],1),
+				   $db['pass'],
+				   $params
+				   );
+	    }
+	} else {
+		$connections[$key] = new PDO($dsn,
 				   $db['user'],
-				   $db['pass']);
+				   $db['pass'],
+				   $params
+				   );
+	}
    } else
-      $connections[$key] = new PDO($db['server']);
+      $connections[$key] = new PDO($dsn,null, null,$params);
+  
     $connections[$key]->dialect = db_dialect($db);
+    $connections[$key]->subdialect = @$db['subdialect'];
     prepareDB( $connections[$key]);
     $connections[$key]->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $connections[$key]->setAttribute(PDO::ATTR_ORACLE_NULLS, PDO::ATTR_ORACLE_NULLS);
@@ -476,9 +517,47 @@ function get_connection($table){
   return $connections[$key];
 }
 
+function rm_encrypt($string,$key) {
+  srand((double) microtime() * 1000000); //for sake of MCRYPT_RAND
+  $key = md5($key); //to improve variance
+  /* Open module, and create IV */
+  $td = mcrypt_module_open('des', '','cfb', '');
+  $key = substr($key, 0, mcrypt_enc_get_key_size($td));
+  $iv_size = mcrypt_enc_get_iv_size($td);
+  $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+  /* Initialize encryption handle */
+   if (mcrypt_generic_init($td, $key, $iv) != -1) {
+      /* Encrypt data */
+      $c_t = mcrypt_generic($td, $string);
+      mcrypt_generic_deinit($td);
+      mcrypt_module_close($td);
+       $c_t = $iv.$c_t;
+       return $c_t;
+   } //end if
+}
+
+function rm_decrypt($string,$key) {
+   $key = md5($key); //to improve variance
+  /* Open module, and create IV */
+  $td = mcrypt_module_open('des', '','cfb', '');
+  $key = substr($key, 0, mcrypt_enc_get_key_size($td));
+  $iv_size = mcrypt_enc_get_iv_size($td);
+  $iv = substr($string,0,$iv_size);
+  $string = substr($string,$iv_size);
+  /* Initialize encryption handle */
+   if (mcrypt_generic_init($td, $key, $iv) != -1) {
+      /* Encrypt data */
+      $c_t = mdecrypt_generic($td, $string);
+      mcrypt_generic_deinit($td);
+      mcrypt_module_close($td);
+       return $c_t;
+   } //end if
+}
+
 set_exception_handler(function ($exception) {
   echo "Exception: " , $exception->getMessage(), "\n";
 });
+
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 
@@ -500,10 +579,12 @@ echo <<<XCFG
 		$G_ENV_LIB_MAPPING
 	local user database in 
 		$G_ENV_LOCAL_USERS
-	local role assigmenus in 
+	local role assignments in 
 		$G_ENV_LOCAL_ROLES
 	model definition in 
 		$G_ENV_MODEL
+	cache dir is
+		$G_ENV_CACHE_DIR
 	model autoload $G_ENV_LOAD_MODEL
 
 	cache mode $G_ENV_CACHE
@@ -514,3 +595,4 @@ XCFG
 
 var_dump($main_cfg);
 var_dump($local_objects_rights);
+var_dump($a_table_db);

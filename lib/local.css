@@ -1,0 +1,248 @@
+@charset "UTF-8";
+
+dfn {
+	font-style: normal;
+}
+
+a[error="Y"] {
+	border: 2px solid;
+	display: inline-block;
+}
+
+[error="Y"], input[tag][error="Y"], a[error="Y"] {
+	border-color: red;
+}
+
+a[error="Y"] + button[callmenu] {
+	border-color: red;
+}
+
+span[error="Y"], pre[error="Y"] {
+	border: 2px solid red;
+	color: red;
+	display: inline-block;
+}
+
+span[error="Y"]:after, a[error="Y"]:after, pre[error="Y"]:after {
+	content: "\00a0";
+}
+
+
+label[sas] {
+	display: inline-block;
+	width: 15em;
+	text-align: right;
+	vertical-align: top;
+	margin-right: 1em;
+}
+label[sas] span.sub {
+	/*display: block;*/
+}
+
+.top label[sas] {
+	display: block;
+	text-align: left;
+	width: auto;
+}
+
+[sctl] {
+	position: relative;
+}
+
+[sctl].top {
+	display: inline-block;
+	vertical-align: top;
+}
+
+label[sas][required]:after {
+	content: "*";
+	color: red;
+	display: inline-block;
+	position: absolute;
+	top: 0;
+	margin-left: 0.5ex;
+}
+
+h2[sas] {
+	border-bottom: 1px solid;
+	margin: 1em 0;
+}
+
+input[tag], textarea, select {
+border: 1px solid #d5d5d5;
+background-color: rgba(255, 255, 255, 0.6);
+-moz-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset;
+-webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset;
+box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset;
+}
+input[tag], textarea, select {
+-webkit-box-shadow: inset 0 1px 2px 2px rgba(0, 0, 0, 0.07);
+-moz-box-shadow: inset 0 1px 2px 2px rgba(0, 0, 0, 0.07);
+box-shadow: inset 0 1px 2px 2px rgba(0, 0, 0, 0.07);
+-moz-transition: border 0.2s linear 0s, box-shadow 0.2s linear 0s;
+-webkit-transition: border 0.2s linear 0s, box-shadow 0.2s linear 0s;
+transition: border 0.2s linear 0s, box-shadow 0.2s linear 0s;
+}
+input[tag], textarea {
+padding: 6px;
+max-width: 100%;
+}
+
+.persphoto [modal] {
+	right: 1em;
+}
+.persphoto button:after {
+	content: "Загрузить фото";
+}
+
+.fileref button:after {
+	content: "...";
+}
+
+.fileref > div {
+	display: inline;
+}
+
+MENU.wide {
+	left: 3em;
+}
+
+.toptable {
+	border-collapse: separate;
+	border-spacing: 2px;
+}
+
+.toptable TH,
+.subtable TH
+{
+    background-color: #EAEAEA;
+    border: medium none;
+    border-top-left-radius: 0.5em;
+    border-top-right-radius: 0.5em;
+    vertical-align: middle;
+    /*font-weight: normal;*/
+}
+
+.areamenu {
+	line-height: 150%;
+}
+
+.areamenu[filter] {
+	right: 0;
+}
+
+.areamenu LI {
+	margin-left: 2em;
+}
+
+.areamenu LI[code="01"]
+,.areamenu LI[code="02"]
+,.areamenu LI[code="03"] 
+,.areamenu LI[code="04"] 
+,.areamenu LI[code="05"] 
+,.areamenu LI[code="06"] 
+,.areamenu LI[code="07"] 
+,.areamenu LI[code="08"] 
+,.areamenu LI[code="09"] 
+{
+	margin-left: 1em;
+}
+
+#editing_buttons {
+	margin-top: 1em;
+}
+
+.tftitle {
+	font-size: 16pt;
+	margin-top: 1em;
+}
+
+#titleform > TBODY > TR > TD {
+	vertical-align: top;
+	border: 1px solid black;
+}
+#titleform {
+	border-collapse: collapse;
+}
+.t1data {
+font-weight: bold;
+font-family: Helvetica, Arial, Serif, Times New Roman, Verdana, Georgia;
+}
+
+.t10data {
+font-weight: normal;
+font-family: Helvetica, Arial, Serif, Times New Roman, Verdana, Georgia;
+line-height: 1.5;
+/* font-size: 12pt; */
+}
+
+
+.fcommhead {
+	margin-bottom: 1ex;
+}
+
+.fcommhead2 {
+	border-bottom: 1px solid;
+}
+
+.fcommtip {
+	margin-top: 1ex;
+	border-top: 1px solid;
+}
+
+.tftitle {
+	border: 1px solid transparent;
+	padding: 0.5ex;
+	-webkit-transition: all 0.3s ease;
+	margin-bottom: 0.5em;
+	cursor: pointer;
+}
+
+.tftitle:hover  {
+	border: 1px solid #ddd;
+	border-radius: 0.5ex;
+	box-shadow: 1px 1px lightgray;
+	-webkit-transition: all 0.3s ease;
+background: #f7fbfc; /* Old browsers */
+background: -moz-linear-gradient(top,  #f7fbfc 0%, #d9edf2 40%, #add9e4 100%); /* FF3.6+ */
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f7fbfc), color-stop(40%,#d9edf2), color-stop(100%,#add9e4)); /* Chrome,Safari4+ */
+background: -webkit-linear-gradient(top,  #f7fbfc 0%,#d9edf2 40%,#add9e4 100%); /* Chrome10+,Safari5.1+ */
+background: -o-linear-gradient(top,  #f7fbfc 0%,#d9edf2 40%,#add9e4 100%); /* Opera 11.10+ */
+background: -ms-linear-gradient(top,  #f7fbfc 0%,#d9edf2 40%,#add9e4 100%); /* IE10+ */
+background: linear-gradient(to bottom,  #f7fbfc 0%,#d9edf2 40%,#add9e4 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7fbfc', endColorstr='#add9e4',GradientType=0 ); /* IE6-9 */
+	
+}
+
+.tftitle2 {
+	margin-bottom: 0.5em;
+	margin-left: 2em;
+}
+
+.ops {
+	margin-top: 1em;
+}
+
+.rf_subarea {
+	display: inline-block;
+	margin-left: -0.5em;
+	margin-top: 0.5em;
+}
+
+textarea[content-resizable="F"] { max-width: 30em; }
+
+.act_item {
+	border: 1px solid #B1CBF0;
+	background: #CCE1FF;
+	cursor: pointer;
+}
+
+[if_no_rows] > TD:after {
+	content: "Нет";
+	padding-left: 1em;
+}
+
+[lobload="filer"] > A:before {
+	content: "скачать...";
+}
+

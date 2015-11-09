@@ -129,7 +129,7 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'mssql' => "DATEADD$1month, $4 $3 $2 $5",// --chage order
 				'mysql' => "$1 ($2) + INTERVAL $4 MONTH$5",
 				],
-		'NOW' => [ //with timezone, if possible!
+		'NOW()' => [ //with timezone, if possible!
 				'pgsql' => "CURRENT_TIMESTAMP",
 				'oracle' => "CURRENT_TIMESTAMP",
 				'mssql' => "CURRENT_TIMESTAMP",
@@ -219,7 +219,7 @@ class dbspecific_select {
 		$this->cmd = $cmd;
 		$this->select = $select;
 		$this->parsed = $parsed;
-		main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
+		//main_table_of_many($parsed->FROM, $this->table, $this->alias, false);
 	}
 	function __toString() { return $this->cmd->doToString($this->select); }
 }
@@ -248,12 +248,12 @@ function make_dbspecific_select($cmd, $parsed, $dialect) {
 //FIXME: we should take alias from command! not from outside
 function main_table_of_many($tables, &$main_table, &$alias, $table_requried = true) {
 	global $RE_ID;
-	if(preg_match("/^\s*($RE_ID)\s+($RE_ID)?\s*$/", $tables, $m)) { 
+	if(preg_match("/^\s*($RE_ID(?:\.$RE_ID)?)\s+($RE_ID)?\s*$/", $tables, $m)) { 
 		$main_table = $m[1];
 		$alias = $m[2];
 		return false; //one table
 	}
-	if(!preg_match("/^\s*($RE_ID)\s+($RE_ID)\s/", $tables, $m))
+	if(!preg_match("/^\s*($RE_ID(?:\.$RE_ID)?)\s+($RE_ID)\s/", $tables, $m))
 		if($table_requried)
 			throw new Exception("Can't find main table and it's alias in $tables");
 		else
@@ -267,7 +267,15 @@ function make_dbspecific_insert_from_select($parsed, $sel, $dialect) {
 	// in select part we have processed everyting before!
 	switch($dialect) {
 	}
-	return $parsed->{'_INSERT INTO'}.' '.$sel; //nothing to do here!
+	global $RE_ID;
+	$ii = $parsed->{'INSERT INTO'};
+	$ii = preg_replace_callback("/^\s*($RE_ID)/"
+		, function ($m) {return _XNode::tableName($m[1]);}
+		, $ii
+	);
+	$ii = preg_replace("/(\(|,)\s*($RE_ID)/", '$1 "$2"', $ii);
+	
+	return "INSERT INTO $ii $sel"; //nothing to do here!
 }
 
 function make_dbspecific_select_values($cmd, $dialect) {
@@ -275,24 +283,77 @@ function make_dbspecific_select_values($cmd, $dialect) {
   return 'SELECT '.$cmd;
 }
 
+function lastInsertedId_oracle($table) {
+	static $s = "SELECT SYS_CONTEXT('CLIENTCONTEXT', 'lastInsertId') FROM DUAL";
+	$dbc = get_connection($table);
+	if(is_string($s)) $s = $dbc->prepare(stmt);
+	$s->execute();
+	return $s->fetchColumn();
+}
+function lastInsertedId_mysql($table) {
+	$dbc = get_connection($table);
+	return $dbc->lastInsertId();
+}
+
+function make_dbspecific_insert_values($parsed, $values_select, $autopk, $dialect) {
+	global $RE_ID;
+	$values_select = $values_select ?: $parsed->_VALUES;
+	$tbl = '';
+	$ii = $parsed->{'INSERT INTO'};
+	$ii = preg_replace_callback("/^\s*($RE_ID)/"
+		, function ($m) use(&$tbl) {return _XNode::tableName($tbl = $m[1]);}
+		, $ii
+	);
+	
+	$ii = preg_replace("/(\(|,)\s*($RE_ID)/", '$1 "$2"', $ii);
+	
+	if($autopk) {
+		switch($dialect) {
+		case 'orcale':
+			$res = "/*lastInsertedId_oracle:$tbl*/ declare pk number; begin
+				INSERT INTO $ii $values_select returning $autopk into pk;
+				DBMS_SESSION.SET_CONTEXT ( 'CLIENTCONTEXT', 'lastInsertId', pk ); end;
+			"; break;
+		case 'mysql':
+			$res = "/*lastInsertedId_mysql:$tbl*/ INSERT INTO $ii $values_select"; break;
+		case 'mssql':
+			$res = "INSERT INTO $ii output inserted.$autopk $values_select"; break;
+		case 'pgsql':
+			$res = "INSERT INTO $ii $values_select returning $autopk"; break;
+		}
+	}
+	else
+		$res = "INSERT INTO $ii $values_select";
+
+	return replace_dbspecific_funcs($res, $dialect);
+}
+
 //check every database if we have to have aliases in multitable update at left side if '='
 // (if field reside in two tables)
 function make_dbspecific_update($parsed, $dialect) {
+	global $RE_ID;
+	
 	$ret = $parsed;
+	
+	//replace filed= ==> "field"=
+	$set = preg_replace("/(^|,)\s*($RE_ID)\s*=/", '$1 "$2"=', $parsed->SET);
+	//TODO: quote WHERE and EXPRESSION in set and FROM (they are aliased!)
+	
 	if(main_table_of_many($parsed->UPDATE, $main_table, $alias)) {
 		switch($dialect) {
 		case 'pgsql':
-		  $ret = "UPDATE $main_table xx SET $parsed->SET FROM $parsed->UPDATE WHERE xx.* IS NOT DISTINCT FROM $alias.*"
+		  $ret = "UPDATE $main_table xx SET $set FROM $parsed->UPDATE WHERE xx.* IS NOT DISTINCT FROM $alias.*"
 		    .(@$parsed->WHERE? " AND ( $parsed->WHERE )":'');
 		  break;
 		case 'oracle':
 		  //UPDATE t SET f = v WHERE c ==> UPDATE (SELECT a1.*, v AS xx__f WHERE c) SET f = xx__f
 		  // NOTE: this KEEP order of placeholders (should be SET before WHERE)
-		  $lst = preg_split("/(?:^|,)\s*($RE_ID)\s*=/", $parsed->SET, 
+		  $lst = preg_split("/(?:^|,) \"($RE_ID)\"=/", $set, 
 				    null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
+		  $set = [];
 		  do{
 		    $f = current($lst);
-		    $set[] =  "$f = xx_$f";
+		    $set[] =  "\"$f\" = xx_$f";
 		    $exprs[] = next($lst) ." AS xx_$f";
 		  }while(next($lst));
 		  $set = strlist($set);
@@ -300,26 +361,31 @@ function make_dbspecific_update($parsed, $dialect) {
 		  $ret = "UPDATE (SELECT $alias.*, $exprs FROM $parsed->UPDATE $parsed->_WHERE) SET $set";
 		  break;
 		case 'mssql': 
-			$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
+			$ret = "UPDATE $alias SET $set FROM $parsed->UPDATE $parsed->_WHERE"; 
 			break;
 		case 'mysql': 
 		  // we need return aliases back!
-		  $parsed->SET = preg_replace("/(^|,)\s*($RE_ID)\s*=/", "$1 $alias.$2 =", $parsed->SET);
-		  $ret = "$parsed->_UPDATE$parsed->_SET$parsed->_WHERE"; 
+		  $set = preg_replace("/(^|,)\s*(\"$RE_ID\")\s*=/", "$1 $alias.$2 =", $set);
+		  $ret = "$parsed->_UPDATE SET $set $parsed->_WHERE"; 
 		  break;
 		}
 	} else {
 		switch($dialect) {
 		case 'mssql': 
-			if($alias)
-				$ret = "UPDATE $alias $parsed->_SET FROM $parsed->UPDATE$parsed->_WHERE"; 
+			if($alias) 
+				$ret = "UPDATE $alias SET $set FROM $parsed->UPDATE $parsed->_WHERE"; 
 			break;
+			default:
+			$ret = "$parsed->_UPDATE SET $set $parsed->_WHERE";
 		}
 	}
 	return replace_dbspecific_funcs($ret, $dialect);
 }
 function make_dbspecific_delete($parsed, $dialect) {
 	$ret = $parsed;
+
+	//TODO: quote WHERE and FROM (they are aliased!)
+	
 	if(main_table_of_many($from = $parsed->{'DELETE FROM'}, $main_table, $alias)) {
 		switch($dialect) {
 		case 'pgsql':
@@ -419,8 +485,10 @@ function prepareDB(&$db)
 	if ($dbtype=="mysql")
 	{
 		$db->exec ("SET NAMES 'utf8'");
-		$db->exec ("SET SESSION time_zone = '+00:00'");
-		$db->exec ("SET SESSION sql_mode='STRICT_ALL_TABLES,PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,ONLY_FULL_GROUP_BY,NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_BACKSLASH_ESCAPES'");
+		if($db->subdialect != 'sphinxql') {
+			$db->exec ("SET SESSION time_zone = '+00:00'");
+			$db->exec ("SET SESSION sql_mode='STRICT_ALL_TABLES,PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,ONLY_FULL_GROUP_BY,NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_BACKSLASH_ESCAPES'");
+		}
 	}
 	// for ms sql 
 	if ($dbtype=="mssql")

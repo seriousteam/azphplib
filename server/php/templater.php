@@ -89,7 +89,7 @@ library reference (relative to $G_JSLIB_PATH) - cached permanently
 
 [[CACHED]] - take this template from cache and end processing (use all args as a key!)
 
-attribute table:
+attribute table: 
 	$attrdef->table = 'atable';
 	$attrdef->filter = ''; //filter to get records from atable (may depends from :adm, :period, :dt, :prefix)
 	$attrdef->fixed = []; //fixed val for inserted values
@@ -163,6 +163,7 @@ class sharing {
 }
 
 function templater_take_zones($text, $file) {
+	$fileq = phpQuote($file);
 	global $library_prefix;
 	echo '<',"?php\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
@@ -174,6 +175,7 @@ function templater_take_zones($text, $file) {
 
 \$functions['$k'] = function(\$cmd, \$args = null, \$params = null) {
 	global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+	\$TEMPLATE_FILE = $fileq;
 
 	if(\$params === null) \$params = new smap;
 	\$call_params = new smap(\$params); 
@@ -217,15 +219,17 @@ function unescape_template_command($cmd) {
 }
 
 function templater_take_one_zone($name, $text, $file) {
+	$fileq = phpQuote($file);
 	global $error_count;
 	global $RE_ID;
 	
 	$escape_mode = preg_match('/\.js$/', $file) ? 'js' : 'html'; //
-
+	
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
 global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+\$TEMPLATE_FILE = $fileq;
 
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
@@ -251,7 +255,9 @@ FUNC;
 		|OFFSET
 		|NEXT
 		|PREV
-		|LIMIT)
+		|LIMIT
+		|CONTROLS
+		)
 	\s*\]\]/sx', function($m) {
 		switch($m[1]) {
 			case 'OFFSET': return "[[\$requested_offset]]";
@@ -262,6 +268,11 @@ FUNC;
 			case 'PREV': return 
 				"[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]";
 			case 'LOADED': return "[[\$main_counter]]";
+			case 'CONTROLS': return <<<ST
+<button first_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), null, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
+<button prev_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
+<button next_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$main_counter > \$requested_limit? \$requested_offset + \$page_limit : '')]]"></button>
+ST;
 		}
 		echo "\t\t\$page_limit = $m[2];\n";
 		return '';
@@ -296,7 +307,8 @@ FUNC;
 			//find position in 'to_process'
 			//var_dump($tag, $attribute, $command, $to_process);
 			if(!$tag) { // to line start
-				$before = strrchr($to_process, '\n') ?: '';
+				$before = strrchr($to_process, '\n') ?: strlen($to_process);
+				$before = substr($to_process, -$before);
 				$to_process = 
 					$before . $command . '</>' . substr($to_process, strlen($before));
 			} else {
@@ -356,7 +368,7 @@ FUNC;
 	$text = implode($repos);
 	//echo $text;
 	//add closing tags
-	preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
+	$text = preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
 	do {
 		$text = preg_replace('#<<:>>
 				(<(\S+?)(?:\s|>) [^<]*+
@@ -377,23 +389,26 @@ FUNC;
 		//echo '====',$text;
 	} while($textp !== $text);
 	//var_dump($text);
+	//var_dump($escape_mode);
 	
 	do {
-		$text = preg_replace('#<<\{\}>> (\{ [^{]*+(?:(?-1)[^{]*+)*? \}) #sx', 
+		
+		$text = preg_replace('#<<\{\}>> (\{ [^{}]*+(?:(?-1)[^{}]*+)*? \}) #sx', 
+						'[[{]]$1[[}]]', $textp = $text);
+	} while($textp !== $text);
+	//var_dump($text);
+	do {
+		$text = preg_replace('#<<\[\]>> (\[ [^[\]]*+(?:(?-1)[^[\]]*+)*? \]) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	do {
-		$text = preg_replace('#<<\[\]>> (\[ [^[]*+(?:(?-1)[^[]*+)*? \]) #sx', 
-						'[[{]]$1[[}]]', $textp = $text);
-	} while($textp !== $text);
-	do {
-		$text = preg_replace('#<<\(\)>> (\( [^(]*+(?:(?-1)[^(]*+)*? \)) #sx', 
+		$text = preg_replace('#<<\(\)>> (\( [^()]*+(?:(?-1)[^()]*+)*? \)) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	
 	//join joined tags
-	//echo $text;
-	$text = preg_replace('#\[\[}\]\]\s*+\[\[/\*\+\*/\]\]\s*+\[\[{\]\]#sx', '', $text);
+	//var_dump($text);
+	$text = preg_replace('#\[\[}\]\]\s*\[\[/\*\+\*/\]\]\s*\[\[{]]#sx', '', $text);
 	
 	//convert default call zones to explicit call by name
 	$text = preg_replace("/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si",
@@ -476,7 +491,7 @@ CTX;
 }, $text);
 	//generate commands
 	$text = preg_replace_callback('/(?<=\[\[).*?(?=\]\])/s', 
-		function($m) use(&$selects, &$attributes, $escape_mode){
+		function($m) use(&$selects, &$attributes, &$escape_mode){
 			global $RE_ID;
 			$cmd = $m[0];
 			//var_dump($cmd);
@@ -513,10 +528,10 @@ EEE;
 					echo '<link rel="stylesheet" href="',file_URI('//az/lib/d3c.css', null, null),'">',"\\n";
 					echo '<script type="text/javascript" src="',file_URI('//az/lib/d3c.js', null, null),'"></script>',"\\n";
 EEE;
-			} else if(preg_match("/^QE\s+(.*)$/i", $cmd, $m)) {
+			} else if(preg_match("/^QE$/i", $cmd, $m)) {
 				$res = sharing::load('d3');
 				$res .= <<<EEE
-				echo qe_control_model('$m[1]');
+				echo qe_control_model();
 				echo '<script type="text/javascript" src="',file_URI('//az/lib/qe.js', null, null),'"></script>',"\\n";
 				echo '<link rel="stylesheet" href="',file_URI('//az/lib/qe.css', null, null),'">',"\\n";
 EEE;
@@ -531,8 +546,8 @@ EEE;
 					if($m[1]==='CALL') $op = 'call_template'; else $op = 'template_reference';
 					if($m[1]==='CREF') $perm = 'TRUE'; else $perm = 'FALSE';
 					$res = "$op('".$m['id']."',"
-						.phpQuote(@$m['file']).","
-						.phpQuote(@$m['cmd']).", \$command_args,\$call_params, __FILE__, $perm);"; 
+						.phpDQuote(@$m['file']).","
+						.phpDQuote(@$m['cmd']).", \$command_args,\$call_params, \$TEMPLATE_FILE, $perm);"; 
 			} else if(preg_match("/^\s*[{}]\s*$/si", $cmd, $m)){
 				$res = $cmd;
 			} else {
@@ -665,6 +680,22 @@ EEE;
 							,@$mend[2])
 						);
 					}
+					if($cmd_part && 
+						preg_match('/^e:([a-zA-Z0-9+-]*)(?:\s+(.*))?$/s'
+							, end($cmd_part), $mend )) {
+						array_pop ($cmd_part);
+						$cmd_part[] = "output_editor2(default_templated_editor('$mend[1]'), '".count($strings)."','".(count($strings)+1)."')";
+						$mend = explode('>:<', @$mend[2]);
+						$mend[0] = preg_replace_callback("/'(\d+)'/", 
+							function($m) use(&$strings) { return $strings[(int)$m[1]];}
+							,@$mend[0]);
+						$mend[1] = preg_replace_callback("/'(\d+)'/", 
+							function($m) use(&$strings) { return $strings[(int)$m[1]];}
+							,@$mend[1]);
+						
+						$strings[] = phpDQuote($mend[0]);
+						$strings[] = phpDQuote($mend[1]);
+					}
 					
 					foreach($cmd_part as $c) {
 						if(preg_match("/^\\\$call_params\\.(.*)/s", $c, $m))
@@ -707,8 +738,16 @@ EEE;
 						preg_replace('/^output_editor_([a-zA-Z0-9]+)\(([^-]+)->([^,]+)(,(.*))?\)$/s'
 							, 'output_editor(\'$1\',$2->ns(\'$3\')$4)'
 							, $res );
+					$res = 
+						preg_replace('/^output_editor2\(([^-]+)->([^,]+)(,(.*))?\)$/s'
+							, 'output_editor2($1->ns(\'$2\')$3)'
+							, $res );
 					$cmd_part[] = 
 						preg_replace('/^output_editor_[a-zA-Z0-9]+\(.*/s'
+							, 'output_editor'
+							, array_splice($cmd_part, -1)[0] );
+					$cmd_part[] = 
+						preg_replace('/^output_editor2\(.*/s'
 							, 'output_editor'
 							, array_splice($cmd_part, -1)[0] );
 					switch( end($cmd_part) )
@@ -828,7 +867,7 @@ EEE;
 	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit);";
 	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
 	//for paging
-	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->$main_select_alias;";
+	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->offset = \$requested_offset;";
 
 	//var_dump($selects);
@@ -860,7 +899,7 @@ if($argc <= 1 || $argv[1] == '-') {
 	$options = getopt("p::");
 	$path_prefix = @$options['p'] ?: __DIR__;
 } else {
-	$options = getopt("c:p::",array("docx::"));
+	$options = getopt("c:p::s::",array("docx::"));
 	$path_prefix = @$options['p'] ?: dirname($options['c']);
 	if(array_key_exists("docx",$options)) {
 		$DOCX_MODE = true;
@@ -891,20 +930,27 @@ if($argc <= 1 || $argv[1] == '-') {
 	} else {
 		$text = file_get_contents($file = $options['c']);
 	}
+	$file = @$options['s']?:$file;
 }
-
 $lib_path = explode(DIRECTORY_SEPARATOR, __DIR__);
 $path_prefix = explode(DIRECTORY_SEPARATOR, realpath($path_prefix));
+
+//echo "$options[p]\n".implode('/',$lib_path),"\n",implode('/',$path_prefix);
+
 for($i = 0; $i < min(count($lib_path), count($path_prefix)); ++$i)
 	if($lib_path[$i] != $path_prefix[$i]) break;
 
 array_splice($path_prefix, 0, $i);
 array_splice($lib_path, 0, $i);
 
+//echo "\n".implode('/',$lib_path),"\n",implode('/',$path_prefix);
+
 $library_prefix = 
 		implode(DIRECTORY_SEPARATOR, 
 			array_merge(count($path_prefix)?array_fill(0,count($path_prefix),'..'):[], $lib_path));
 if($library_prefix) $library_prefix = '/'.$library_prefix;
+
+//echo "\n$library_prefix";
 
 if(@$DOCX_MODE) 
 	ob_start();

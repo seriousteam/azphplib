@@ -4,6 +4,19 @@ function getHTTPRequestObject()
 }
 var couldProcess = false;
 var httpRequester = getHTTPRequestObject();
+var texttimer=-1;
+var global_vars={
+current_cp:"UTF-8",
+ed_simple:0,
+synt_hl:"plain",
+hashtext:""
+}
+function getGlobVarsToURL()
+{
+	var rez="";
+	for (var obj in global_vars) if (obj!="hashtext") rez+="&"+obj+"="+global_vars[obj];
+	return rez;
+}
 function justResponse() 
 {
   if ( httpRequester.readyState == 4 ) 
@@ -12,6 +25,57 @@ function justResponse()
 	 couldProcess = false;
 	 if (httpRequester.status != 200) alert("Failed! Err text: "+value);
   }  
+}
+function reloadLocation()
+{
+	var lst=document.URL.split('&');
+	location.href=lst[0]+getGlobVarsToURL();
+}
+function startTextTimer()
+{
+	var targs=getCookie("ref_text_timer");
+	if (targs==null) targs=30;
+	texttimer=setInterval(isChangedContent,targs*1000);
+}
+function txtVerControl()
+{
+	if ( httpRequester.readyState == 4 ) 
+	{ 
+		var value = httpRequester.responseText; 
+		couldProcess = false;
+		if (httpRequester.status != 200) alert("Failed! Err text: "+value);
+		if (getGlobVar('hashtext')!=value)		
+		{
+			clearInterval(texttimer);
+			if (confirm ("File has been modified by another user. Do you want relod it?")) 
+			{
+				location.reload();
+				startTextTimer();
+			}
+		}		
+	}  
+}
+function getHashAnswer()
+{
+	if ( httpRequester.readyState == 4 ) 
+	{ 
+		var value = httpRequester.responseText; 
+		couldProcess = false;
+		if (httpRequester.status != 200) alert("Failed! Err text: "+value);
+		setGlobVar('hashtext',value);
+	}
+}
+function onChangeTimer()
+{
+	clearInterval(texttimer);
+	var val=document.getElementsByName('seltime')[0];
+	if (val!=null)
+	{
+		var ncp=val.options[val.selectedIndex].value;
+		setCookie("ref_text_timer",ncp);	
+		location.reload(true);	
+	}
+	startTextTimer();
 }
 function reloadResponse() 
 {
@@ -27,14 +91,15 @@ function reloadResponse()
 	 else alert("Failed! Err text: "+value);
   }  
 }
-function saveFile()
+function saveFile(o) 
 {
+    o && o.removeAttribute("changes");
 	if (!couldProcess && httpRequester)
 	{
 		var data="dir="+encodeURIComponent(document.URL)+"&edtext=";
 		if (document.getElementById("teditor")==null) data+=encodeURIComponent(editor.getValue());
 		else data+=encodeURIComponent(document.getElementById("teditor").value);		
-		sendPOST(data,"just");				
+		sendPOST(data,"gethashanswer");
 	}	
 }
 function getChList()
@@ -51,10 +116,11 @@ function getChList()
 function deleteFile()
 {
 	var dellist=getChList();
-	if (!couldProcess && httpRequester&&dellist.length>0)
+	if (!couldProcess && httpRequester&&dellist.length>0 
+        && confirm(dellist.length+" file(s) will be deleted. Are you sure?"))
 	{
 		var data="dir="+encodeURIComponent(document.URL)+"&delfls="+encodeURIComponent(dellist.join("*"));
-		sendPOST(data,"reload");		
+		sendPOST(data,"reload");	
 		var checks=document.getElementsByName('chbt');
 		for (var i=0;i<checks.length;i++) checks[i].checked=false;					
 	}	
@@ -62,12 +128,16 @@ function deleteFile()
 function sendPOST(data,type)
 {
 	httpRequester.open("POST", "dir.php",true);
+	httpRequester.onreadystatechange = justResponse;
 	if (type=="reload") httpRequester.onreadystatechange = reloadResponse;
-	else httpRequester.onreadystatechange = justResponse;			
+	if (type=="checktext") httpRequester.onreadystatechange = txtVerControl;
+	if (type=="gethashanswer") httpRequester.onreadystatechange=getHashAnswer;
 	httpRequester.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-	couldProcess = true;	
+	couldProcess = true;
+	//data+=encodeURIComponent(getGlobVarsToURL());
 	httpRequester.send(data);
 }
+
 function create(isfile)
 {	
 	var hnt="DIR";
@@ -81,6 +151,7 @@ function create(isfile)
 		sendPOST(data,"reload");
 	}
 }
+
 function copyFiles()
 {
 	var cplist=getChList();	
@@ -115,6 +186,11 @@ function getCookie(name)
 	    "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
 	return matches ? decodeURIComponent(matches[1]) : null;
 }
+function getGlobVar(name)
+{
+		return global_vars[name];
+}
+
 function setCookie(name, value, options) 
 {
 	options = options || {};	
@@ -127,6 +203,10 @@ function setCookie(name, value, options)
 		if (propValue !== true) updatedCookie += "=" + propValue;
 	} 
 	document.cookie = updatedCookie;
+}
+function setGlobVar(name, value, options) 
+{
+	global_vars[name]=value;
 }
 function filterContent()
 {
@@ -144,17 +224,20 @@ function filterContent()
 function changeEdit()
 {
 	var checks=document.getElementsByName('simple_ed')[0];
-	if (checks.checked) setCookie("ed_simple",1);
-	else setCookie("ed_simple",0);	
-	location.reload(true);	
+	if (checks.checked) setGlobVar("ed_simple",0);
+	else setGlobVar("ed_simple",1);	
+	//location.reload(true);
+	//window.location.href=zzz;
+	reloadLocation();
 }
 function changeLang()
 {
 	var val=document.getElementsByName('lang')[0];
 	if (val!=null)
 	{
-		setCookie("synt_hl",val.options[val.selectedIndex].value);
-		location.reload(true);		
+		setGlobVar("synt_hl",val.options[val.selectedIndex].value);
+		//location.reload(true);		
+		reloadLocation();
 	}
 }
 function changeCP()
@@ -163,7 +246,13 @@ function changeCP()
 	if (val!=null)
 	{
 		var ncp=val.options[val.selectedIndex].value;
-		setCookie("current_cp",ncp);	
-		location.reload(true);	
+		setGlobVar("current_cp",ncp);	
+		//location.reload(true);	
+		reloadLocation();
 	}
+}
+function isChangedContent()
+{
+	var data="dir="+encodeURIComponent(document.URL)+"&get_hash=1";
+	sendPOST(data,"checktext");	
 }
