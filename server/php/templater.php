@@ -932,7 +932,6 @@ if($argc <= 1 || $argv[1] == '-') {
 	}
 	$file = @$options['s']?:$file;
 }
-
 $lib_path = explode(DIRECTORY_SEPARATOR, __DIR__);
 $path_prefix = explode(DIRECTORY_SEPARATOR, realpath($path_prefix));
 
