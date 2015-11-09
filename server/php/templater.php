@@ -899,7 +899,7 @@ if($argc <= 1 || $argv[1] == '-') {
 	$options = getopt("p::");
 	$path_prefix = @$options['p'] ?: __DIR__;
 } else {
-	$options = getopt("c:p::",array("docx::"));
+	$options = getopt("c:p::s::",array("docx::"));
 	$path_prefix = @$options['p'] ?: dirname($options['c']);
 	if(array_key_exists("docx",$options)) {
 		$DOCX_MODE = true;
@@ -930,6 +930,7 @@ if($argc <= 1 || $argv[1] == '-') {
 	} else {
 		$text = file_get_contents($file = $options['c']);
 	}
+	$file = @$options['s']?:$file;
 }
 
 $lib_path = explode(DIRECTORY_SEPARATOR, __DIR__);

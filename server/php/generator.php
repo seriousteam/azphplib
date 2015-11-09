@@ -11,7 +11,7 @@ class TemplaterCache {
 	function gen_from_ob($ob) {
 		$tmpfile = tempnam($this->cdir, 'GEN');
 		file_put_contents($tmpfile.'.s', $ob);
-		$this->generate("$tmpfile.s",$tmpfile);		
+		$this->generate("$tmpfile.s",$tmpfile, $this->fphpname.'.s');		
 		@unlink($this->fphpname);
 		@unlink($this->fphpname.'.s');
 		@rename($tmpfile, $this->fphpname);
@@ -26,11 +26,12 @@ class TemplaterCache {
 		@rename($tmpfile, $this->fphpname);
 		@unlink($tmpfile);
 	}
-	function generate($fromfile, $tofile) {
+	function generate($fromfile, $tofile, $sourcefile = "") {
+		$sourcefile = $sourcefile? "-s $sourcefile" : "";
 		$phppath = __DIR__."/../../../../php/php.exe";
 		if(!file_exists($phppath)) $phppath = "php";
 		system("$phppath -f ".
-			__DIR__."/templater.php -- -c $fromfile -p{$this->cdir} > $tofile");
+			__DIR__."/templater.php -- -c $fromfile -p{$this->cdir} $sourcefile > $tofile");
 	}
 	function __construct($filetogen) {
 		global $G_ENV_CACHE_DIR;
