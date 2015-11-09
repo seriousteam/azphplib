@@ -30,24 +30,52 @@ class loop_info {
 	var $was_connector = false;
 	var $group_starts = [];
 	var $group_level = 0;
+	var $group_ends = 0;
 	
 	var $level = 0;
 	
 	function at_group_start($value) {
-		$idx = count($this->group_starts) - $this->group_level;
+		$idx = $this->group_level;
 		if($idx >= count($this->group_starts))
 		{	
 			$this->group_starts[$idx] = $value;
-			return true;
+			return true; //new group
 		} else {
 			if($this->group_starts[$idx] === $value)
-				return false;
+				return false; //same value
 			array_splice($this->group_starts, $idx); //remove all up to idx
 			$this->group_starts[$idx] = $value;
-			return $this->group_level;
+			return count($this->group_starts) - $idx; //all gropus depper $idx  changed
 		}
 	}
 }
+
+function at_group_start($value) { 
+	if( ($cnt = loop_info::$top->at_group_start($value))
+		&& $cnt !== true
+		) 
+	{
+		while($cnt--
+		&& loop_info::$top->group_ends) {
+			--loop_info::$top->group_ends;
+			ob_end_flush();
+		}
+	} else {
+		if($cnt === false 
+		&& loop_info::$top->group_ends) {
+			--loop_info::$top->group_ends;
+		    ob_end_clean(); //clean previous end
+		}
+	}
+	++loop_info::$top->group_level;
+	return $cnt !== false;
+}
+function at_group_end($a = false) { 
+	ob_start(); loop_info::$top->group_ends++; 
+	return true;
+}
+
+function between_iterations() { ob_start(); loop_info::$top->was_connector = true; }
 
 class loop_helper extends IteratorIterator {
 	var $info = null;
@@ -101,7 +129,7 @@ class loop_helper extends IteratorIterator {
 		//at_group_start will flush group ends, if any
 		$this->info->group_level = 0;
 	} else { //at iteration very end!
-		while($this->info->group_level--)
+		while($this->info->group_ends--)
 			ob_end_flush();
 		if($this->info->was_connector === true)
 			ob_end_clean();
@@ -138,33 +166,6 @@ class everything_you_want {
 	}
 	function subselect_info($name) { return $this->subselects[$name]; }
 	function ns($name) { return new namedString($name, null, $this); }
-}
-
-function current_loop() { return loop_info::$top; }
-
-function iteration_connector() { ob_start(); loop_info::$top->$info->was_connector = true; }
-
-function at_group_start($value) { 
-	if($cnt = $this->info->at_group_start($value)) {
-		//
-		while($cnt--) {
-			--$this->info->group_level;
-			ob_end_flush();
-		}
-		$this->info->was_connector = false;
-	} else {
-		ob_clean(); //clean previous end
-		if(--$this->info->group_level === 0 &&
-			$this->info->was_connector) {
-			echo $this->info->was_connector; //if no groups, output connector!
-			$this->info->was_connector = false;
-		}
-	}
-}
-function at_group_end() { 
-	if($this->info->was_connector === true)
-		$this->info->was_connector = ob_get_clean(); //group connector, get connector in variable!
-	ob_start(); loop_info::$top->group_level++; 
 }
 
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
@@ -324,6 +325,14 @@ function sas_TABLE($filter, $table, $root = '/') {
 	http_build_query( [ 'ro_filter' => $filter
 		,'query' => "report_".preg_replace('/^en/','', $table)
 		,'target' => "webreport"
+		]);
+}
+
+function sas_FORM($rid, $table, $root = '/') {
+	return $root . '?' .
+	http_build_query( [ 'ro_filter' => "_main.$table.syrecordidw = $rid~"
+		,'table' => "main.$table"
+		,'target' => "qe_editrec"
 		]);
 }
 
