@@ -579,10 +579,12 @@ echo <<<XCFG
 		$G_ENV_LIB_MAPPING
 	local user database in 
 		$G_ENV_LOCAL_USERS
-	local role assigmenus in 
+	local role assignments in 
 		$G_ENV_LOCAL_ROLES
 	model definition in 
 		$G_ENV_MODEL
+	cache dir is
+		$G_ENV_CACHE_DIR
 	model autoload $G_ENV_LOAD_MODEL
 
 	cache mode $G_ENV_CACHE
