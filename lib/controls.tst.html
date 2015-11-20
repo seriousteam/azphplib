@@ -1,0 +1,27 @@
+<html>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <head>
+    <script type="text/javascript" src="scripts.js"></script>
+	  <script type="text/javascript" src="editing20.js"></script>
+	  <link rel="stylesheet" href="main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="controls.js"></script>
+    <link rel="stylesheet" href="controls.css">
+	<style>
+	[error] {outline:3px solid red}
+	</style>
+  </head>
+   <body>
+    one:
+    <dfn control=choose description='[{"table" : "enpersons", "field" : "a.enf_fw", "mask" : /^(..)/, filter:"a.enf_fw LIKE ?", "arg" : "$1____" }, { "mask" : /^..(..)/, "arg" : "$1$2__"}, {"mask":/^....(..)/, "arg" : "$1$2$3" }]'></dfn>
+    <br>
+    last:
+    <dfn control=choose last description='[{"table" : "enpersons", "field" : "a.enf_fw", "mask" : /^(..)/, filter:"a.enf_fw LIKE ?", "arg" : "$1____" }, { "mask" : /^..(..)/, "arg" : "$1$2__"}, {"mask":/^....(..)/, "arg" : "$1$2$3" }]'></dfn>
+    <br>
+    multi:
+    <dfn control=choose multi description='[{"table" : "enpersons", "field" : "a.enf_fw", "mask" : /^(..)/, filter:"a.enf_fw LIKE ?", "arg" : "$1____" }, { "mask" : /^..(..)/, "arg" : "$1$2__"}, {"mask":/^....(..)/, "arg" : "$1$2$3" }]'></dfn>
+    <br>
+    multi last:
+    <dfn control=choose multi last description='[{"table" : "enpersons", "field" : "a.enf_fw", "mask" : /^(..)/, filter:"a.enf_fw LIKE ?", "arg" : "$1____" }, { "mask" : /^..(..)/, "arg" : "$1$2__"}, {"mask":/^....(..)/, "arg" : "$1$2$3" }]'></dfn>
+   </body>
+</html>
