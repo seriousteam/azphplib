@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/processor.php');
 require_once(__DIR__.'/sas_coder.php');
+
 class smap {
 	var $___base = null;
 	var $___map = [];
@@ -352,6 +353,14 @@ function sas_TABLE($filter, $table, $root = '/') {
 	http_build_query( [ 'ro_filter' => $filter
 		,'query' => "report_".preg_replace('/^en/','', $table)
 		,'target' => "webreport"
+		]);
+}
+
+function sas_FORM($rid, $table, $root = '/') {
+	return $root . '?' .
+	http_build_query( [ 'ro_filter' => "_main.$table.syrecordidw = $rid~"
+		,'table' => "main.$table"
+		,'target' => "qe_editrec"
 		]);
 }
 
