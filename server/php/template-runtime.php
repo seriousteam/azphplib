@@ -406,7 +406,7 @@ require_once __DIR__."/ru_number.php";
 function load_template($file) {
 	global $functions;
 	static $included_templates = [];
-	if(!$included_templates) $included_templates = [ __FILE__ => $functions ];
+	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
 	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
 	$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
@@ -417,7 +417,7 @@ $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
 	
-	if(!$file) $file = __FILE__;
+	if(!$file) $file = $caller;
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = "$G_P_DOC_ROOT$file";
@@ -434,7 +434,6 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
-	
 
 	if($G_ENV_CACHE_DIR && dirname($file) !== $G_ENV_CACHE_DIR ) {
 		$droot = $_SERVER['DOCUMENT_ROOT'];
