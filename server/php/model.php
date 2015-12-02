@@ -145,15 +145,15 @@ class _Field {
 	case 'DATE': return 'DATE';
 	case 'CLOB': return 'CLOB';
 	case 'SUBTABLE': return 'SUBTABLE';
-	case 'FILE': 
-		switch((string)$this->size) {
-			case 'image': return 'FILE_IMAGE';
-			case 'video': return 'FILE_VIDEO';
-			case 'sound': return 'FILE_SOUND';
-			case 'pdf': return 'FILE_PDF';
-			default: return 'FILE';
+        case 'FILE': 
+    	    switch((string)$this->size) {
+    		case 'image': return 'FILE_IMAGE';
+    		case 'video': return 'FILE_VIDEO';
+    		case 'sound': return 'FILE_SOUND';
+    	        case 'pdf': return 'FILE_PDF';
+		    default: return 'FILE';
 		}
-	case 'ACTION': return 'ACTION';
+        case 'ACTION': return 'ACTION';
 	case 'VARCHAR': return $this->size && $this->size > MAX_UI_SIZE ? 'LONGVARCHAR' : 'VARCHAR';
 	default: return 'VARCHAR';
 	}
@@ -175,6 +175,7 @@ class _Field {
 	case 'INTEGER': return " maxlength=$this->size" . $this->getControlXProps();
 	case 'CHAR': 
 	case 'VARCHAR': return 
+		
 		" maxlength=$this->size" . $this->getControlXProps();
 	default: return $this->getControlXProps();
 	}
@@ -279,6 +280,8 @@ class modelParser extends _PreCmd {
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
 							else if($m['name'] == 'AUTO_KEY')
 								$props[ 'AUTO_KEY' ] = true;
+							else if($m['name'] == 'DICT')
+								$props[ 'DICT' ] = true;
 							else if($m['name'] == 'PAGE')
 								$current_page = $m['value'];
 							continue;

@@ -1,20 +1,19 @@
 <?php
+//http://213.208.189.135/az/server/php/tabler.php?table=enrf_stages
 if(!defined('CHOOSER_MODE')) define('CHOOSER_MODE', '');
 
 require_once(__DIR__.'/template-runtime.php');
-
-$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
+require_once(__DIR__.'/generator.php');
 
 $table = $_REQUEST['table'];
 $link = @$_REQUEST['link'];
 
-$fphpname = "$cdir/$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t";
-$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
-$mtt = $G_ENV_MODEL ? stat($G_ENV_MODEL)['mtime'] : 1;
-if($mt >= $mtt) {
-	//valid cache
-	goto end;
-}
+$cache = new TemplaterCache("$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t");
+
+$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
+
+if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
+
 
 //$link_filter = '';
 //if($link) $link_filter = " $link = ? ";
@@ -55,7 +54,7 @@ echo <<<ST
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 [[LIB]]
-<link rel="stylesheet" href="/ais/form.css">
+<!--link rel="stylesheet" href="/az/lib/bullfinch.css"-->
 </head>
 <body>
 
@@ -66,17 +65,21 @@ ST;
 echo <<<ST
 <div id=filter_def filter_def="[ EQ(1,1)
 ST;
+$cnts = 0;
 foreach($table_fields as $n=>$f) if($f->search_op) { ++$cnts; echo ", a.$n $f->search_op ?$n\n"; }
 echo <<<ST
 	]"
-	selfref="[[CURRENT_URI()]]" onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
-> 
+	selfref="[[CURRENT_URI()]]"
 ST;
+if(!CHOOSER_MODE) echo <<<ST
+	onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
+ST;
+echo "\n>";
 
 ob_start(); $cnts = 0;
 echo '<input filter_ctrl onkeyup="applyFuncFilterT(this)"';
 
-foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"\n'; ++$cnts; }
+foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo "\"\n"; ++$cnts; }
 
 echo ' style="width:100%">';
 
@@ -93,15 +96,16 @@ echo <<<ST
 <div style="clear:both"><!--FILTRED:-->
 [[ob_start();]]
 <table tabler onrefresh="refreshNoRowStatus(this)">
-<thead>
-	<tr>
 ST;
 	ob_start(); $cnt = 0;
+echo "<thead><tr>";
 	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page && $n != $link){ 
 	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
+if(!CHOOSER_MODE) echo '<th><th>';
+echo '</thead>';
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 
-echo '<th><th></thead>';
+
 
 echo <<<ST
 
@@ -114,7 +118,7 @@ if(CHOOSER_MODE){
 echo <<<ST
 	[[rt@tr \$data-:a__table__id]]
 	[[value@tr \$data-:a__$pk0]]
-	[[onclick@tr 'this.closeModal(this)']]
+	[[onclick@tr 'blockEvent(event);this.closeModal(this)']]
 	[[style@tr 'cursor: pointer']]
 	
 ST;
@@ -130,7 +134,7 @@ foreach($table_fields as $n=>$f)
 				echo "[[\$data.a.$n]]";
 		} else {
 			if($f->Target())
-				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
+				echo "[[\$data.a.$n._id_~e:]]"; 
 			else
 				echo "[[\$data.a.$n~e:]]"; 
 		}
@@ -147,7 +151,7 @@ ST;
 		if($f->type && !$f->hidden && $f->page && $n != $link) { ++$cnt;
 			echo "<div ctrl_container><label>"; output_html($f->caption ?: $n); echo "</label>";
 			if($f->Target())
-				echo "[[\$data.a.$n._id_~e: add_button=N]]"; 
+				echo "[[\$data.a.$n._id_~e:]]"; 
 			else
 				echo "[[\$data.a.$n~e:]]"; 
 			echo "\n";
@@ -156,13 +160,15 @@ ST;
 	if($cnt>1) ob_end_flush(); else ob_end_clean();
 echo <<<ST
 
-<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del>x</button>
+<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del><span>x</span></button>
 ST;
 }
 
+echo "</tr>\n<tfoot>\n";
+if(CHOOSER_MODE && $_REQUEST['add_empty'])
+	echo "<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>";
 echo <<<ST
-</tr>
-<tfoot><tr if_no_rows><td colspan=100>
+<tr if_no_rows><td colspan=100>
 </table>
 [[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
 [[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
@@ -184,19 +190,16 @@ if(!CHOOSER_MODE){
 ST;
 }
 echo <<<ST
-[[PAGE CONTROLS]]
+<div>[[PAGE CONTROLS]]</div>
 <!--FILTRED.--></div>
 </body>
 ST;
 
-file_put_contents($fphpname.'.s', ob_get_clean());
-	system("php -f ".
-		__DIR__."/templater.php -- -c $fphpname.s -p$cdir > $fphpname");
+$cache->gen_from_ob( ob_get_clean() );
 
-	//unlink($fphpname.'.s');
 end:;
 
-require $fphpname;
+while(@!include $cache->file()) {}
 
 if(__FILE__ != TOPLEVEL_FILE) return $functions;
 

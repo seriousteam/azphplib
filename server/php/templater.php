@@ -224,7 +224,7 @@ function templater_take_one_zone($name, $text, $file) {
 	global $RE_ID;
 	
 	$escape_mode = preg_match('/\.js$/', $file) ? 'js' : 'html'; //
-
+	
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
@@ -307,7 +307,8 @@ ST;
 			//find position in 'to_process'
 			//var_dump($tag, $attribute, $command, $to_process);
 			if(!$tag) { // to line start
-				$before = strrchr($to_process, '\n') ?: '';
+				$before = strrchr($to_process, '\n') ?: strlen($to_process);
+				$before = substr($to_process, -$before);
 				$to_process = 
 					$before . $command . '</>' . substr($to_process, strlen($before));
 			} else {
@@ -367,7 +368,7 @@ ST;
 	$text = implode($repos);
 	//echo $text;
 	//add closing tags
-	preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
+	$text = preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
 	do {
 		$text = preg_replace('#<<:>>
 				(<(\S+?)(?:\s|>) [^<]*+
@@ -388,23 +389,26 @@ ST;
 		//echo '====',$text;
 	} while($textp !== $text);
 	//var_dump($text);
+	//var_dump($escape_mode);
 	
 	do {
-		$text = preg_replace('#<<\{\}>> (\{ [^{]*+(?:(?-1)[^{]*+)*? \}) #sx', 
+		
+		$text = preg_replace('#<<\{\}>> (\{ [^{}]*+(?:(?-1)[^{}]*+)*? \}) #sx', 
+						'[[{]]$1[[}]]', $textp = $text);
+	} while($textp !== $text);
+	//var_dump($text);
+	do {
+		$text = preg_replace('#<<\[\]>> (\[ [^[\]]*+(?:(?-1)[^[\]]*+)*? \]) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	do {
-		$text = preg_replace('#<<\[\]>> (\[ [^[]*+(?:(?-1)[^[]*+)*? \]) #sx', 
-						'[[{]]$1[[}]]', $textp = $text);
-	} while($textp !== $text);
-	do {
-		$text = preg_replace('#<<\(\)>> (\( [^(]*+(?:(?-1)[^(]*+)*? \)) #sx', 
+		$text = preg_replace('#<<\(\)>> (\( [^()]*+(?:(?-1)[^()]*+)*? \)) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
 	
 	//join joined tags
-	//echo $text;
-	$text = preg_replace('#\[\[}\]\]\s*+\[\[/\*\+\*/\]\]\s*+\[\[{\]\]#sx', '', $text);
+	//var_dump($text);
+	$text = preg_replace('#\[\[}\]\]\s*\[\[/\*\+\*/\]\]\s*\[\[{]]#sx', '', $text);
 	
 	//convert default call zones to explicit call by name
 	$text = preg_replace("/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si",
@@ -487,7 +491,7 @@ CTX;
 }, $text);
 	//generate commands
 	$text = preg_replace_callback('/(?<=\[\[).*?(?=\]\])/s', 
-		function($m) use(&$selects, &$attributes, $escape_mode){
+		function($m) use(&$selects, &$attributes, &$escape_mode){
 			global $RE_ID;
 			$cmd = $m[0];
 			//var_dump($cmd);
@@ -524,10 +528,10 @@ EEE;
 					echo '<link rel="stylesheet" href="',file_URI('//az/lib/d3c.css', null, null),'">',"\\n";
 					echo '<script type="text/javascript" src="',file_URI('//az/lib/d3c.js', null, null),'"></script>',"\\n";
 EEE;
-			} else if(preg_match("/^QE\s+(.*)$/i", $cmd, $m)) {
+			} else if(preg_match("/^QE$/i", $cmd, $m)) {
 				$res = sharing::load('d3');
 				$res .= <<<EEE
-				echo qe_control_model('$m[1]');
+				echo qe_control_model();
 				echo '<script type="text/javascript" src="',file_URI('//az/lib/qe.js', null, null),'"></script>',"\\n";
 				echo '<link rel="stylesheet" href="',file_URI('//az/lib/qe.css', null, null),'">',"\\n";
 EEE;
@@ -895,7 +899,7 @@ if($argc <= 1 || $argv[1] == '-') {
 	$options = getopt("p::");
 	$path_prefix = @$options['p'] ?: __DIR__;
 } else {
-	$options = getopt("c:p::",array("docx::"));
+	$options = getopt("c:p::s::",array("docx::"));
 	$path_prefix = @$options['p'] ?: dirname($options['c']);
 	if(array_key_exists("docx",$options)) {
 		$DOCX_MODE = true;
@@ -926,8 +930,8 @@ if($argc <= 1 || $argv[1] == '-') {
 	} else {
 		$text = file_get_contents($file = $options['c']);
 	}
+	$file = @$options['s']?:$file;
 }
-
 $lib_path = explode(DIRECTORY_SEPARATOR, __DIR__);
 $path_prefix = explode(DIRECTORY_SEPARATOR, realpath($path_prefix));
 

@@ -13,13 +13,30 @@ if(!@$_REQUEST['table']) {
 	}
 } else {
 	$t = $_REQUEST['table'];
+	$vals = [];
 	if(@$_REQUEST['add_empty'] && !isset($ModelDB[$t]['.'])) {
-		echo "<li value-patch='' rt=''>?</li>\n";
+		$vals[] = [ 'value' => '', 'text' => '?', 'rt' => '' ];
 	}
 	foreach($ModelDB[$t] as $k => $v)
-		if($k == '.')
-			echo '<li value-patch="">'.htmlspecialchars($v)."</li>\n";
-		else
-			echo '<li value-patch="'.htmlspecialchars($k).'">'.htmlspecialchars($v)."</li>\n";
+		if($k === '.') {
+			$vnull = @$ModelDB[$t.'.info']['.'];
+			$vals[] = [ 'value' => "$vnull", 'text' => htmlspecialchars($v) ];
+		} else
+			$vals[] = [ 'value' => htmlspecialchars($k), 'text' => htmlspecialchars($v)  ];
+	
+	if(@$_REQUEST['js']) {
+		echo '['.implode(','
+			,array_map(function($li) {
+				return "{\"value\" : \"{$li['value']}\",\"text\":\"{$li['text']}\"}";
+			}, $vals)
+		).']';
+	} else {
+		echo implode(''
+			,array_map(function($li) {
+				return "<li value-patch=\"{$li['value']}\"".(isset($li['rt'])?" rt=\"{$li['rt']}\"":'')
+					.">{$li['text']}</li>\n";
+			}, $vals)
+		);
+	}
 }
-
+//			var_dump($ModelDB);

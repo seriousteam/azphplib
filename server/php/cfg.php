@@ -1,10 +1,9 @@
 <?php
 
 mb_internal_encoding("UTF-8");
+define('REPLACED_TOPLEVEL', defined('TOPLEVEL_FILE'));
 
-if(@$force_toplevel)
-	define('TOPLEVEL_FILE', realpath($force_toplevel));
-else 
+if(!REPLACED_TOPLEVEL)
 	define('TOPLEVEL_FILE', @end(debug_backtrace())['file']?:__FILE__);
 
 require_once (__DIR__.'/dialects.php');
@@ -94,8 +93,6 @@ $main_cfg = array(
 		  'default_db' => array(
 					'dialect' => '',
 					'server' => '',
-					'user' => '',
-					'pass' => ''
 					)
 		  );
 
@@ -115,7 +112,7 @@ if($G_ENV_TABLE_DB_MAPPING) {
   /*
     table_name = db_name
    */
-  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING);
+  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING, true);
 }
 
 function table_db($table){
@@ -351,7 +348,7 @@ function add_role_to_context($role) {
 }
 
 // uri after striping our prefix (normalized in some sence)
-$LOCALIZED_URI = (PHP_SAPI == 'cli' && !isset($force_toplevel))? 
+$LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)? 
 	$_SERVER['argv'][0]
 	:
 	( substr_compare($_SERVER['REQUEST_URI'], $G_ENV_URI_PREFIX, 0, strlen($G_ENV_URI_PREFIX)) == 0?
@@ -422,8 +419,7 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 
 $CFG_STDIN_CONTENT = null;
 function main_argument($str = true) {
-	global $force_toplevel;
-  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
+  if(PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL) {
     $arg = @$_SERVER['argv'][1] ?: '-';
     if($arg === '-')
       if($str) {
@@ -449,8 +445,7 @@ function main_argument($str = true) {
 }
 
 function main_subarguments($str = true) {
-	global $force_toplevel;
-  if(PHP_SAPI == 'cli' && !isset($force_toplevel)) {
+  if(PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL) {
     $arg = $_SERVER['argv'][1] ?: '-';
 	$args = [];
     if($arg === '-' && $str) {
@@ -503,12 +498,13 @@ function get_connection($table){
 				   $params
 				   );
 	    }
-	} else
+	} else {
 		$connections[$key] = new PDO($dsn,
 				   $db['user'],
 				   $db['pass'],
 				   $params
 				   );
+	}
    } else
       $connections[$key] = new PDO($dsn,null, null,$params);
   
@@ -583,10 +579,12 @@ echo <<<XCFG
 		$G_ENV_LIB_MAPPING
 	local user database in 
 		$G_ENV_LOCAL_USERS
-	local role assigmenus in 
+	local role assignments in 
 		$G_ENV_LOCAL_ROLES
 	model definition in 
 		$G_ENV_MODEL
+	cache dir is
+		$G_ENV_CACHE_DIR
 	model autoload $G_ENV_LOAD_MODEL
 
 	cache mode $G_ENV_CACHE
@@ -597,3 +595,4 @@ XCFG
 
 var_dump($main_cfg);
 var_dump($local_objects_rights);
+var_dump($a_table_db);
