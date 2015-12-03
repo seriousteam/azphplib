@@ -1108,6 +1108,7 @@ function output_attr_ctrl($name, $vfield, $tag, $attrs, $db) {
 }
 
 
+/*
 function xlsx_file_output($file_name, $templ) {
 	
 	$zip = new ZipArchive;
@@ -1163,6 +1164,11 @@ function xlsx_file_output($file_name, $templ) {
 	readfile($file);
 	
 	unlink($file);
+}
+*/
+function xlsx_file_output($file_name, $templ) {
+	require_once(__DIR__.'/htmltoexcl.php');
+	htmlToExcel($templ,$file_name.'.xlsx',__DIR__.'/sample.xlsx');
 }
 
 function csv_file_output($file_name, $templ) {
