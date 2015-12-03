@@ -1,30 +1,34 @@
 <?php
-require_once(__DIR__.'/template-runtime.php');
-
+//http://213.208.189.135/az/server/php/tabler.php?table=enrf_stages
 if(!defined('CHOOSER_MODE')) define('CHOOSER_MODE', '');
 
-$functions['_main_'] = function($cmd, $args = null, $params = null) {
+require_once(__DIR__.'/template-runtime.php');
+require_once(__DIR__.'/generator.php');
 
-if($params === null) $params = new smap;
-$call_params = new smap($params); 
+$table = $_REQUEST['table'];
+$link = @$_REQUEST['link'];
 
-if($params->empty_start && !$cmd) $cmd = "*WHERE 1=0 ";
+$cache = new TemplaterCache("$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t");
+
+$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
+
+if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
+
+
+//$link_filter = '';
+//if($link) $link_filter = " $link = ? ";
+
+ob_start();
 
 global $Tables;
-$table = $Tables->{$params->table};
+$table = $Tables->{$table};
 $pk = $table->PK(true);
+$pk0 = $table->PK();
+$pk_s = implode(',', array_map(function($a){ return "a.$a";}, $pk));
 
-//var_dump($table);
+$sql_fields[] = $table->ID('a')." AS a__table__id";
+$table_fields = $table->fields;
 
-if(!$cmd && $table->default_filter())
-	$cmd = "*WHERE ".$table->default_filter();
-
-$page_limit = 20;
-
-	$counters = new stdClass;
-	$statements = new stdClass;
-	$sql_fields[] = $table->ID('a')." AS a__table__id";
-	$table_fields = $table->fields;
 	if(CHOOSER_MODE) {
 		$has_choose = false;
 		foreach($table_fields as $f) if($f->choose) $has_choose = true;
@@ -37,119 +41,165 @@ $page_limit = 20;
 	}
 	if(!isset($table_fields[$n = $table->PK()]))
 		$sql_fields[] = "a.$n AS a__$n";
-	foreach($table_fields as $n=>$f) if($f->type){
-		$sql_fields[] = "a.$n AS a__$n";
-		if($t = $f->Target("a.$n")) 
-			$sql_fields[] = "$t AS a_id__$n";
-	}
-		
 	$sql_fields = implode(', ', $sql_fields);
-	$qcmd = merge_queries("SELECT $sql_fields FROM $table->___name a", $cmd, $args, $requested_offset, $requested_limit, $page_limit);
-	$rowsets['data'] = process_query($qcmd, $args);
-	if(is_object($rowsets['data'])) $main_counter =& $counters->data;
-	if(is_object($rowsets['data'])) $rowsets['data']->offset = $requested_offset;
-?><html>
-<head>
-<?php 					echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',"\n";
-					echo '<link rel="stylesheet" href="',file_URI('//az/lib/main.css', null, TRUE),'">',"\n";
-					echo '<link rel="stylesheet" href="',file_URI('//az/lib/local.css', null, TRUE),'">',"\n";
-					echo '<script type="text/javascript" src="',file_URI('//az/lib/scripts.js', null, TRUE),'"></script>',"\n";
-					echo '<script type="text/javascript" src="',file_URI('//az/lib/editing20.js', null, TRUE),'"></script>',"\n";?>
-<link rel="stylesheet" href="/ais/form.css">
-</head>
+	
+echo <<<ST
+[[PROLOG global \$Tables; \$table = \$Tables->{\$params->table};]]
+[[PROLOG if(\$params->empty_start && !\$cmd) \$cmd = "*WHERE 1=0 "]]
+[[PROLOG if(!\$cmd && \$table->default_filter()) \$cmd = "*WHERE ".\$table->default_filter();]]
 
+[[PAGE BY 20]]
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+[[LIB]]
+<!--link rel="stylesheet" href="/az/lib/bullfinch.css"-->
+</head>
 <body>
 
-<?php if($params->h == 'Y') { echo "<h1>";  output_html($table->___caption ?: $table->___name); echo "</h1>"; } ?>
 
-<div id=filter_def
-	filter_def="[ EQ(1,1)
-		<?php foreach($table_fields as $n=>$f) if($f->search_op) { echo ", a.$n $f->search_op ?$n"; }?>
+[[if(\$params->h == 'Y') { echo "<h1>";  output_html(\$table->___caption ?: \$table->___name); echo "</h1>"; }]]
+ST;
+
+echo <<<ST
+<div id=filter_def filter_def="[ EQ(1,1)
+ST;
+$cnts = 0;
+foreach($table_fields as $n=>$f) if($f->search_op) { ++$cnts; echo ", a.$n $f->search_op ?$n\n"; }
+echo <<<ST
 	]"
-	selfref="<?php output_html(CURRENT_URI());?>"
-	onrefresh="restoreFuncFilter(this, def, <?php output_html(seqCookie());?>)"
->
-<input filter_ctrl onkeyup="applyFuncFilterT(this)" 
-	<?php foreach($table_fields as $n=>$f) if($f->search_op) { echo "filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo '"'; } ?>
-style="width:100%">
-	<?php  ob_start(); $cnt = 0;
-		foreach($table_fields as $n=>$f) 
-			if($f->search_op) 
-				{ ++$cnt; echo " <span filter_hint=$n>"; output_html($f->caption); echo '</span>'; }
-		if($cnt>1) ob_end_flush(); else ob_end_clean();
-	?>
-</div>
+	selfref="[[CURRENT_URI()]]"
+ST;
+if(!CHOOSER_MODE) echo <<<ST
+	onrefresh="restoreFuncFilter(this, def, [[seqCookie()]])"
+ST;
+echo "\n>";
 
+ob_start(); $cnts = 0;
+echo '<input filter_ctrl onkeyup="applyFuncFilterT(this)"';
+
+foreach($table_fields as $n=>$f) if($f->search_op) { echo " filter_ctrl-$f->search_priority-$n=\""; output_html($f->search_re); echo "\"\n"; ++$cnts; }
+
+echo ' style="width:100%">';
+
+	ob_start(); $cnt = 0;
+	foreach($table_fields as $n=>$f) 
+		if($f->search_op) 
+			{ ++$cnt; echo " <span filter_hint=$n>"; output_html($f->caption); echo '</span>'; }
+	if($cnt>1) ob_end_flush(); else ob_end_clean();
+
+if($cnts) ob_end_flush(); else { ob_end_clean(); }
+echo "</div>\n";	
+
+echo <<<ST
 <div style="clear:both"><!--FILTRED:-->
-<?php ob_start(); ?>
-<table main_table>
-<thead>
-	<tr>
-	<?php 
-		ob_start(); $cnt = 0;
-		foreach($table_fields as $n=>$f) if($f->type && !$f->hidden){ ++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
-		if($cnt>1) ob_end_flush(); else ob_end_clean();
-	?>
-</thead>
-<?php foreach(with_loop_info_and_sample($rowsets['data'], $counters->data, $statements->data = @$rowsets['data']->exInfo) as $data){?>
-<tr cmd="<?php output_html(make_manipulation_command($data, $counters->data, $statements->data));?>" <?php output_html(($counters->data === 0? 'sample' : ''));?> 
-	<?php 
-		if(CHOOSER_MODE){ 
-			echo ' rt="'; output_html($data->a__table__id); echo '"';
-			echo ' value="'; output_html($data->{'a__'.$table->PK()}); echo '"';
-			echo ' onclick="this.closeModal(this)" style="cursor: pointer;" '; 
-		} 
-	?>
->
-	<?php foreach($table_fields as $n=>$f) if($f->type && !$f->hidden) { echo '<td>'; 
+[[ob_start();]]
+<table tabler onrefresh="refreshNoRowStatus(this)">
+ST;
+	ob_start(); $cnt = 0;
+echo "<thead><tr>";
+	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page && $n != $link){ 
+	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
+if(!CHOOSER_MODE) echo '<th><th>';
+echo '</thead>';
+	if($cnt>1) ob_end_flush(); else ob_end_clean();
+
+
+
+echo <<<ST
+
+<tr>
+[[@tr \$data : SAMPLE AND SELECT *, $sql_fields FROM $table->___name]]
+[[cmd@tr \$data.{CMD $pk_s}]]
+
+ST;
+if(CHOOSER_MODE){ 
+echo <<<ST
+	[[rt@tr \$data-:a__table__id]]
+	[[value@tr \$data-:a__$pk0]]
+	[[onclick@tr 'blockEvent(event);this.closeModal(this)']]
+	[[style@tr 'cursor: pointer']]
+	
+ST;
+}
+echo '[[$@tr $data.{SAMPLE}]]';
+
+foreach($table_fields as $n=>$f) 
+		if($f->type && !$f->hidden && !$f->page && $n != $link) { echo "\n<td>"; 
 		if(CHOOSER_MODE){
 			if($f->Target())
-				output_html($data->{"a_id__$n"});
+				echo "[[\$data.a.$n._id_]]";
 			else
-				output_html($data->{"a__{$n}"});
+				echo "[[\$data.a.$n]]";
 		} else {
 			if($f->Target())
-				output_editor2($data->ns("a_id__$n"), '', " add_button=N "); 
+				echo "[[\$data.a.$n._id_~e:]]"; 
 			else
-				output_editor2($data->ns("a__$n"), '', ''); 
+				echo "[[\$data.a.$n~e:]]"; 
 		}
-	}?>
+	}
 
-<?php if(!CHOOSER_MODE){?>
-	<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del>x</button>
-<?php }?>
+if(!CHOOSER_MODE){
+	ob_start(); $cnt = 0;
+echo <<<ST
+	
+<td><button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
+	<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
+ST;
+	foreach($table_fields as $n=>$f) 
+		if($f->type && !$f->hidden && $f->page && $n != $link) { ++$cnt;
+			echo "<div ctrl_container><label>"; output_html($f->caption ?: $n); echo "</label>";
+			if($f->Target())
+				echo "[[\$data.a.$n._id_~e:]]"; 
+			else
+				echo "[[\$data.a.$n~e:]]"; 
+			echo "\n";
+		}
+	echo "</div>\n";
+	if($cnt>1) ob_end_flush(); else ob_end_clean();
+echo <<<ST
 
-</tr><?php }?>
+<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del><span>x</span></button>
+ST;
+}
+
+echo "</tr>\n<tfoot>\n";
+if(CHOOSER_MODE && $_REQUEST['add_empty'])
+	echo "<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>";
+echo <<<ST
+<tr if_no_rows><td colspan=100>
 </table>
-<?php 
-$where_vals = make_manipulation_command(null, false, $statements->data);
-if( ($counters->data-1) ) ob_end_flush(); else { ?>
-<style> [main_table] THEAD { display: none; }</style>
-<?php ob_end_flush();
-$all_keys = true; foreach($pk as $kf) if(!array_key_exists($kf, $where_vals)) $all_keys = false;
-?><div>Нет</div><?php }?>
+[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
+[[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
 
-<?php if(!CHOOSER_MODE){?>
-<button type=button onclick="makeChoose(this, null, '')" add=suspend unlocked=Y
-	<?php  foreach($where_vals as $k=>$v) { echo 'def-',$k,'="'; output_html($v); echo '"\n'; } ?>
-><span suspend>+</span><span resume>OK</span></button>
-<?php }?>
-
-<?php if($counters->data-1 && !CHOOSER_MODE){?>
-<button row_counter type=button style="float: right" 
-	onclick="var e = this; X.XHR('GET','<?php output_html(make_counting_command($statements->data));?>').done(function(t) { e.setV(e.V().replace(/\?|\d+/, t)); })"
->Число записей: ?</button>
-<?php }?>
-<button first_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), null, this)" offset="<?php output_html(($page_limit && $requested_offset? $requested_offset - $page_limit : ''));?>">В начало</button>
-<button prev_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="<?php output_html(($page_limit && $requested_offset? $requested_offset - $page_limit : ''));?>">&lt; Предыдущая страница</button>
-<button next_page type=button onclick="applyFuncFilter(this.UT('DIV').QSattrPrevious('filter_def'), this, this)" offset="<?php output_html(($page_limit && $main_counter > $requested_limit? $requested_offset + $page_limit : ''));?>">Следующая страница &gt;</button>
-
+ST;
+if(!CHOOSER_MODE){
+	echo <<<ST
+	
+<button type=button onclick="startAddRow(this)" add=suspend unlocked=Y
+		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
+	><span suspend>+</span><span resume>OK</span>
+	</button>
+<button type=button onclick="this.setDN(toggle)" display_next inline_next></button>
+<span>
+<button row_counter type=button
+	onclick="var e = this; X.XHR('GET','[[make_counting_command(\$statements->data)]]').done(function(t) { e.setV(e.V().replace(/\?|\d+/, t)); })"
+>[[@button \$data.{COUNT}~?]]Число записей: ?</button>
+</span>
+ST;
+}
+echo <<<ST
+<div>[[PAGE CONTROLS]]</div>
 <!--FILTRED.--></div>
+</body>
+ST;
 
-</body><?php 
+$cache->gen_from_ob( ob_get_clean() );
 
-};
+end:;
 
+while(@!include $cache->file()) {}
 
 if(__FILE__ != TOPLEVEL_FILE) return $functions;
 

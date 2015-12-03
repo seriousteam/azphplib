@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/processor.php');
 require_once(__DIR__.'/sas_coder.php');
+
 class smap {
 	var $___base = null;
 	var $___map = [];
@@ -8,7 +9,7 @@ class smap {
 		$this->___base = $base;
 		$this->___map = $arr;
 	}
-	function __destruct() { 
+	function __destruct() {
 		if($this->___base) $this->___base->clear();
 	}
 	function __get($name) { 
@@ -29,24 +30,52 @@ class loop_info {
 	var $was_connector = false;
 	var $group_starts = [];
 	var $group_level = 0;
+	var $group_ends = 0;
 	
 	var $level = 0;
 	
 	function at_group_start($value) {
-		$idx = count($this->group_starts) - $this->group_level;
+		$idx = $this->group_level;
 		if($idx >= count($this->group_starts))
 		{	
 			$this->group_starts[$idx] = $value;
-			return true;
+			return true; //new group
 		} else {
 			if($this->group_starts[$idx] === $value)
-				return false;
+				return false; //same value
 			array_splice($this->group_starts, $idx); //remove all up to idx
 			$this->group_starts[$idx] = $value;
-			return $this->group_level;
+			return count($this->group_starts) - $idx; //all gropus depper $idx  changed
 		}
 	}
 }
+
+function at_group_start($value) { 
+	if( ($cnt = loop_info::$top->at_group_start($value))
+		&& $cnt !== true
+		) 
+	{
+		while($cnt--
+		&& loop_info::$top->group_ends) {
+			--loop_info::$top->group_ends;
+			ob_end_flush();
+		}
+	} else {
+		if($cnt === false 
+		&& loop_info::$top->group_ends) {
+			--loop_info::$top->group_ends;
+		    ob_end_clean(); //clean previous end
+		}
+	}
+	++loop_info::$top->group_level;
+	return $cnt !== false;
+}
+function at_group_end($a = false) { 
+	ob_start(); loop_info::$top->group_ends++; 
+	return true;
+}
+
+function between_iterations() { ob_start(); loop_info::$top->was_connector = true; }
 
 class loop_helper extends IteratorIterator {
 	var $info = null;
@@ -100,7 +129,7 @@ class loop_helper extends IteratorIterator {
 		//at_group_start will flush group ends, if any
 		$this->info->group_level = 0;
 	} else { //at iteration very end!
-		while($this->info->group_level--)
+		while($this->info->group_ends--)
 			ob_end_flush();
 		if($this->info->was_connector === true)
 			ob_end_clean();
@@ -137,38 +166,12 @@ class everything_you_want {
 	}
 	function subselect_info($name) { return $this->subselects[$name]; }
 	function ns($name) { return new namedString($name, null, $this); }
-}
 
-function current_loop() { return loop_info::$top; }
-
-function iteration_connector() { ob_start(); loop_info::$top->$info->was_connector = true; }
-
-function at_group_start($value) { 
-	if($cnt = $this->info->at_group_start($value)) {
-		//
-		while($cnt--) {
-			--$this->info->group_level;
-			ob_end_flush();
-		}
-		$this->info->was_connector = false;
-	} else {
-		ob_clean(); //clean previous end
-		if(--$this->info->group_level === 0 &&
-			$this->info->was_connector) {
-			echo $this->info->was_connector; //if no groups, output connector!
-			$this->info->was_connector = false;
-		}
-	}
-}
-function at_group_end() { 
-	if($this->info->was_connector === true)
-		$this->info->was_connector = ob_get_clean(); //group connector, get connector in variable!
-	ob_start(); loop_info::$top->group_level++; 
 }
 
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	global $SELECT_STRUCT, $RE_ID;
-	
+
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
 	
 	if($page) {
@@ -260,10 +263,23 @@ file reference with stamp!
 
 function NVL($v, $def) { 
 	if($v instanceof namedString) {
-		$v->value = NVL($v->value, $def);
+		$v->value = NVL((string)$v, $def);
 		return $v;
 	}
 	return $v === null || $v === ''? $def: $v; 
+}
+function tr($v, $arr = null) {
+	$nv = (string)$v;
+	{
+		$nv = $nv !== null && $nv !== ''?
+			(@$arr[$nv] ?: "?$nv?") : null;
+		if($v instanceof namedString) {
+			$v->key = (string)$v;
+			$v->value = $nv;
+			$v->tr = $arr;
+		} else $v = $nv;
+	}
+	return $v;
 }
 function lpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_LEFT); }
 function rpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_RIGHT); }
@@ -273,7 +289,7 @@ function isNZ($v) { return preg_match('/^0*$/', $v)? '' : $v; }
 function toTitle($v) { return $v? mb_substr($v,0,1, 'UTF-8').'.' : $v; }
 function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? FALSE : TRUE); }
 function subRE($v, $re, $np = 0) { return preg_match($re, $v, $m)? $m[$np] : ''; }
-function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d\s*/', '', $v); }
+function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d(\.\d+)?\s*/', '', $v); }
 function ROLES() { global $CURRENT_ROLES_ARRAY; return "('".implode("','",$CURRENT_ROLES_ARRAY)."')"; }
 function HASROLE($role) { global $CURRENT_ROLES_ARRAY; if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; return ''; }
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
@@ -304,8 +320,8 @@ function seqCookie() {
 	return $s;
 }
 
-function tabler_ref($table) {
-	return file_URI('//az/server/php/tabler.php', [ 'table' => $table ]);
+function tabler_ref($table, $link = "") {
+	return file_URI('//az/server/php/tabler.php', [ 'table' => $table, 'link' => $link ]);
 }
 
 function sas_PROC($v, $pname, $proc, $file, $root = '/') {
@@ -338,6 +354,14 @@ function sas_TABLE($filter, $table, $root = '/') {
 	http_build_query( [ 'ro_filter' => $filter
 		,'query' => "report_".preg_replace('/^en/','', $table)
 		,'target' => "webreport"
+		]);
+}
+
+function sas_FORM($rid, $table, $root = '/') {
+	return $root . '?' .
+	http_build_query( [ 'ro_filter' => "_main.$table.syrecordidw = $rid~"
+		,'table' => "main.$table"
+		,'target' => "qe_editrec"
 		]);
 }
 
@@ -393,19 +417,18 @@ require_once __DIR__."/ru_number.php";
 function load_template($file) {
 	global $functions;
 	static $included_templates = [];
-	if(!$included_templates) $included_templates = [ __FILE__ => $functions ];
+	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
 	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
 	$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
 }
 
 $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
-//  echo $LOCALIZED_URI;
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
-	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
-
-	if(!$file) $file = __FILE__;
+	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
+	
+	if(!$file) $file = $caller;
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = "$G_P_DOC_ROOT$file";
@@ -418,11 +441,34 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 				$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //go up
 				$f = substr($f,3);
 			}
+			if($CURRENT_TEMPLATE_URI === '/') $CURRENT_TEMPLATE_URI = '';
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
+	
 
-	$file = realpath($file);
+	if($G_ENV_CACHE_DIR && dirname($file) !== $G_ENV_CACHE_DIR ) {
+		$droot = $_SERVER['DOCUMENT_ROOT'];
+
+		$fphpname = "$G_ENV_CACHE_DIR/".urlencode( substr($file, strlen($droot)+1 ) );
+
+		//die($fphpname);
+
+		$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
+		$mtt = filemtime($file);
+
+		//echo 'X', $fname, $mt, ' ', $mtt;
+
+		if($mt < $mtt) {
+			//echo 'y';
+			//file_put_contents($fphpname, file_get_contents($fname));
+			system("php -f ".
+				__DIR__."/templater.php -- -c $file -p$G_ENV_CACHE_DIR > $fphpname");
+		}
+
+		$file = $fphpname;
+	} else
+		$file = realpath($file);
 
 	$funcs = load_template($file);
 
@@ -567,6 +613,8 @@ function make_manipulation_command($data, $counter, $stmt = NULL, $with_pk = '')
 			if(isset($data->{'a__'.$e}))
 				$d[] = $data->{'a__'.$e};
 			else {
+				if(!isset($where_vals[$e]))
+					var_dump($counter, $where_vals);
 				$d[] = $where_vals[$e];
 			}
 		}
@@ -750,7 +798,7 @@ function output_html($res) {
 	return $res;
 }
 function output_js($res) {
-	echo addslashes($res);
+	echo json_encode($res, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 	return $res;
 }
 
@@ -822,8 +870,14 @@ function output_editor($mode, $value, $attrs = '')
 function default_templated_editor($t) {
 static $a = [
 	'' => NULL
+	, 'V' => '$value'
+	, 'SPAN' => '<span $attrs>$value</span>'
+	, 'NAMED_SPAN' => '<span name="$name" $attrs>$value</span>'
+	, 'TAG' => '<$name $attrs>$value</$name>'
+	, 'TAGV' => '<$name $attrs value="$value" />'
+
 	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
-	, 'LONGVARCHAR' => '<dfn tag vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
+	, 'LONGVARCHAR' => '<dfn tag=TEXTAREA vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
 	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs>{$EXPR[\'ru_date(substr($value,0,16))\']}</dfn>'
@@ -831,13 +885,65 @@ static $a = [
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
-	, ':R' => '<a tag fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, ':M' => '<a tag fctl name="$name" $attrs>$value</a><menu mctl $attrs2>$rel_target</menu>'
-	, ':R+' => '<button tag add fctl name="$name" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, ':M+' => '<button tag add fctl name="$name" $attrs>+</button><menu mctl $attrs2>$rel_target</menu>'
+	, 'DL' => '<a tag=A fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
+	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2>$rel_target</menu>'
+	, 'SUBTABLE' =>
+					'<button type=button onclick="this.setDN(toggle)" display_next $attrs></button>
+					<div subtable ref=Y>"/az/server/php/tabler.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
+				'
+	, 'FILE' =>
+		'<span lobload=filer accept="" filetypes="*">
+			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
+				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
+			></a>
+		</span>'
+	, 'FILE_IMAGE' =>
+		'<span lobload=filer accept="image/*" filetypes="*">
+			<img src="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
+				href="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
+				onrefresh="var e = this; e.setA(\'src\', 
+						e.A(\'src\').setURLParam(\'key\\\\[\\\\]\', findRid(e)))"
+			>
+		</span>'
+	, 'FILE_PDF' =>
+		'<span lobload=filer accept="application/pdf" filetypes="pdf">
+			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
+				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
+			></a>
+		</span>'
+
 ];
 	return $a[$t];
 }
+
+/*
+	menu:
+	1) translate internal -> external with array on show and set VALUE
+	2) user rid when save to db on edit
+	
+	bool:
+	2/3/3M -> works like menu (translate 0/1 -> yes/no on show 
+		and translate back on save)
+	two/three/threeM - do not translate at all
+	
+	also, we can use custom texts (from model!)
+	
+	2/3 is a model decision(!) (as a datatype!)
+	2 vs two, 3 vs 3M vs three vs threeM is a design decision
+	
+	so, in the model we
+	1) specify datatype 
+		DECIMAL(1) VALUES:BOOL2 (NULL/1)
+		DECIMAL(1) VALUES:BOOL3 (NULL/0/1)
+		DECIMAL(N) VALUES:varname (use model_db()->varname as array key/value pairs)
+	2) also, we use checkbox exactly for BOOL2
+	3) also, we can set "expanded from" for BOOL3 (by default) or any other translators
+		if so, we inline menu and show it (like 'three')
+	so we do not use two, 3, 3M, three, threeM vtypes
+	instead we use a+menu AND interpret "menu_expanded" attribute
+*/
 
 class templated_editors_helper implements ArrayAccess {
 	var $a = null;
@@ -858,71 +964,151 @@ function choose_from($v, $target) {
 	return $v;
 }
 
-function add_with_choose($v) {
-	$v->for_add = '+';
-	return $v;
+function name_of_field_in_nv($value)
+{
+	if($value instanceof namedString)
+		return explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
+	return '';
 }
-
-function menu_choose($v) {
-	$v->menu = ':M';
-	return $v;
+function get_filter_control($f)
+{
+	$descr = [];
+	$ct = $f->getControlType();
+	$descr['mc'] = $ct;
+	if($ct=='DL' && @$f->target) {
+		$descr['rel_target'] = file_URI('//az/server/php/chooser.php', 
+				[ 'table' => $f->target->___name 
+				  , 'add_empty' => ''
+				]);
+		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+		$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+				[ 'table' => $f->target->___name ]);
+		$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';	
+	} else
+	if($ct=='MENU' && @$f->values) {
+		$descr['rel_target'] = file_URI('//az/server/php/modeldata.php', 
+			[ 'table' => $f->values 
+			  , 'add_empty' => ''
+			]);
+		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
+		$descr['ref'] = 'Y';
+		$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+				[ 'table' => $f->target->___name ]);
+		$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';
+	}
+	return $descr;
 }
-
 function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
 	global $Tables;
 	
-	$name = '';
-	$rel_target = @$value->rel_target;
-	$data = '';
-	
-	if($value instanceof namedString)
-		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
-	
-	//TODO: get default editor from model
-	
-	if($template == NULL
-		&& $value instanceof namedString 
-	) {
+	$name = name_of_field_in_nv($value);
+	$size = '';
+	$precision = '';
+	$rel_target = '';
+	$table_name = '';
+
+	if($value instanceof namedString) {
 		
 		$table = $Tables->{$value->container->getName()};
+		$table_name = $table->___name;
 		$f = $table->fields[$name];
-		$template = default_templated_editor($f->getControlType());
-		
-		if($rel_target || $f->target) {
-			$template = default_templated_editor((@$value->menu ?: ':R') . @$value->for_add);
-			if(is_string($rel_target))
-				$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $rel_target ]);
-			else
-				if(!$rel_target)
-					$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
-			
-		} else {
-			$attrs .= ' ' . $f->getControlProps(); //NOT FOR CHOOSE!
+
+		//we can specify control type explicitly
+		if(!$template) {
+			//if not, we take control from model
+			if(!is_object($f)) {
+				var_dump($f, $name, $value, $table);
+				die('!!!!');
+			}
+			$template = default_templated_editor(
+				$f->getControlType()
+			);
 		}
-	}
 	
-	if(is_array($rel_target)) {
-		$value = @$rel_target[ $value ];
-		$data = [];
-		foreach($rel_target as $k=>$v) 
-		{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
-		$rel_target = implode("\n", $data);
-	}
-	else
-		if($rel_target)
+		if(@$value->rel_target || $f->target) {
+			$rel_target = file_URI('//az/server/php/chooser.php', 
+				[ 'table' => 
+						@$value->rel_target ?: $f->target->___name 
+				  , 'add_empty' => $f->required ? '' : 'Y'
+				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
-	
+		}
+		
+		if(@$f->values) {
+			global $ModelDB;
+			
+			$value->value = isset($ModelDB[$f->values][(string)$value]) ?
+				$ModelDB[$f->values][(string)$value] : 
+				(@$ModelDB[$f->values]['.'] ?: '')
+			;
+			
+			$rel_target = file_URI('//az/server/php/modeldata.php', 
+				[ 'table' => $f->values 
+				  , 'add_empty' => $f->required ? '' : 'Y'
+				]);
+			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
+			//$attrs .= ' add_button=N ';
+			$attrs2 .= ' ref=Y ';
+		}
+
+		if(@$value->tr) { // translated value --> use tr array as choose items
+			$data = [];
+			if(!$f->required)
+				$data[] = "<li value-patch=''>?</li>";
+			foreach($value->tr as $k=>$v) 
+			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
+			$rel_target = implode("\n", $data);
+		}
+		
+		$attrs .= $f->getControlProps();
+		$size = $f->size;
+		$precision = $f->precision;
+	}
+
 	$value = htmlspecialchars( $value );
 	
 	$EXPR = new templated_editors_helper(
-		compact('value', 'name', 'rel_target', 'data', 'attrs', 'attrs2')
+		compact('value', 'name', 'rel_target', 'attrs', 'attrs2', 'size', 'precision')
 	);
 
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
 }
 
 
+function to_attr_struct($val, $name, $cmd, $afield, &$db
+	, $name_translator = null, $add_translator_to_def = '') {
+	if($name===NULL) {
+		$db = new stdClass;
+		$db->attr_fileld = $afield;
+		$db->ins_cmd = $cmd;
+		$db->vals = new stdClass;
+		$db->cmds = new stdClass;
+		$db->name_translator = $name_translator ? $GLOBALS[$name_translator] : null;
+		$db->add_translator_to_def = $add_translator_to_def;
+		return;
+	}
+	$db->vals->$name = $val;
+	$db->cmds->$name = $cmd;
+}
+
+function output_attr_ctrl($name, $vfield, $tag, $attrs, $db) {
+	$pname = $name;
+	if($db->name_translator) 
+		$name = $db->name_translator[$name];
+	$rcmd = @$db->cmds->$name ? 
+		$db->cmds->$name 
+		: $db->ins_cmd;
+	$add_to_def = '';
+	if($db->add_translator_to_def)
+		$add_to_def = "def-$db->add_translator_to_def='$pname'";
+	echo "<$tag $attrs name=$vfield def-$db->attr_fileld='$name' $add_to_def cmd='$rcmd'>";
+	output_html(@$db->vals->$name);
+	echo "</$tag>";
+}
+
+
+/*
 function xlsx_file_output($file_name, $templ) {
 	
 	$zip = new ZipArchive;
@@ -979,6 +1165,11 @@ function xlsx_file_output($file_name, $templ) {
 	
 	unlink($file);
 }
+*/
+function xlsx_file_output($file_name, $templ) {
+	require_once(__DIR__.'/htmltoexcl.php');
+	htmlToExcel($templ,$file_name.'.xlsx',__DIR__.'/sample.xlsx');
+}
 
 function csv_file_output($file_name, $templ) {
 	header('Content-type: text/');
@@ -994,13 +1185,15 @@ function csv_file_output($file_name, $templ) {
 	}
 }
 
-function qe_control_model($params) {
+function qe_control_model() {
 	global $Tables;
 	$tbls = [];
 	foreach($Tables as $name=>$table) {
 		$fields = [];
 		$pk = "['".implode("','", $table->PK(true))."']";
-		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk}";
+		$dict = @$table->table_props["DICT"] ? ",dict:true" : "";
+		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk$dict}";
+		
 		foreach($table->fields as $fld_name=>$props) {
 			$properties = [];
 			$properties[] = "$:{name: '$fld_name'}";
@@ -1010,12 +1203,17 @@ function qe_control_model($params) {
 			$properties[] = "sicaption:'{$props->si_caption}'";
 			$properties[] = 'visibility:' .($props->vis ? 'true' : 'false');
 			$properties[] = "type:'{$props->type}'";
+			$ctrl = get_filter_control($props);
+			$ctrl = array_map( function($k,$v) {
+				return "$k:\"$v\"";
+			},array_keys($ctrl),array_values($ctrl) );
+			$properties[] = 'ctrl:{'.implode(',',$ctrl).'}';
 			$fields[] = $fld_name.':{'.implode(',', $properties).'}';
 		}
 		;
 		$tbls[]=$name.': {'.implode(',', $fields).'}';					
 	}
-	return "<script>var qe_params={".$params."};var qe_model={".implode(',', $tbls)."}</script>";
+	return "<script>var QEMODEL={".implode(',', $tbls)."}</script>";
 }
 
 function make_request($url, $srv = 'http://localhost') {

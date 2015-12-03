@@ -18,6 +18,11 @@ class _XNode {
     $n = ++_XNode::$a_num;
     $this->alias = "a$n";
     $this->table = $table;
+    if(!$table) {
+    	debug_print_backtrace();
+  		var_dump($this);
+  		die('');
+    }
   }
 
   function addChild($name, $table) {
@@ -42,10 +47,24 @@ class _XNode {
     if($dst !== null) $dst = "( $dst ) AND ( $a )";
     else $dst = $a;
   }
+  
+  static function tableName($table_name) {
+	global $a_table_db;
+	return	
+			trim(@explode(':', @$a_table_db[$table_name], 2)[1])
+			?: $table_name
+	;
+  }
 
   function __toString() {
+  	if(!$this->table) {
+  		var_dump($this);
+  		die('');
+  	}
       $tn = isset($this->table->select) ? 
-        "({$this->table->select})" : $this->table->___name;
+        "({$this->table->select})" 
+		: _XNode::tableName($this->table->___name)
+		;
       if($this->access_filters) {
         _XNode::filter2str($this->access_filters, $a);
         $tn = "( SELECT * FROM $tn a1 WHERE $a )"; 
@@ -75,14 +94,26 @@ class _XPath {
 	}
     return
         $this->___rel_to_node 
-			?: $this->___node->alias .'.'. $this->___name
-      ;
+			?: (
+			@$this->___node->table->fields[$this->___name]->type == "SUBTABLE"
+			||
+			@$this->___node->table->fields[$this->___name]->type == "ACTION"
+			?
+			"NULL":
+			(
+			@$this->___node->table->fields[$this->___name]->type == "FILE" ?
+				$this->___node->alias .'.'. $this->___node->table->PK()
+			:
+			$this->___node->alias .'.'. $this->___name
+			)
+      );
   }
   function __get($name) {
    /* if($name==='join') {
       //accessed left and right fields, but in different nodes!
       // this is for check rights especially
-      // $this->___rel_to_node = _XNode::$ext['a']->{$this->___node->table->fields[$this->___name]->target->PK()}; 
+      // $this->___rel_to_node = 
+      //    _XNode::$ext['a']->{$this->___node->table->fields[$this->___name]->target->PK()}; 
       //now, we use direct link generation and dont check access to linked key fields
       //$this->___node->alias.rel = _XNode::$ext['a']->alias.id
       //$this->___node->alias.rel = _XNode::$ext['a']->alias.rel.id
@@ -220,8 +251,9 @@ class _Cmd extends _PreCmd {
       throw new Exception("can not find root table: $table in $table_part_of_parsed");
     $this->table = $table;
     $this->dialect = db_dialect(table_db($table));
-    if(!$this->dialect)
+    if(!$this->dialect) {
       throw new Exception("can not find root table dialect for: $table");
+	}
   }
 
   function parse_joins($from) {
@@ -382,6 +414,8 @@ class _Cmd extends _PreCmd {
         // select to array here
         $old_num = _XNode::$a_num; //keep old alias numeration
             $a = $this->process_select($m['select'], $paths);
+            $a->table = $this->table;
+            $a->alias = $this->alias;
         _XNode::$a_num = $old_num;
         if(!$paths)
           throw new Exception("Uncorrelated array subselect: $a->stmt");
@@ -414,14 +448,14 @@ class _Cmd extends _PreCmd {
 	global $RE_ID;
 		
 	    //echo "\n^^^^$p", preg_match(_SQL_FUNC_KWD, $m[0])?"-F-":'-I-';
-			   if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
-			   $path = explode('.', $p);
+		if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
+		$path = explode('.', $p);
 		$roots = $tree->roots;
 		reset($roots);
 		$alias = count($path)>1? array_shift($path) : key($roots);
 		//$alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
 	    
-		if(preg_match("/^ext([0-9]*)(_$RE_ID)?/", $alias, $mi)) {
+		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $alias, $mi)) {
 			   
 			    $level = (int)(@$mi[1]?:0);
 	    $alias = @$mi[2] ?: 'a';	    
@@ -636,7 +670,7 @@ class _Cmd extends _PreCmd {
     // here we can update some fields only if another fields is in some state (null or not null)
     // for example, for stages fields, related to stage updatable 
     // if a stage enter guard is not null and a stage complete guard is null
-    // more general, we can use expressions, but it's too complex for now
+    // more general, we can use essions, but it's too complex for now
     // doing inserts we can easely force record creation in initial stage with all guards equal to null
     // but! guards can be in another table, so only sql expression can check them here,
     // because we have not chance to add path with filters - too late

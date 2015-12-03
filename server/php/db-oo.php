@@ -1,11 +1,14 @@
 <?php
 
 require_once(__DIR__.'/db-oo-transformer.php');
+require_once(__DIR__.'/modeldata.php');
 
 class namedString {
 var $name = '';
 var $value = '';
 var $container = null;
+var $key = null; // not translated (if !=null => value before translation)
+var $tr = null; // translation array
 function __toString() { return (string)$this->value; }
 function __construct($n, $v, $c) {
 	$this->name = $n;
@@ -210,6 +213,7 @@ $pv = $dbc->lastInsertId();
 */
 function execute_and_get_generated_id($stmt, $a) {
 	global $RE_ID;
+	$a = prepare_db_args($a);
 	$stmt->execute($a);
 	if(preg_match('#^/*lastInsertedId_[a-zA-Z0-9]+:($RE_ID)#', $stmt->queryString, $m)) {
 		$f = $m[0];

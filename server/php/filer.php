@@ -4,6 +4,7 @@ include 'GenPDF_class.php';
 
 $tname = $_REQUEST['table'];
 $fld = $_REQUEST['fld'];
+$name_field = @$_REQUEST['name_field'];
 
 $key = $_REQUEST['key'];
 
@@ -26,7 +27,10 @@ function checkrights_cmd($cmd, $args) {
   if(preg_match("/^\s*SELECT\s.*?\sFROM\s(.*)/si",$cmd, $m))
 	$cmd2 = "SELECT 1 FROM $m[1]";
   else
-	$cmd2 = "SELECT 1 FROM $table a1 WHERE ". (explode(' WHERE ', $cmd, 2)[1]);
+  if(preg_match("/^\s*UPDATE\s+(\S+)\s+(\S+)\s+SET\s+[^=]+=\s*NULL\s+WHERE\s(.*)/si",$cmd, $m))
+	$cmd2 = "SELECT 1 FROM $m[1] $m[2] WHERE $m[3]";
+  else
+	  die($cmd);
 
   $dbh = get_connection($table);
   //die($cmd2);
@@ -44,6 +48,7 @@ if(!checkrights_cmd($cmd, $key)) {
 }
 
 $fdir = $a_table_db["$tname.$fld"];
+
 $fname = rawurlencode(implode('~',$key));
 
 $dir = @scandir("$fdir/$fname");
@@ -972,14 +977,4 @@ if($file) {
   
 }
 
-
-function jsOnResponse($obj)  
- {  
- echo ' 
- <script type="text/javascript"> 
- window.parent.onResponse("'.$obj.'"); 
- </script> 
- ';  
-}  
-
-if($_REQUEST['upload-ok'] != 'yes')	echo @$_REQUEST['upload-ok'];
+echo @$_REQUEST['upload-ok'];

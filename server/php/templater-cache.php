@@ -1,29 +1,11 @@
-<?php 
-//var_dump($_ENV);
-//var_dump($_SERVER);
-
-$fname = getenv('fullfile');
-$cdir = getenv('cache');
-
+<?php
+require_once( dirname( dirname( dirname( __DIR__ ) ) ).'/ais/env.php');
+require_once( __DIR__.'/generator.php' );
+$fname = getenv('fullfile') ?: getenv('PATH_INFO');
 if(!$fname) die('');
-
-$droot = $_SERVER['DOCUMENT_ROOT'];
-
-$fphpname = "$cdir/".urlencode( substr($fname, strlen($droot)+1 ) );
-
-//die($fphpname);
-
-$mt = file_exists($fphpname) ? stat($fphpname)['mtime'] : 0;
-$mtt = stat($fname)['mtime'];
-
-//echo 'X', $fname, $mt, ' ', $mtt;
-
-if($mt < $mtt) {
-	//echo 'y';
-	//file_put_contents($fphpname, file_get_contents($fname));
-	system("php -f ".
-		__DIR__."/templater.php -- -c $fname -p$cdir > $fphpname");
+$cache = new TemplaterCache( urlencode( substr($fname, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
+if($cache->need_to_gen_from($fname)) {
+	$cache->gen_from_file($fname);
 }
-
-$force_toplevel = $fphpname;
-require $fphpname;
+define('TOPLEVEL_FILE', realpath($cache->file()));
+while(@!include $cache->file()) {}

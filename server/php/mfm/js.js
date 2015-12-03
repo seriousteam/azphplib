@@ -91,8 +91,9 @@ function reloadResponse()
 	 else alert("Failed! Err text: "+value);
   }  
 }
-function saveFile()
+function saveFile(o) 
 {
+    o && o.removeAttribute("changes");
 	if (!couldProcess && httpRequester)
 	{
 		var data="dir="+encodeURIComponent(document.URL)+"&edtext=";
@@ -115,10 +116,11 @@ function getChList()
 function deleteFile()
 {
 	var dellist=getChList();
-	if (!couldProcess && httpRequester&&dellist.length>0)
+	if (!couldProcess && httpRequester&&dellist.length>0 
+        && confirm(dellist.length+" file(s) will be deleted. Are you sure?"))
 	{
 		var data="dir="+encodeURIComponent(document.URL)+"&delfls="+encodeURIComponent(dellist.join("*"));
-		sendPOST(data,"reload");		
+		sendPOST(data,"reload");	
 		var checks=document.getElementsByName('chbt');
 		for (var i=0;i<checks.length;i++) checks[i].checked=false;					
 	}	
@@ -149,6 +151,7 @@ function create(isfile)
 		sendPOST(data,"reload");
 	}
 }
+
 function copyFiles()
 {
 	var cplist=getChList();	
@@ -221,8 +224,8 @@ function filterContent()
 function changeEdit()
 {
 	var checks=document.getElementsByName('simple_ed')[0];
-	if (checks.checked) setGlobVar("ed_simple",1);
-	else setGlobVar("ed_simple",0);	
+	if (checks.checked) setGlobVar("ed_simple",0);
+	else setGlobVar("ed_simple",1);	
 	//location.reload(true);
 	//window.location.href=zzz;
 	reloadLocation();
