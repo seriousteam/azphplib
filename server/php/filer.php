@@ -977,4 +977,15 @@ if($file) {
   
 }
 
-echo @$_REQUEST['upload-ok'];
+
+
+function jsOnResponse($obj)  
+ {  
+ echo ' 
+ <script type="text/javascript"> 
+ window.parent.onResponse("'.$obj.'"); 
+ </script> 
+ ';  
+}  
+
+if($_REQUEST['upload-ok'] != 'yes')	echo @$_REQUEST['upload-ok'];
