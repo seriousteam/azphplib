@@ -85,8 +85,8 @@
                 $dtc=0;
                 $T_T=array();
                 $cl=0;
-                for($i=1;$i<$result['maxcol'];$i++)
-                        $objPHPExcel->getActiveSheet()->getColumnDimension(getColLetterByNum($i))->setAutoSize(true);                                
+                //for($i=1;$i<$result['maxcol'];$i++)
+                        //$objPHPExcel->getActiveSheet()->getColumnDimension(getColLetterByNum($i))->setAutoSize(true);                                
                 while (isset($result['data'][$dtc]))
                 {
                     if (!isset($result['mrg_supp'][$rw][$cl]) || 
@@ -152,8 +152,8 @@
                     }
                     */
                 
-                //$objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setWrapText(true);
-                //$objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setVertical(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setWrapText(true);
+                $objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setVertical(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
                 if (!$table_ws)
                 {                    
                     $result['data']= array();
