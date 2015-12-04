@@ -417,7 +417,7 @@ require_once __DIR__."/ru_number.php";
 function load_template($file) {
 	global $functions;
 	static $included_templates = [];
-	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
+	if(!$included_templates) $included_templates = [ $file => $functions ];
 	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
 	$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
