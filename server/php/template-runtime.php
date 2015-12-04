@@ -417,7 +417,7 @@ require_once __DIR__."/ru_number.php";
 function load_template($file) {
 	global $functions;
 	static $included_templates = [];
-	if(!$included_templates) $included_templates = [ $file => $functions ];
+	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
 	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
 	$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
@@ -428,7 +428,8 @@ $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
 	
-	if(!$file) $file = $caller;
+	if(!$file) $file = preg_replace('/\.t$/','',$caller);
+	//was $caller. we want ".php" as a caller. Template file is just a source for .php now.
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = "$G_P_DOC_ROOT$file";
@@ -445,7 +446,6 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
-	
 
 	if($G_ENV_CACHE_DIR && dirname($file) !== $G_ENV_CACHE_DIR ) {
 		$droot = $_SERVER['DOCUMENT_ROOT'];
@@ -469,9 +469,9 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 		$file = $fphpname;
 	} else
 		$file = realpath($file);
-
+	
 	$funcs = load_template($file);
-
+	
 	if(!$args) $args = [];
 
 	$func = $funcs[$name?:'_main_'];
@@ -501,7 +501,7 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 		}
 	else {
 		$file = preg_replace('/\.t$/','',$caller);
-		//we want ".php" as a caller. Template file is just a source for .php now.
+		//was $caller. we want ".php" as a caller. Template file is just a source for .php now.
 	}
 	$file = realpath($file);
 	
