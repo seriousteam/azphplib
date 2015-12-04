@@ -481,7 +481,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 }
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
-
+	
 	$uri = $CURRENT_TEMPLATE_URI;
 	if($file)
 		if($file[0] === '/') {
@@ -500,7 +500,8 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 			$file = dirname($caller). '/' . $file;
 		}
 	else {
-		$file = $caller;
+		$file = preg_replace('/\.t$/','',$caller);
+		//we want ".php" as a caller. Template file is just a source for .php now.
 	}
 	$file = realpath($file);
 	
