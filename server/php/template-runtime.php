@@ -428,8 +428,8 @@ $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
 	
-	if(!$file) $file = preg_replace('/\.t$/','',$caller);
-	//was $caller. we want ".php" as a caller. Template file is just a source for .php now.
+	if(!$file) $file = $caller;
+	
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = "$G_P_DOC_ROOT$file";
@@ -467,8 +467,12 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 		}
 
 		$file = $fphpname;
-	} else
+	} else {
+		
+		if(!$G_ENV_CACHE_DIR)//template monitor rules
+			$file = preg_replace('/\.t$/','',$file);
 		$file = realpath($file);
+	}
 	
 	$funcs = load_template($file);
 	
@@ -500,8 +504,7 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 			$file = dirname($caller). '/' . $file;
 		}
 	else {
-		$file = preg_replace('/\.t$/','',$caller);
-		//was $caller. we want ".php" as a caller. Template file is just a source for .php now.
+		$file = $caller;
 	}
 	$file = realpath($file);
 	
