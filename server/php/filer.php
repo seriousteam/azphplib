@@ -1,6 +1,6 @@
 <?php
 require_once(__DIR__.'/db-oo.php');
-
+include 'GenPDF_class.php';
 
 $tname = $_REQUEST['table'];
 $fld = $_REQUEST['fld'];
@@ -57,7 +57,18 @@ if($dir) $dir = array_diff($dir, array('..', '.'));
 
 if(isset($_REQUEST['check'])) {
 	die($dir ? 'OK' : 'NO');
-} 
+}
+if(isset($_REQUEST['del'])) {
+	if ($dir)
+	{
+		unlink("$fdir/$fname/$fname.pdf");
+		die('OK');
+	}
+	else
+	{
+		die('NO');
+	}
+}
 
 function file_default_mimetype_mapping() {
   return array(
@@ -931,6 +942,25 @@ if($dir && !$err) {
 		unlink("$fdir/$fname/$f");
 	rmdir("$fdir/$fname");
 }
+if($_REQUEST['upload-ok'] == 'yes')
+{	
+	$genPDF = new GenPDF();
+	$count = $genPDF->getCountPages($file['tmp_name']);
+	/*$f = fopen($file['tmp_name'], "r");
+	$count = null;
+	while(!feof($f)) {
+		$line = fgets($f,255);
+		if (preg_match('/\/Count [0-9]+/', $line, $matches))
+		{
+			preg_match('/[0-9]+/',$matches[0], $matches2);
+			if ($count<$matches2[0]) $count=$matches2[0]; 
+		} 
+	}
+	fclose($f);*/
+}
+
+
+
 
 if($file) {
 
@@ -939,10 +969,23 @@ if($file) {
 	
 	$tfn = $file['name'];
 
+	//$pd = file_get_contents("ftp://10.10.12.37/lobs/att_case/reviewlead_org/77882001.00000/77882001.00000.pdf");
 	$ftype = strtolower(pathinfo($tfn, PATHINFO_EXTENSION )) ?: 'bin';
 	
-	
-	move_uploaded_file($file['tmp_name'], "$fdir/$fname/$fname.$ftype");
-} 
+	$success = move_uploaded_file($file['tmp_name'], "$fdir/$fname/$fname.$ftype");
+	if($_REQUEST['upload-ok'] == 'yes') jsOnResponse("{'filename':'" . $tfn . "', 'success':'" . $success . "', 'count':'" . $count . "', 'fld':'" . $fld . "', 'id':'" . $fname . "', 'date_load':'" . date('Y-m-d') . "'}");  
+  
+}
 
-echo @$_REQUEST['upload-ok'];
+
+
+function jsOnResponse($obj)  
+ {  
+ echo ' 
+ <script type="text/javascript"> 
+ window.parent.onResponse("'.$obj.'"); 
+ </script> 
+ ';  
+}  
+
+if($_REQUEST['upload-ok'] != 'yes')	echo @$_REQUEST['upload-ok'];

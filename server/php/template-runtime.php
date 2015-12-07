@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/processor.php');
 require_once(__DIR__.'/sas_coder.php');
+
 class smap {
 	var $___base = null;
 	var $___map = [];
@@ -165,6 +166,7 @@ class everything_you_want {
 	}
 	function subselect_info($name) { return $this->subselects[$name]; }
 	function ns($name) { return new namedString($name, null, $this); }
+
 }
 
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
@@ -355,6 +357,14 @@ function sas_TABLE($filter, $table, $root = '/') {
 		]);
 }
 
+function sas_FORM($rid, $table, $root = '/') {
+	return $root . '?' .
+	http_build_query( [ 'ro_filter' => "_main.$table.syrecordidw = $rid~"
+		,'table' => "main.$table"
+		,'target' => "qe_editrec"
+		]);
+}
+
 function sas_RCT($file, $root = '/') {
 	global $G_P_DOC_ROOT;
 	return $root . 
@@ -407,7 +417,7 @@ require_once __DIR__."/ru_number.php";
 function load_template($file) {
 	global $functions;
 	static $included_templates = [];
-	if(!$included_templates) $included_templates = [ __FILE__ => $functions ];
+	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
 	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
 	$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
@@ -418,7 +428,8 @@ $CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
 	
-	if(!$file) $file = __FILE__;
+	if(!$file) $file = $caller;
+	
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = "$G_P_DOC_ROOT$file";
@@ -435,7 +446,6 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
-	
 
 	if($G_ENV_CACHE_DIR && dirname($file) !== $G_ENV_CACHE_DIR ) {
 		$droot = $_SERVER['DOCUMENT_ROOT'];
@@ -457,11 +467,15 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 		}
 
 		$file = $fphpname;
-	} else
+	} else {
+		
+		if(!$G_ENV_CACHE_DIR)//template monitor rules
+			$file = preg_replace('/\.t$/','',$file);
 		$file = realpath($file);
-
+	}
+	
 	$funcs = load_template($file);
-
+	
 	if(!$args) $args = [];
 
 	$func = $funcs[$name?:'_main_'];
@@ -471,7 +485,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 }
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
-
+	
 	$uri = $CURRENT_TEMPLATE_URI;
 	if($file)
 		if($file[0] === '/') {
@@ -1098,6 +1112,7 @@ function output_attr_ctrl($name, $vfield, $tag, $attrs, $db) {
 }
 
 
+/*
 function xlsx_file_output($file_name, $templ) {
 	
 	$zip = new ZipArchive;
@@ -1153,6 +1168,11 @@ function xlsx_file_output($file_name, $templ) {
 	readfile($file);
 	
 	unlink($file);
+}
+*/
+function xlsx_file_output($file_name, $templ) {
+	require_once(__DIR__.'/htmltoexcl.php');
+	htmlToExcel($templ,$file_name.'.xlsx',__DIR__.'/sample.xlsx');
 }
 
 function csv_file_output($file_name, $templ) {
@@ -1211,6 +1231,7 @@ function make_request($url, $srv = 'http://localhost') {
 		$opts = stream_context_create();
 	return file_get_contents('http://localhost/'.$url, false, $opts);
 }
+
 /*TODO
 1) make attribute table description
 	it defines:

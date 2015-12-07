@@ -159,6 +159,10 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'oracle' => "XSESSION!",
 				'mssql' => "(SELECT val FROM #svar_x_$1)",
 				'mysql' => "XSESSION!",
+				],
+		'PARTS' => 
+				[
+				'pgsql' => '$1SELECT REGEXP_SPLIT_TO_TABLE($2, E\'#\')$3'
 				]
 	];
 	static $frepl_from = null;
