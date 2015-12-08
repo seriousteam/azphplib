@@ -122,7 +122,43 @@ function table_db($table){
   $tn = trim(explode(':', @$a_table_db[$table], 2)[0]);
   return $main_cfg[$tn ?: 'default_db'];
 }
-
+if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
+	$checks = [
+		"PDO" => false,
+		"SimpleXML" => false
+	];	
+	$checks["PDO"] = extension_loaded("pdo");
+	if($checks["PDO"]) {
+		$pdo_dialects = [ "mssql"=>"pdo_sqlsrv", 
+				"mysql"=>"pdo_mysql", "pgsql"=>"pdo_pgsql", "oracle"=>"pdo_oci"];
+		foreach($main_cfg as $k=>$v) {
+			$dialect = $v["dialect"];
+			$checks["PDO for $dialect"] = extension_loaded($pdo_dialects[$dialect]);		
+		}
+	}
+	$checks["SimpleXML"] = extension_loaded("SimpleXML");
+	
+	$phppath = __DIR__."/../../../../php/php.exe";
+	if(!file_exists($phppath)) {
+		$phppath = "php";
+	}
+	system("$phppath >&0",$retval);
+	$checks['PHP Cli'] = !$retval;
+	
+	if(@$G_ENV_CACHE_DIR && $checks['PHP Cli']) {
+		$checks["PHP Cli Rights for $G_ENV_CACHE_DIR for $CURRENT_USER"] = false;
+		$tmpfile = "$G_ENV_CACHE_DIR/az.cfg.check.php";
+		system("echo 11111 > $tmpfile",$retval);		
+		if(!$retval && file_exists($tmpfile) ) {
+			$checks["PHP Cli Rights for $G_ENV_CACHE_DIR for $CURRENT_USER"] = 
+				preg_replace('/[^1]+/','',file_get_contents($tmpfile))==="11111";
+			unlink($tmpfile);
+		}
+	}	
+	foreach($checks as $k=>$v) {
+		if(preg_match('/^PDO/',$k) && !$v) goto FAILED;
+	}
+}
 if($G_ENV_LOCAL_USERS) {
   /*
     [user]
@@ -561,38 +597,59 @@ set_exception_handler(function ($exception) {
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 
-header('Content-type: text/plain');
+FAILED:
 
+header('Content-type: text/html');
+echo <<<HEAD
+	<html><head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<style>
+	* { font-family: sans-serif; font-size:14pt; }
+	table {border-collapse:collapse}
+	td {padding:0.4em; border:1px solid rgba(0,0,0,0.1)}
+	[ok] { color: olivedrab }
+	[failed] { color: tomato }
+	[req] td:first-child { white-space: nowrap }
+	</style>
+	</head>
+	<body><table cellspacing=0>
+	<tr><td colspan=2><b>Requirements:</b></tr>
+HEAD;
+
+foreach($checks as $k=>$v) {
+	$style = $v ? "ok" : "failed";
+	echo "<tr req $style><td>$k<td>$style</tr>";
+}
+$G = function($v) { return is_string($v) ? $v : 'corrupted'; };
 echo <<<XCFG
-	user is $CURRENT_USER 
-		from $CURRENT_USER_IP
-	roles $CURRENT_ROLES_CSV		
-	root is 
-		$G_P_DOC_ROOT
-	uri prefix is 
-		$G_ENV_URI_PREFIX
-	main config in 
-		$G_ENV_MAIN_CFG
-	table mapping set in 
-		$G_ENV_TABLE_DB_MAPPING
-	lib mapping set in 
-		$G_ENV_LIB_MAPPING
-	local user database in 
-		$G_ENV_LOCAL_USERS
-	local role assignments in 
-		$G_ENV_LOCAL_ROLES
-	model definition in 
-		$G_ENV_MODEL
-	cache dir is
-		$G_ENV_CACHE_DIR
-	model autoload $G_ENV_LOAD_MODEL
-
-	cache mode $G_ENV_CACHE
-	cache ttl $G_ENV_CACHE_TTL
-
+	<tr><td colspan=2><b>Info:</b></tr>
+	<tr><td>User<td>$CURRENT_USER</tr>
+	<tr><td>IP from<td>$CURRENT_USER_IP</tr>
+	<tr><td>Roles<td>{$G(@$CURRENT_ROLES_CSV)}</tr>
+	<tr><td>Root<td>$G_P_DOC_ROOT</tr>
+	<tr><td>URI prefix<td>$G_ENV_URI_PREFIX</tr>
+	<tr><td>Main config<td>$G_ENV_MAIN_CFG</tr>	
+	<tr><td>Table mapping<td>$G_ENV_TABLE_DB_MAPPING</tr>
+	<tr><td>Lib mapping<td>$G_ENV_LIB_MAPPING</tr>
+	<tr><td>Local user database<td>{$G($G_ENV_LOCAL_USERS)}</tr>
+	<tr><td>Local role assignments<td>$G_ENV_LOCAL_ROLES</tr>	
+	<tr><td>Model definition<td>$G_ENV_MODEL</tr>		
+	<tr><td>Cache directory<td>$G_ENV_CACHE_DIR</tr>
+	<tr><td>Model autoload<td>$G_ENV_LOAD_MODEL</tr>	 
+	<tr><td>Cache mode<td>$G_ENV_CACHE</tr>
+	<tr><td>Cache ttl<td>$G_ENV_CACHE_TTL</tr>
 XCFG
 ;
-
+echo <<<TFOOT
+	</table><pre>
+TFOOT;
+echo '<div><b>$main_cfg</b></div>';
 var_dump($main_cfg);
+echo '<div><b>$local_objects_rights</b></div>';
 var_dump($local_objects_rights);
+echo '<div><b>$a_table_db</b></div>';
 var_dump($a_table_db);
+
+echo <<<FOOT
+	</body></html>
+FOOT;

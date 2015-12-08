@@ -1,6 +1,5 @@
 <?php
 require_once(__DIR__.'/template-runtime.php');
-require_once(__DIR__.'/generator.php');
 
 $table = $_REQUEST['table'];
 

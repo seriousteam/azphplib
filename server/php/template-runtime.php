@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/processor.php');
 require_once(__DIR__.'/sas_coder.php');
+require_once(__DIR__.'/generator.php');
 
 class smap {
 	var $___base = null;
@@ -418,8 +419,9 @@ function load_template($file) {
 	global $functions;
 	static $included_templates = [];
 	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
-	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
-	$included_templates[$file] = require_once($file);
+	if(array_key_exists($file, $included_templates)) return $included_templates[$file];	
+	while( !($included_templates[$file] = @include $file) ) {}	
+	//$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
 }
 
@@ -446,41 +448,27 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
-
-	if($G_ENV_CACHE_DIR && dirname($file) !== $G_ENV_CACHE_DIR ) {
-		$droot = $_SERVER['DOCUMENT_ROOT'];
-
-		$fphpname = "$G_ENV_CACHE_DIR/".urlencode( substr($file, strlen($droot)+1 ) );
-
-		//die($fphpname);
-
-		$mt = file_exists($fphpname) ? filemtime($fphpname) : 0;
-		$mtt = filemtime($file);
-
-		//echo 'X', $fname, $mt, ' ', $mtt;
-
-		if($mt < $mtt) {
-			//echo 'y';
-			//file_put_contents($fphpname, file_get_contents($fname));
-			system("php -f ".
-				__DIR__."/templater.php -- -c $file -p$G_ENV_CACHE_DIR > $fphpname");
-		}
-
-		$file = $fphpname;
+	
+	if($G_ENV_CACHE_DIR) {
+		//template-cache rules		
+		$cache = new TemplaterCache( urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
+		if(dirname($file) !== $G_ENV_CACHE_DIR) {
+			if( $cache->need_to_gen_from( $file ) ) {
+				$cache->gen_from_file( $file );
+			}
+		}		
+		$file = realpath( $cache->file() );	
 	} else {
-		
-		if(!$G_ENV_CACHE_DIR)//template monitor rules
-			$file = preg_replace('/\.t$/','',$file);
-		$file = realpath($file);
-	}
-	
+		//template monitor rules
+		$file = preg_replace('/\.t$/','',$file);
+		$file = realpath( $file );
+	}	
 	$funcs = load_template($file);
-	
+		
 	if(!$args) $args = [];
 
 	$func = $funcs[$name?:'_main_'];
 	$func($cmd, $args, $call_parameters); // call_parameters cleared in func automatically (with destroctor)
-
 	$args = [];
 }
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
@@ -1112,8 +1100,8 @@ function output_attr_ctrl($name, $vfield, $tag, $attrs, $db) {
 }
 
 
-/*
-function xlsx_file_output($file_name, $templ) {
+
+function xlsx_file_output_old_variant($file_name, $templ) {
 	
 	$zip = new ZipArchive;
 	$zip->open(__DIR__.'/sample.xlsx') or die("can't open sample file");
@@ -1169,7 +1157,6 @@ function xlsx_file_output($file_name, $templ) {
 	
 	unlink($file);
 }
-*/
 function xlsx_file_output($file_name, $templ) {
 	require_once(__DIR__.'/htmltoexcl.php');
 	htmlToExcel($templ,$file_name.'.xlsx',__DIR__.'/sample.xlsx');

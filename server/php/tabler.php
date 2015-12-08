@@ -3,7 +3,6 @@
 if(!defined('CHOOSER_MODE')) define('CHOOSER_MODE', '');
 
 require_once(__DIR__.'/template-runtime.php');
-require_once(__DIR__.'/generator.php');
 
 $table = $_REQUEST['table'];
 $link = @$_REQUEST['link'];

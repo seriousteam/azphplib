@@ -33,9 +33,9 @@ class TemplaterCache {
 		system("$phppath -f ".
 			__DIR__."/templater.php -- -c $fromfile -p{$this->cdir} $sourcefile > $tofile");
 	}
-	function __construct($filetogen) {
+	function __construct($in_cache_name) {
 		global $G_ENV_CACHE_DIR;
 		$this->cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
-		$this->fphpname = "{$this->cdir}/$filetogen";
+		$this->fphpname = "{$this->cdir}/$in_cache_name";
 	}
 }
