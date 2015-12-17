@@ -22,11 +22,13 @@
     //http://213.208.189.135/ais/rsh/templates/chartdata.php?cmd=O:xxxxx.xlsx
 	
 	
+	// htmlToExcel - parse html tables and create excel file (in out)
     // html - raw html 
     // $fname - output filename fullpath
     // $template - template xsl filename full path.
     // $table_ws= 1 one table = one excel page, else all tables on one excel page
-    function htmlToExcel($html,$fname,$template=null,$table_ws=TRUE)
+	// $resize_cells - true - try resize rows and cols by content, false - default sizing
+   function htmlToExcel($html,$fname,$template=null,$table_ws=TRUE,$resize_cells=true)
     {
 		if(preg_match('/^.*\.xls\s*$/',$fname)) 
 			$format = 'Excel5';
@@ -37,17 +39,17 @@
 		
         $html=preg_replace('/[\x01-\x1f]/', ' ', $html);
         $html=preg_replace('/\t+/', ' ', $html);
-        //$html=preg_replace('/\n+/', ' ', $html);
+        $html=preg_replace('/\n+/', ' ', $html);
         $tables=null;
         //preg_match_all("#<table.*?<\/table>#i",$pre_cont,$tables);
         $dom = new DOMDocument();
         if (!($dom->loadHTML($html))) return null;
         $tables = $dom->getElementsByTagName("table");
         $data=null;
-        if ($tables && $template)
+        if ($tables)
         {
             $objPHPExcel=new PHPExcel();
-			$objPHPExcel=PHPExcel_IOFactory::load($template);
+			if ($template) $objPHPExcel=PHPExcel_IOFactory::load($template);
             $sh_count=0;            
             PHPExcel_Cell::setValueBinder( new PHPExcel_Cell_AdvancedValueBinder() );
             //PHPExcel_Shared_Font::setAutoSizeMethod(PHPExcel_Shared_Font::AUTOSIZE_METHOD_EXACT);
@@ -116,7 +118,7 @@
                         )
                     )
                 );
-                $objPHPExcel->getActiveSheet()->getRowDimension($rw)->setRowHeight(-1);
+                //$objPHPExcel->getActiveSheet()->getRowDimension($rw)->setRowHeight(-1);
                 $objPHPExcel->getActiveSheet()->getStyle($all_cells)->applyFromArray($styleArray );
                 $objPHPExcel->getActiveSheet()->calculateColumnWidths();                
 					/*
@@ -151,9 +153,59 @@
                         $c_sheet->getColumnDimension(getColLetterByNum($j))->setWidth($c_col_wdth);
                     }
                     */
-                
+                $objPHPExcel->getActiveSheet()->getDefaultRowDimension()->setRowHeight(-1);
                 $objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setWrapText(true);
                 $objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setVertical(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+                
+                $c_sheet=$objPHPExcel->getActiveSheet();                    
+                $nColumn=PHPExcel_Cell::columnIndexFromString($c_sheet->getHighestColumn());
+				$nRow=$c_sheet->getHighestRow();				
+				if ($resize_cells)
+				{
+					$cwdhs=array();
+					// calculate columns width
+					for ($j=0;$j<=$nColumn; $j++)
+					{
+						$c_wdth=$c_sheet->getColumnDimension(getColLetterByNum($j))->getWidth();
+						if ($c_wdth<=0) $c_wdth=10;
+						$maxchrs=0;
+						for ($i=1;$i<=$nRow; $i++)
+						{
+							$cell=getColLetterByNum($j).$i;                        						
+							$val=$c_sheet->getCell($cell)->getValue();
+							if (mb_strlen($val)>=70) $c_wdth=33;
+							$words=preg_split("#\s#",$val);
+							$cc=0;
+							foreach ($words as $wrd)
+							{
+								$cc=mb_strlen($wrd);
+								if ($cc>$maxchrs) $maxchrs=$cc;							
+							}												
+						}					
+						if ($c_wdth<$maxchrs) $c_wdth=$maxchrs+1;
+						$c_sheet->getColumnDimension(getColLetterByNum($j))->setWidth($c_wdth);
+						$cwdhs[$j]=$c_wdth;
+					}				
+					// calculate rows height (setRowHeight(-1)) not work correct.
+					for ($i=1;$i<=$nRow; $i++)
+					{
+						$maxln=-1;
+						for ($j=0;$j<=$nColumn; $j++)
+						{
+							if (!isset($result['m_starts'][$i][$j]))
+							{
+								$cell=getColLetterByNum($j).$i;
+								$fntsize=$c_sheet->getStyle()->getFont($cell)->getSize();						
+								$val=$c_sheet->getCell($cell)->getValue();
+								$cntll=ceil(mb_strlen($val)/$cwdhs[$j]);
+								$lnvar=$cntll*$fntsize+$cntll*3;
+								if ($maxln<$lnvar) $maxln=$lnvar;						
+							}						
+						}
+						$c_sheet->getRowDimension($i)->setRowHeight($maxln);
+					}
+				}				
+				
                 if (!$table_ws)
                 {                    
                     $result['data']= array();
@@ -164,8 +216,7 @@
                     $row++;
                     $row_start=$row+1;
                     $col=0;
-                }
-                
+                }                
                 //$objPHPExcel->getActiveSheet()->getStyle($all_cells)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_RIGHT);
                 //break;
             }
