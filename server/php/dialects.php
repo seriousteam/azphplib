@@ -124,7 +124,7 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'mysql' => "$1 ($2) + INTERVAL $4 DAY$5",
 				],
 		'ADD_MONTHS' => [
-				'pgsql' => "$1 ($2) + INTERVAL $4 MONTH$5",
+				'pgsql' => "$1 ($2) + CAST($4 || ' MONTH' AS INTERVAL) $5",
 				'oracle' => "$1 ($2) + INTERVAL $4 MONTH$5",
 				'mssql' => "DATEADD$1month, $4 $3 $2 $5",// --chage order
 				'mysql' => "$1 ($2) + INTERVAL $4 MONTH$5",

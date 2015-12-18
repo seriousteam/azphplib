@@ -641,6 +641,7 @@ EEE;
 						}
 						,$db_part
 					);
+					/*
 					$db_part = preg_replace_callback(
 						"/\\.[a-z][a-zA-Z0-9_]*+(?: : [0-9]++ )? 
 							(?!=\s*[(])
@@ -657,6 +658,7 @@ EEE;
 						}
 						,$db_part
 					);
+					*/
 					//remove explicit to value conversion if only path give
 					if(preg_match('/^\s*
 						(ctx::\$current

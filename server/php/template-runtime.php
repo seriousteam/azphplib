@@ -407,7 +407,7 @@ require_once __DIR__."/ru_number.php";
 function load_template($file) {
 	global $functions;
 	static $included_templates = [];
-	if(!$included_templates) $included_templates = [ __FILE__ => $functions ];
+	if(!$included_templates) $included_templates = [ TOPLEVEL_FILE => $functions ];
 	if(array_key_exists($file, $included_templates)) return $included_templates[$file];
 	$included_templates[$file] = require_once($file);
 	return $included_templates[$file];
@@ -903,7 +903,7 @@ static $a = [
 				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
 			></a>
 		</span>'
-
+	, 'FILES' => '<div filelist dynamic="\'/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value&list=1\'.setURLParam(\'args[]\',findRid(this))"></div>'
 ];
 	return $a[$t];
 }
@@ -991,6 +991,7 @@ function get_filter_control($f)
 function output_editor2($value, $template, $attrs, $attrs2 = '')
 {
 	global $Tables;
+	global $controls;
 	
 	$name = name_of_field_in_nv($value);
 	$size = '';
@@ -1059,23 +1060,56 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 	$value = htmlspecialchars( $value );
 	
 	$EXPR = new templated_editors_helper(
-		compact('value', 'name', 'rel_target', 'attrs', 'attrs2', 'size', 'precision')
+		compact('value', 'name', 'rel_target', 'attrs', 'attrs2', 'size', 'precision', 'table_name')
 	);
-
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
 }
 
+class AttrsDBhelper {
+	function __get($name) {
+		if($name[0] == '=') {
+			$name = substr($name,1);
+			return $this->vals->{$this->name_translator[$name]};
+		}
+		if($name[0] == '#') {
+			$name = substr($name,1);
+			return $this->vals->{$name};
+		}
+	}
+	function __call($name, $args) {
+		if(count($args) && $args[0]===null) {
+			array_shift($args);
+			return isset($args[0])?
+				$this->vals->{$this->name_translator[$name]."($args[0])"}
+			:
+				$this->vals->{$this->name_translator[$name]};
+		} else
+		if(isset($args[0]))
+			output_html($this->vals->{$this->name_translator[$name]."($args[0])"});
+		else
+			output_html($this->vals->{$this->name_translator[$name]});
+	}
+}
 
-function to_attr_struct($val, $name, $cmd, $afield, &$db
+function to_attr_struct($val, $name, $cmd, &$db, $afield = NULL
 	, $name_translator = null, $add_translator_to_def = '') {
 	if($name===NULL) {
-		$db = new stdClass;
+		$db = new AttrsDBhelper;
 		$db->attr_fileld = $afield;
 		$db->ins_cmd = $cmd;
 		$db->vals = new stdClass;
 		$db->cmds = new stdClass;
 		$db->name_translator = $name_translator ? $GLOBALS[$name_translator] : null;
 		$db->add_translator_to_def = $add_translator_to_def;
+		return;
+	}
+	if($cmd === NULL) {
+		foreach($db as $k=>$v)
+			if(startsWith($k, $name))
+			{
+				unset($db->vals->$k);
+				unset($db->cmds->$k);
+			}
 		return;
 	}
 	$db->vals->$name = $val;

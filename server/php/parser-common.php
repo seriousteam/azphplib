@@ -100,7 +100,7 @@ class _PreCmd {
     $this->paramscount = substr_count($cmd, '?');
 
     global $RE_ID;
-    $cmd = preg_replace("/(?<!\\s|[.a-zA-Z0-9_])$RE_ID/"," $0", $cmd); //start all ids from space!
+    $cmd = preg_replace("/(?<!\\s|[.a-zA-Z0-9_\"])$RE_ID/"," $0", $cmd); //start all ids from space!
     //$cmd = preg_replace("/$RE_ID(?!\\s|[.a-zA-Z0-9_])/","$0 ", $cmd); //end all ids with space!
     $cmd = preg_replace('/\s+/',' ', $cmd);
     $cmd = str_replace([' .', '. '], '.', $cmd);
