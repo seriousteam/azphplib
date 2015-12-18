@@ -181,7 +181,8 @@ if($G_ENV_LOCAL_USERS) {
 			function($user, $name_to_check, $pass, $ip) use($cmd, $table_to_check) {
 				$dbh = get_connection($table_to_check);
 				$stmt = $dbh->prepare($cmd);
-				try {	$stmt->execute([$name_to_check, $pass]); 
+				try {	
+					$stmt->execute([$name_to_check, $pass]); 
 				} catch(Exception $e) { die($e); }
 				if($r = $stmt->fetchAll(PDO::FETCH_OBJ)) {
 					$ret = [];
@@ -383,11 +384,13 @@ function add_role_to_context($role) {
 	$CURRENT_ROLES_ARRAY[] = $role;
 }
 
+//error_log('URI:'.$_SERVER['REQUEST_URI']);
 // uri after striping our prefix (normalized in some sence)
 $LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)? 
 	$_SERVER['argv'][0]
 	:
-	( substr_compare($_SERVER['REQUEST_URI'], $G_ENV_URI_PREFIX, 0, strlen($G_ENV_URI_PREFIX)) == 0?
+	( 
+		substr_compare($_SERVER['REQUEST_URI'], $G_ENV_URI_PREFIX, 0, strlen($G_ENV_URI_PREFIX)) == 0?
 		substr_replace($_SERVER['REQUEST_URI'], '/', 0, strlen($G_ENV_URI_PREFIX))
 	  : $_SERVER['REQUEST_URI']
 	)
@@ -588,6 +591,18 @@ function rm_decrypt($string,$key) {
       mcrypt_module_close($td);
        return $c_t;
    } //end if
+}
+
+function startsWith($val, $w, $adv_char = '') {
+	return 
+		strncmp($val, $w, strlen($w)) == 0
+		&& 
+		( 
+			$adv_char === '' ||
+			strlen($val) > strlen($w)
+			&& $val[strlen($w)] === $adv_char
+		)
+	;
 }
 
 set_exception_handler(function ($exception) {

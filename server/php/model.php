@@ -154,6 +154,7 @@ class _Field {
 		    default: return 'FILE';
 		}
         case 'ACTION': return 'ACTION';
+    case 'FILES': return 'FILES';
 	case 'VARCHAR': return $this->size && $this->size > MAX_UI_SIZE ? 'LONGVARCHAR' : 'VARCHAR';
 	default: return 'VARCHAR';
 	}

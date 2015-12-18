@@ -4,6 +4,7 @@ include 'GenPDF_class.php';
 
 $tname = $_REQUEST['table'];
 $fld = $_REQUEST['fld'];
+
 $name_field = @$_REQUEST['name_field'];
 
 $key = $_REQUEST['key'];
@@ -51,23 +52,40 @@ $fdir = $a_table_db["$tname.$fld"];
 
 $fname = rawurlencode(implode('~',$key));
 
-$dir = @scandir("$fdir/$fname");
+if( isset($_REQUEST['list']) ) {
+      $files = @scandir( "$fdir/$fname" );
+      if($files) $files = array_diff($files, array('..', '.'));
+      $key = is_array($key) ? $key : [$key];
+      $key = implode('&',array_map(function($v) { return "key[]=".rawurlencode($v); }, $key));
+      if(!$files) $files = [];
+      $files = array_map(function($f) use($tname,$fld,$key,$fdir,$fname)  {           
+            $content_name = file_exists("$fdir/$fname/$f/meta") ? 
+                  file_get_contents("$fdir/$fname/$f/meta") : '';
+return <<<FFF
+<span lobload=filer accept="" filetypes="*" onfileok=*refresh files changefile drop>
+      <a href="/az/server/php/filer.php?fld=$fld&table=$tname&$key&file=$f" target="_blank"
+            onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
+      >$content_name</a>
+</span>
+FFF;
+      }, $files);
+      $files[] = "<span lobload=filer accept='' filetypes='*' onfileok=*refresh files newfile>
+            <span style='display:none' href='/az/server/php/filer.php?fld=$fld&table=$tname&$key&file='></span>";
+      header("Content-Type: text/html");
+      echo implode('',$files);
+      exit;
+}
+$file_name = @$_REQUEST['file'];
+$file_name = isset($_REQUEST['file']) ? ($file_name ?: uniqid("F")) : null;
+
+$dir_name = $file_name ? "$fdir/$fname/$file_name" : "$fdir/$fname";
+
+$dir = @scandir($dir_name);
 
 if($dir) $dir = array_diff($dir, array('..', '.'));
 
 if(isset($_REQUEST['check'])) {
 	die($dir ? 'OK' : 'NO');
-}
-if(isset($_REQUEST['del'])) {
-	if ($dir)
-	{
-		unlink("$fdir/$fname/$fname.pdf");
-		die('OK');
-	}
-	else
-	{
-		die('NO');
-	}
 }
 
 function file_default_mimetype_mapping() {
@@ -915,7 +933,9 @@ function file_default_mimetype_mapping() {
   );
 }
 
+//if multiple files in one FILE field, it's link to it
 if(!$write) {
+      //get
 	if($dir) {
 		$tfn = current($dir);
 		$ftype = strtolower(pathinfo($tfn, PATHINFO_EXTENSION ));
@@ -924,23 +944,30 @@ if(!$write) {
 			$mime = $mapping['mimetypes'][$mapping['extensions'][$ftype]];
 		} else
 			$mime = 'application/octet-stream';
+            if($file_name && file_exists("$dir_name/meta")) { 
+                  $content_name = file_get_contents("$dir_name/meta");
+            } else {
+                  $content_name = "uploaded.$ftype";
+            }
 		header("Content-Type: $mime");
-		readfile("$fdir/$fname/$tfn");
+            header("Content-Disposition: inline; filename=\"$content_name\"");
+		readfile("$dir_name/$tfn");
 		exit;
 	}
 	die('');
 }
 
 $err = false;
+
 $file = $_FILES ? current($_FILES) : false;
 
 if($file && $file['error']) { $file = null; $err = true; }
 
-if($dir && !$err) {
+if($dir) {
 	//delete
-	foreach($dir as $f)
-		unlink("$fdir/$fname/$f");
-	rmdir("$fdir/$fname");
+      foreach($dir as $f)
+            unlink("$dir_name/$f");
+      rmdir("$dir_name");     	
 }
 if($_REQUEST['upload-ok'] == 'yes')
 {	
@@ -965,17 +992,18 @@ if($_REQUEST['upload-ok'] == 'yes')
 if($file) {
 
 	//upload
-	@mkdir("$fdir/$fname");
-	
+      @mkdir("$dir_name", 0777, true);
 	$tfn = $file['name'];
 
-	//$pd = file_get_contents("ftp://10.10.12.37/lobs/att_case/reviewlead_org/77882001.00000/77882001.00000.pdf");
 	$ftype = strtolower(pathinfo($tfn, PATHINFO_EXTENSION )) ?: 'bin';
-	
-	$success = move_uploaded_file($file['tmp_name'], "$fdir/$fname/$fname.$ftype");
-	if($_REQUEST['upload-ok'] == 'yes') jsOnResponse("{'filename':'" . $tfn . "', 'success':'" . $success . "', 'count':'" . $count . "', 'fld':'" . $fld . "', 'id':'" . $fname . "', 'date_load':'" . date('Y-m-d') . "'}");  
-  
-}
+	if($file_name) {
+            file_put_contents("$dir_name/meta", $tfn);
+            $fname = $file_name;
+      }     
+      $success = move_uploaded_file($file['tmp_name'], "$dir_name/$fname.$ftype");    	
+      if($_REQUEST['upload-ok'] == 'yes') jsOnResponse("{'filename':'" . $tfn . "', 'success':'" . $success . "', 'count':'" . $count . "', 'fld':'" . $fld . "', 'id':'" . $fname . "', 'date_load':'" . date('Y-m-d') . "'}");
+} 
+
 
 
 

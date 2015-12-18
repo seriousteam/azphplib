@@ -101,7 +101,8 @@ class _XPath {
 			?
 			"NULL":
 			(
-			@$this->___node->table->fields[$this->___name]->type == "FILE" ?
+			(@$this->___node->table->fields[$this->___name]->type == "FILE" ||
+       @$this->___node->table->fields[$this->___name]->type == "FILES") ?
 				$this->___node->alias .'.'. $this->___node->table->PK()
 			:
 			$this->___node->alias .'.'. $this->___name
@@ -374,7 +375,7 @@ class _Cmd extends _PreCmd {
 
     // make root tree
     $toplevel = $this->toplevel; //works in insert too
-    $this->start_alias_tree($from, $tree);
+    $this->start_alias_tree( ($from ?: 'dual'), $tree);
     
     //replace LIMIT
     if($toplevel) {
@@ -417,8 +418,9 @@ class _Cmd extends _PreCmd {
             $a->table = $this->table;
             $a->alias = $this->alias;
         _XNode::$a_num = $old_num;
-        if(!$paths)
-          throw new Exception("Uncorrelated array subselect: $a->stmt");
+        if(!$paths) {
+          throw new Exception("Uncorrelated array subselect: $m[alias] : $a->stmt");
+        }
         foreach($paths as $i=>$p)
           $a->args[] = $m['alias'].($i? '__'.$i :'');
         $subselects[$a->args[0]] = $a; //store linked 'selects to array' in parent
@@ -440,8 +442,14 @@ class _Cmd extends _PreCmd {
     $parsed->process_ids('ORDER BY', $this, $tree, $externals );
 
     $this->pop_root_from_tree($parsed->FROM, $tree, false);
-    $ret = make_dbspecific_select($this, $parsed, $this->dialect);
-    $ret->subselects = $subselects;
+    if($from) {
+	    $ret = make_dbspecific_select($this, $parsed, $this->dialect);
+    	$ret->subselects = $subselects;
+    } else {
+    	$ret = '(' . make_dbspecific_select_values(
+    		$parsed->SELECT
+    		, $this->dialect).')';
+    }
    return $ret;
   }
   function process_path($p, &$tree, &$externals) {
