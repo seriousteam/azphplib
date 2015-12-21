@@ -131,7 +131,13 @@ class _XPath {
 			  $this->___node->table->fields[$this->___name]->target);
     return new _XPath($n, $name);
   }
-  
+  function add_u_filter() {
+	if($this->___node->table->___name[0] !== '(') //we trust our subselects
+    merge_rights_for_roles(
+			   $this->___node->access_filters,
+			   '.u', '', 
+			   $this->___node->table->___name, $this->___name);
+  }
   function add_ro_filter() {
     if($this->___node->table->___name[0] !== '(') //we trust our subselects
     //here we check access rights for our 'name' (relation) in our table
@@ -503,8 +509,14 @@ class _Cmd extends _PreCmd {
 			->getCondition($node->___node->alias, count($joinpath) ? explode('.', $rel_node->alias)[0] : _XNode::$ext['a']->alias);
 			
 			break;
+		} else
+		if($name==='update') {
+			$node->add_u_filter();
+			break;
 		}
-	       $node = $node->$name;
+		else {			
+			$node = $node->$name;
+		}	       
 	}
 	//record name in last node as accessed from commend
 	$node->add_ro_filter();
@@ -616,7 +628,7 @@ class _Cmd extends _PreCmd {
     
     $parsed = new parsedCommand($DELETE_STRUCT, $s);
     if(!$parsed->ok)
-      throw new Exception("bad delete structire: $s");
+      throw new Exception("bad delete structure: $s");
 
     $from = $parsed->{'DELETE FROM'};
     // make root tree

@@ -823,6 +823,8 @@ input[tag][vtype="D"][add_button="table"] +[calendcont]:hover
 
 [filelist]>[lobload] button
 {	
+	cursor:pointer;
+	border:none;
 	border-radius:2em;
 	line-height: 0;
 	margin:0.2em;

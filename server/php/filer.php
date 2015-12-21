@@ -1,29 +1,30 @@
 <?php
 require_once(__DIR__.'/db-oo.php');
-include 'GenPDF_class.php';
 
 $tname = $_REQUEST['table'];
 $fld = $_REQUEST['fld'];
-
-$name_field = @$_REQUEST['name_field'];
-
 $key = $_REQUEST['key'];
-
 $write = $_SERVER['REQUEST_METHOD'] != 'GET';
-
 $pk = $Tables->$tname->PK(true);
-
+$cmd = ( $write ? "a.$fld.update" : "a.$fld" )
+	. " FROM $tname WHERE "
+	. implode(' AND ', array_map(function($k) { return "$k = ?"; }, $pk) )
+	. ( $write ? "" : " LIMIT 1" )
+	;
+if( !Select($cmd,$key)->fetchColumn() ) {
+	header('HTTP/1.0 403 Forbidden'); 
+	die('You are not allowed to access this file.');
+}
+/*
 $cmd = ( $write ? "UPDATE $tname SET $fld = NULL " : "SELECT $fld FROM $tname " )
 	. " WHERE "
 	. implode(' AND ', array_map(function($k) { return "$k = ?"; }, $pk) )
 	. ( $write ? "" : "LIMIT 1" )
 	;
-
 function checkrights_cmd($cmd, $args) {
-  $cmd = get_cached_cmd_object($cmd);
-
-	$table = $cmd->root();
-
+  echo $cmd;
+  $cmd = get_cached_cmd_object( $cmd );
+  $table = $cmd->root();
   global $RE_ID;
   if(preg_match("/^\s*SELECT\s.*?\sFROM\s(.*)/si",$cmd, $m))
 	$cmd2 = "SELECT 1 FROM $m[1]";
@@ -42,38 +43,37 @@ function checkrights_cmd($cmd, $args) {
   return $stmt->fetchColumn();
 }
 
-
 if(!checkrights_cmd($cmd, $key)) {
 	header('HTTP/1.0 403 Forbidden'); 
 	die('You are not allowed to access this file.'); 
 }
-
+*/
 $fdir = $a_table_db["$tname.$fld"];
 
 $fname = rawurlencode(implode('~',$key));
 
 if( isset($_REQUEST['list']) ) {
-      $files = @scandir( "$fdir/$fname" );
-      if($files) $files = array_diff($files, array('..', '.'));
-      $key = is_array($key) ? $key : [$key];
-      $key = implode('&',array_map(function($v) { return "key[]=".rawurlencode($v); }, $key));
-      if(!$files) $files = [];
-      $files = array_map(function($f) use($tname,$fld,$key,$fdir,$fname)  {           
-            $content_name = file_exists("$fdir/$fname/$f/meta") ? 
-                  file_get_contents("$fdir/$fname/$f/meta") : '';
+  $files = @scandir( "$fdir/$fname" );
+  if($files) $files = array_diff($files, array('..', '.'));
+  $key = is_array($key) ? $key : [$key];
+  $key = implode('&',array_map(function($v) { return "key[]=".rawurlencode($v); }, $key));
+  if(!$files) $files = [];
+  $files = array_map(function($f) use($tname,$fld,$key,$fdir,$fname)  {           
+		$content_name = file_exists("$fdir/$fname/$f/meta") ? 
+			  file_get_contents("$fdir/$fname/$f/meta") : '';
 return <<<FFF
 <span lobload=filer accept="" filetypes="*" onfileok=*refresh files changefile drop>
-      <a href="/az/server/php/filer.php?fld=$fld&table=$tname&$key&file=$f" target="_blank"
-            onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
-      >$content_name</a>
+  <a href="/az/server/php/filer.php?fld=$fld&table=$tname&$key&file=$f" target="_blank"
+		onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
+  >$content_name</a>
 </span>
 FFF;
-      }, $files);
-      $files[] = "<span lobload=filer accept='' filetypes='*' onfileok=*refresh files newfile>
-            <span style='display:none' href='/az/server/php/filer.php?fld=$fld&table=$tname&$key&file='></span>";
-      header("Content-Type: text/html");
-      echo implode('',$files);
-      exit;
+  }, $files);
+  $files[] = "<span lobload=filer accept='' filetypes='*' onfileok=*refresh files newfile>
+		<span style='display:none' href='/az/server/php/filer.php?fld=$fld&table=$tname&$key&file='></span>";
+  header("Content-Type: text/html");
+  echo implode('',$files);
+  exit;
 }
 $file_name = @$_REQUEST['file'];
 $file_name = isset($_REQUEST['file']) ? ($file_name ?: uniqid("F")) : null;
@@ -935,7 +935,7 @@ function file_default_mimetype_mapping() {
 
 //if multiple files in one FILE field, it's link to it
 if(!$write) {
-      //get
+    //get
 	if($dir) {
 		$tfn = current($dir);
 		$ftype = strtolower(pathinfo($tfn, PATHINFO_EXTENSION ));
@@ -944,17 +944,17 @@ if(!$write) {
 			$mime = $mapping['mimetypes'][$mapping['extensions'][$ftype]];
 		} else
 			$mime = 'application/octet-stream';
-            if($file_name && file_exists("$dir_name/meta")) { 
-                  $content_name = file_get_contents("$dir_name/meta");
-            } else {
-                  $content_name = "uploaded.$ftype";
-            }
+		if($file_name && file_exists("$dir_name/meta")) { 
+			  $content_name = file_get_contents("$dir_name/meta");
+		} else {
+			  $content_name = "uploaded.$ftype";
+		}
 		header("Content-Type: $mime");
-            header("Content-Disposition: inline; filename=\"$content_name\"");
+        header("Content-Disposition: inline; filename=\"$content_name\"");
 		readfile("$dir_name/$tfn");
 		exit;
 	}
-	die('');
+	die('file not found');
 }
 
 $err = false;
@@ -963,14 +963,16 @@ $file = $_FILES ? current($_FILES) : false;
 
 if($file && $file['error']) { $file = null; $err = true; }
 
+//To remove file you must submit empty input=file, so $file['error']==true
 if($dir) {
 	//delete
-      foreach($dir as $f)
-            unlink("$dir_name/$f");
-      rmdir("$dir_name");     	
+    foreach($dir as $f)
+        unlink("$dir_name/$f");
+    rmdir("$dir_name");     	
 }
-if($_REQUEST['upload-ok'] == 'yes')
+if(@$_REQUEST['upload-ok'] == 'yes')//Enemy code
 {	
+	require_once(__DIR__.'/GenPDF_class.php');
 	$genPDF = new GenPDF();
 	$count = $genPDF->getCountPages($file['tmp_name']);
 	/*$f = fopen($file['tmp_name'], "r");
@@ -985,35 +987,30 @@ if($_REQUEST['upload-ok'] == 'yes')
 	}
 	fclose($f);*/
 }
-
-
-
-
 if($file) {
-
 	//upload
-      @mkdir("$dir_name", 0777, true);
+    @mkdir("$dir_name", 0777, true);
 	$tfn = $file['name'];
-
 	$ftype = strtolower(pathinfo($tfn, PATHINFO_EXTENSION )) ?: 'bin';
 	if($file_name) {
-            file_put_contents("$dir_name/meta", $tfn);
-            $fname = $file_name;
-      }     
-      $success = move_uploaded_file($file['tmp_name'], "$dir_name/$fname.$ftype");    	
-      if($_REQUEST['upload-ok'] == 'yes') jsOnResponse("{'filename':'" . $tfn . "', 'success':'" . $success . "', 'count':'" . $count . "', 'fld':'" . $fld . "', 'id':'" . $fname . "', 'date_load':'" . date('Y-m-d') . "'}");
-} 
-
-
-
-
-function jsOnResponse($obj)  
+        file_put_contents("$dir_name/meta", $tfn);
+        $fname = $file_name;
+    }     
+    $success = move_uploaded_file($file['tmp_name'], "$dir_name/$fname.$ftype");    	
+    if(@$_REQUEST['upload-ok'] && $_REQUEST['upload-ok'] == 'yes') {//Enemy code
+		$date = date('Y-m-d');
+		jsOnResponse("{'filename':'$tfn','success':'$success','count':'$count','fld':'$fld','id':'$fname','date_load':'$date'}");
+	} else {
+		echo @$_REQUEST['upload-ok'];
+	}
+} else {
+	echo @$_REQUEST['upload-ok'];
+}
+function jsOnResponse($obj)//Enemy code
  {  
  echo ' 
  <script type="text/javascript"> 
  window.parent.onResponse("'.$obj.'"); 
  </script> 
  ';  
-}  
-
-if($_REQUEST['upload-ok'] != 'yes')	echo @$_REQUEST['upload-ok'];
+}
