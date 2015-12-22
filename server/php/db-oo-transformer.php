@@ -88,6 +88,14 @@ class _XPath {
     $this->___node = $node;
     $this->___name = $name;
   }
+  function fieldName() {
+  global $a_table_db;
+  //return $this->___name;
+  return  
+      @$a_table_db["{$this->___node->table->___name}.{$this->___name}"]
+      ?: $this->___name
+  ;
+  }
   function __toString() {
 	if($this->___name == '_id_') {
 		return $this->___node->table->ID($this->___node->alias);
@@ -105,7 +113,7 @@ class _XPath {
        @$this->___node->table->fields[$this->___name]->type == "FILES") ?
 				$this->___node->alias .'.'. $this->___node->table->PK()
 			:
-			$this->___node->alias .'.'. $this->___name
+			$this->___node->alias .'.'. $this->fieldName()
 			)
       );
   }
