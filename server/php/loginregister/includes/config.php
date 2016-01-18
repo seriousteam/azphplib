@@ -1,7 +1,5 @@
 <?php
-
 require_once(__DIR__.'../../../cfg.php');
-require_once(__DIR__.'../../../../../../../cfg/register_login.php');
 
 ob_start();
 session_start();
@@ -18,7 +16,7 @@ try {
     exit;
 }
 */
-$db=get_connection(DBTABLE);
+$db=get_connection($RL_DBTABLE);
 //include the user class, pass in the database connection
 include('classes/user.php');
 $user = new User($db); 

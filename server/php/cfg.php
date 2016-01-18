@@ -80,7 +80,8 @@ define('__ROOTDIR__', $G_P_DOC_ROOT);
 $GLOBAS_STATE_VARS = [];
 
 //echo $G_P_DOC_ROOT, ' ', $_SERVER['SCRIPT_FILENAME'];
-@include "$G_P_DOC_ROOT/ais/env.php"; //override setting on php side, if server doesn't allow to use SetEnv
+require_once(__DIR__.'/envars.php');//override setting on php side, if server doesn't allow to use SetEnv
+
 
 /*
 	we need setup cache configuration first
@@ -138,7 +139,7 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 	}
 	$checks["SimpleXML"] = extension_loaded("SimpleXML");
 	
-	$phppath = __DIR__."/../../../../php/php.exe";
+	$phppath = __DIR__."/../../../../../php/php.exe";
 	if(!file_exists($phppath)) {
 		$phppath = "php";
 	}

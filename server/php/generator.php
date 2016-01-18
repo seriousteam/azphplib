@@ -28,7 +28,7 @@ class TemplaterCache {
 	}
 	function generate($fromfile, $tofile, $sourcefile = "") {
 		$sourcefile = $sourcefile? "-s$sourcefile" : "";
-		$phppath = __DIR__."/../../../../php/php.exe";
+		$phppath = __DIR__."/../../../../../php/php.exe";
 		if(!file_exists($phppath)) $phppath = "php";
 		system("$phppath -f ".
 			__DIR__."/templater.php -- -c $fromfile -p{$this->cdir} $sourcefile > $tofile");

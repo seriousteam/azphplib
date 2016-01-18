@@ -7,14 +7,14 @@ if( $user->is_logged_in() ){ header('Location: memberpage.php'); }
 if(isset($_POST['submit'])){
 
 	//email validation
-	if(!filter_var($_POST[EMAIL_CONST], FILTER_VALIDATE_EMAIL)){
+	if(!filter_var($_POST[$RL_EMAIL_CONST], FILTER_VALIDATE_EMAIL)){
 	    $error[] = 'Введите правильный email.';
 	} else {
-		$stmt = $db->prepare('SELECT '.EMAIL_CONST.' FROM '.DBTABLE.' WHERE '.EMAIL_CONST.' = :email');
-		$stmt->execute(array(':email' => $_POST[EMAIL_CONST]));
+		$stmt = $db->prepare('SELECT '.$RL_EMAIL_CONST.' FROM '.$RL_DBTABLE.' WHERE '.$RL_EMAIL_CONST.' = :email');
+		$stmt->execute(array(':email' => $_POST[$RL_EMAIL_CONST]));
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-		if(empty($row[EMAIL_CONST])){
+		if(empty($row[$RL_EMAIL_CONST])){
 			$error[] = 'Введенный email не спользуется.';
 		}			
 	}
@@ -26,18 +26,18 @@ if(isset($_POST['submit'])){
 
 		try {
 
-			$stmt = $db->prepare("UPDATE ".DBTABLE." SET ".RESET_TOKEN_CONST." = :token, ".RESET_COMPL_CONST."='No' WHERE ".EMAIL_CONST." = :email");
+			$stmt = $db->prepare("UPDATE ".$RL_DBTABLE." SET ".$RL_RESET_TOKEN_CONST." = :token, ".$RL_RESET_COMPL_CONST."='No' WHERE ".$RL_EMAIL_CONST." = :email");
 			$stmt->execute(array(
-				':email' => $row[EMAIL_CONST],
+				':email' => $row[$RL_EMAIL_CONST],
 				':token' => $token
 			));
 
 			//send email
-			$to = $row[EMAIL_CONST];
-			$subject = '=?UTF-8?B?'.base64_encode(REG_MAIL_SUBJ).'?=';
-			$body = RESET_MAIL_BODY.DIR."resetPassword.php?key=$token";
-			$additionalheaders = "From: <".SITEEMAIL.">\r\n";
-			$additionalheaders .= "Reply-To: $".SITEEMAIL."";
+			$to = $row[$RL_EMAIL_CONST];
+			$subject = '=?UTF-8?B?'.base64_encode($RL_RESET_MAIL_SUBJ).'?=';
+			$body = $RL_RESET_MAIL_BODY.$RL_DIR."resetPassword.php?key=$token";
+			$additionalheaders = "From: <".$RL_SITEEMAIL.">\r\n";
+			$additionalheaders .= "Reply-To: $".$RL_SITEEMAIL."";
 			mail($to, $subject, $body, $additionalheaders);
 
 			//redirect to index page
@@ -83,10 +83,10 @@ require('layout/header.php');
 					//check the action
 					switch ($_GET['action']) {
 						case 'active':
-							echo "<h2 class='bg-success'>".RESET_LOGOK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_LOGOK."</h2>";
 							break;
 						case 'reset':
-							echo "<h2 class='bg-success'>".RESET_CHK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_CHK."</h2>";
 							break;
 					}
 				}

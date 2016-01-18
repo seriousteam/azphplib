@@ -3,26 +3,26 @@
 //if logged in redirect to members page
 if( $user->is_logged_in() ){ header('Location: memberpage.php'); } 
 
-$stmt = $db->prepare('SELECT '.RESET_TOKEN_CONST.', '.RESET_COMPL_CONST.' FROM '.DBTABLE.' WHERE '.RESET_TOKEN_CONST.' = :token');
+$stmt = $db->prepare('SELECT '.$RL_RESET_TOKEN_CONST.', '.$RL_RESET_COMPL_CONST.' FROM '.$RL_DBTABLE.' WHERE '.$RL_RESET_TOKEN_CONST.' = :token');
 $stmt->execute(array(':token' => $_GET['key']));
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 //if no token from db then kill the page
-if(empty($row[RESET_TOKEN_CONST])){
-	$stop = RESET_INV_TOKEN;
-} elseif($row[RESET_COMPL_CONST] == 'Yes') {
-	$stop = RESET_ALR_CHANGED;
+if(empty($row[$RL_RESET_TOKEN_CONST])){
+	$stop = $RL_RESET_INV_TOKEN;
+} elseif($row[$RL_RESET_COMPL_CONST] == 'Yes') {
+	$stop = $RL_RESET_ALR_CHANGED;
 }
 
 //if form has been submitted process it
 if(isset($_POST['submit'])){
 
 	//basic validation
-	if(strlen($_POST[PASSWORD_CONST]) < 3){
+	if(strlen($_POST[$RL_PASSWORD_CONST]) < 3){
 		$error[] = 'Пароль слинком короткий.';
 	}
 
-	if($_POST[PASSWORD_CONST] != $_POST['passwordConfirm']){
+	if($_POST[$RL_PASSWORD_CONST] != $_POST['passwordConfirm']){
 		$error[] = 'Пароли не совпадают.';
 	}
 
@@ -30,14 +30,14 @@ if(isset($_POST['submit'])){
 	if(!isset($error)){
 
 		//hash the password
-		$hashedpassword = $user->password_hash($_POST[PASSWORD_CONST], PASSWORD_BCRYPT);
+		$hashedpassword = $user->password_hash($_POST[$RL_PASSWORD_CONST], PASSWORD_BCRYPT);
 
 		try {
 
-			$stmt = $db->prepare("UPDATE ".DBTABLE." SET ".PASSWORD_CONST." = :hashedpassword, ".RESET_COMPL_CONST." = 'Yes'  WHERE ".RESET_TOKEN_CONST." = :token");
+			$stmt = $db->prepare("UPDATE ".$RL_DBTABLE." SET ".$RL_PASSWORD_CONST." = :hashedpassword, ".$RL_RESET_COMPL_CONST." = 'Yes'  WHERE ".$RL_RESET_TOKEN_CONST." = :token");
 			$stmt->execute(array(
 				':hashedpassword' => $hashedpassword,
-				':token' => $row[RESET_TOKEN_CONST]
+				':token' => $row[$RL_RESET_TOKEN_CONST]
 			));
 
 			//redirect to index page
@@ -88,10 +88,10 @@ require('layout/header.php');
 					//check the action
 					switch (@$_GET['action']) {
 						case 'active':
-							echo "<h2 class='bg-success'>".RESET_LOGOK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_LOGOK."</h2>";
 							break;
 						case 'reset':
-							echo "<h2 class='bg-success'>".RESET_CHK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_CHK."</h2>";
 							break;
 					}
 					?>

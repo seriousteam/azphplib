@@ -9,14 +9,14 @@ $stmt=null;
 //if id is number and the active token is not empty carry on
 if(!empty($active)){
 	//update users record set the active column to Yes where the memberID and active value match the ones provided in the array
-	$stmt = $db->prepare("UPDATE ".DBTABLE." SET active = 'Yes' WHERE active = :active");
+	$stmt = $db->prepare("UPDATE ".$RL_DBTABLE." SET active = 'Yes' WHERE active = :active");
 	$stmt->execute(array(':active' => $active));	
 }
 else
 {
 	if (isset($_REQUEST['activasion']))
 	{	
-		$info=rm_decrypt($_REQUEST['activasion'],CRYPT_KEY);
+		$info=rm_decrypt($_REQUEST['activasion'],$RL_CRYPT_KEY);
 		$rez_arr=null;
 		parse_str($info,$rez_arr);
 		if ($rez_arr)
@@ -24,7 +24,7 @@ else
 			try
 			{
 				//$yes='Yes';
-				$sql="INSERT INTO ".DBTABLE."(".implode(array_keys($rez_arr),",").") VALUES (?"
+				$sql="INSERT INTO ".$RL_DBTABLE."(".implode(array_keys($rez_arr),",").") VALUES (?"
 					.str_repeat(",?",count($rez_arr)-1).")";
 				$stmt = $db->prepare($sql);
 				print_r($info);

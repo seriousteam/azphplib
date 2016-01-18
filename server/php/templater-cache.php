@@ -1,5 +1,5 @@
 <?php
-require_once( dirname( dirname( dirname( __DIR__ ) ) ).'/ais/env.php');
+require_once( __DIR__.'/envars.php');
 require_once( __DIR__.'/generator.php' );
 $fname = getenv('fullfile') ?: getenv('PATH_INFO');
 if(!$fname) die('');

@@ -8,16 +8,16 @@ if( $user->is_logged_in() ){ header('Location: index.php'); }
 //process login form if submitted
 if(isset($_POST['submit'])){
 
-	$username = $_POST[USER_CONST];
-	$password = $_POST[PASSWORD_CONST];
+	$username = $_POST[$RL_USER_CONST];
+	$password = $_POST[$RL_PASSWORD_CONST];
 	
 	if($user->login($username,$password)){ 
-		$_SESSION[USER_CONST] = $username;
+		$_SESSION[$RL_USER_CONST] = $username;
 		header('Location: memberpage.php');
 		exit;
 	
 	} else {
-		$error[] = LOG_WRG;
+		$error[] = $RL_LOG_WRG;
 	}
 
 }//end if submit
@@ -53,13 +53,13 @@ require('layout/header.php');
 					//check the action
 					switch ($_GET['action']) {
 						case 'active':
-							echo "<h2 class='bg-success'>".RESET_LOGOK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_LOGOK."</h2>";
 							break;
 						case 'reset':
-							echo "<h2 class='bg-success'>".RESET_CHK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_CHK."</h2>";
 							break;
 						case 'resetAccount':
-							echo "<h2 class='bg-success'>".RESET_CH_OK."</h2>";
+							echo "<h2 class='bg-success'>".$RL_RESET_CH_OK."</h2>";
 							break;
 					}
 

@@ -7,33 +7,33 @@ if( $user->is_logged_in() ){ header('Location: memberpage.php'); }
 if(isset($_POST['submit'])){
 
 	//very basic validation
-	if(strlen($_POST[USER_CONST]) < 3){
+	if(strlen($_POST[$RL_USER_CONST]) < 3){
 		$error[] = 'Имя пользователя слишком короткое.';
 	} else {
-		$stmt = $db->prepare('SELECT '.USER_CONST.' FROM '.DBTABLE.' WHERE '.USER_CONST.' = :username');
-		$stmt->execute(array(':username' => $_POST[USER_CONST]));
+		$stmt = $db->prepare('SELECT '.$RL_USER_CONST.' FROM '.$RL_DBTABLE.' WHERE '.$RL_USER_CONST.' = :username');
+		$stmt->execute(array(':username' => $_POST[$RL_USER_CONST]));
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-		if(!empty($row[USER_CONST])){
+		if(!empty($row[$RL_USER_CONST])){
 			$error[] = 'Имя пользователя уже используется.';
 		}			
 	}
-	if(strlen($_POST[PASSWORD_CONST]) < 3){
+	if(strlen($_POST[$RL_PASSWORD_CONST]) < 3){
 		$error[] = 'Пароль слишком короткий.';
 	}
 
-	if($_POST[PASSWORD_CONST] != $_POST['passwordConfirm']){
+	if($_POST[$RL_PASSWORD_CONST] != $_POST['passwordConfirm']){
 		$error[] = 'Пароли не совпадают.';
 	}
 
 	//email validation
-	if(!filter_var($_POST[EMAIL_CONST], FILTER_VALIDATE_EMAIL)){
+	if(!filter_var($_POST[$RL_EMAIL_CONST], FILTER_VALIDATE_EMAIL)){
 	    $error[] = 'В веденном email есть ошибки';
 	} else {
-		$stmt = $db->prepare('SELECT '.EMAIL_CONST.' FROM '.DBTABLE.' WHERE '.EMAIL_CONST.' = :email');
-		$stmt->execute(array(':email' => $_POST[EMAIL_CONST]));
+		$stmt = $db->prepare('SELECT '.$RL_EMAIL_CONST.' FROM '.$RL_DBTABLE.' WHERE '.$RL_EMAIL_CONST.' = :email');
+		$stmt->execute(array(':email' => $_POST[$RL_EMAIL_CONST]));
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-		if(!empty($row[EMAIL_CONST])){
+		if(!empty($row[$RL_EMAIL_CONST])){
 			$error[] = 'Данный email уже используется.';
 		}			
 	}
@@ -41,23 +41,23 @@ if(isset($_POST['submit'])){
 	if(!isset($error)){
 
 		//hash the password
-		$hashedpassword = $user->password_hash($_POST[PASSWORD_CONST], PASSWORD_BCRYPT);
+		$hashedpassword = $user->password_hash($_POST[$RL_PASSWORD_CONST], PASSWORD_BCRYPT);
 
 		//create the activasion code
 		$activasion = md5(uniqid(rand(),true));
-		$body = REG_MAIL_HEAD;
-		$link=DIR."activate.php";
+		$body = $RL_REG_MAIL_HEAD;
+		$link=$RL_DIR."activate.php";
 		try {
 			//insert into database with a prepared statement
 			$argarr=$_REQUEST;			
-			$argarr[PASSWORD_CONST]=$hashedpassword;
+			$argarr[$RL_PASSWORD_CONST]=$hashedpassword;
 			// unset tresh
 			$trasharr=array("passwordConfirm","submit","action");
 			foreach($trasharr as $trsh) unset($argarr[$trsh]);
-			if (CREATE_USER_IN_LINK!="yes")
+			if ($RL_CREATE_USER_IN_LINK!="yes")
 			{	
-				$argarr[ACTIVE_CONST]=$activasion;
-				$sql="INSERT INTO ".DBTABLE."(".implode(array_keys($argarr),",").") VALUES (?"
+				$argarr[$RL_ACTIVE_CONST]=$activasion;
+				$sql="INSERT INTO ".$RL_DBTABLE."(".implode(array_keys($argarr),",").") VALUES (?"
 					.str_repeat(",?",count($argarr)-1).")";				
 				$stmt = $db->prepare($sql);
 				$stmt->execute(array_values($argarr));
@@ -66,16 +66,16 @@ if(isset($_POST['submit'])){
 			else
 			{	
 				// activate user
-				$argarr[ACTIVE_CONST]="Yes";
-				$link.="?activasion=".urlencode(rm_encrypt(http_build_query($argarr),CRYPT_KEY));				
+				$argarr[$RL_ACTIVE_CONST]="Yes";
+				$link.="?activasion=".urlencode(rm_encrypt(http_build_query($argarr),$RL_CRYPT_KEY));				
 			}
 
 			//send email
-			$to = "<".$_POST[EMAIL_CONST].">";//'=?UTF-8?B?'.base64_encode($email_subject).'?='
-			$subject ='=?UTF-8?B?'.base64_encode(REG_MAIL_SUBJ).'?=';
-			$body.=" ".$link." ".REG_MAIL_END;
-			$additionalheaders = "From: <".SITEEMAIL.">\r\n\"Content-type: text/plain; charset=utf-8\";\r\n";
-			$additionalheaders .= "Reply-To: ".SITEEMAIL."";
+			$to = "<".$_POST[$RL_EMAIL_CONST].">";//'=?UTF-8?B?'.base64_encode($email_subject).'?='
+			$subject ='=?UTF-8?B?'.base64_encode($RL_REG_MAIL_SUBJ).'?=';
+			$body.=" ".$link." ".$RL_REG_MAIL_END;
+			$additionalheaders = "From: <".$RL_SITEEMAIL.">\r\n\"Content-type: text/plain; charset=utf-8\";\r\n";
+			$additionalheaders .= "Reply-To: ".$RL_SITEEMAIL."";
 			mail($to, $subject, $body, $additionalheaders);
 			
 			//redirect to index page

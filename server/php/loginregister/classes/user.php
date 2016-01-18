@@ -14,11 +14,11 @@ class User extends Password{
 	private function get_user_hash($username){	
 
 		try {
-			$stmt = $this->_db->prepare('SELECT '.PASSWORD_CONST.' FROM '.DBTABLE.' WHERE '.USER_CONST.' = :username AND '.ACTIVE_CONST."='Yes' ");
+			$stmt = $this->_db->prepare('SELECT '.$RL_PASSWORD_CONST.' FROM '.$RL_DBTABLE.' WHERE '.$RL_USER_CONST.' = :username AND '.$RL_ACTIVE_CONST."='Yes' ");
 			$stmt->execute(array('username' => $username));
 			
 			$row = $stmt->fetch();
-			return $row[PASSWORD_CONST];
+			return $row[$RL_PASSWORD_CONST];
 
 		} catch(PDOException $e) {
 		    echo '<p class="bg-danger">'.$e->getMessage().' sdfsdf </p>';
