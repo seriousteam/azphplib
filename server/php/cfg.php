@@ -67,10 +67,13 @@ $G_ENV_CACHE
 $G_ENV_CACHE_TTL
 
 */
-
-$G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
-$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
-	 // p_doc_root/az/server/php/cfg.php
+if(!isset($G_ENV_URI_PREFIX)) {
+	$G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
+}
+if(!isset($G_P_DOC_ROOT)) {
+	$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
+}
+// p_doc_root/az/server/php/cfg.php
 	 
 define('__ROOTDIR__', $G_P_DOC_ROOT);
 
@@ -510,7 +513,7 @@ function main_subarguments($str = true) {
   return [];
 }
 
-function get_connection($table){
+function get_connection($table) {
   static $connections = array();
   $db = table_db($table);
   $key = serialize($db);
@@ -539,11 +542,15 @@ function get_connection($table){
 				   );
 	    }
 	} else {
-		$connections[$key] = new PDO($dsn,
+		try {
+			$connections[$key] = new PDO($dsn,
 				   $db['user'],
 				   $db['pass'],
 				   $params
 				   );
+		} catch(Exception $e) {
+			throw new Exception("Couldnt connect to database.");
+		}		
 	}
    } else
       $connections[$key] = new PDO($dsn,null, null,$params);
