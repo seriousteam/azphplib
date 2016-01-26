@@ -139,7 +139,7 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 	}
 	$checks["SimpleXML"] = extension_loaded("SimpleXML");
 	
-	$phppath = __DIR__."/../../../../../php/php.exe";
+	$phppath = $G_PHP_PATH;
 	if(!file_exists($phppath)) {
 		$phppath = "php";
 	}
@@ -510,7 +510,7 @@ function main_subarguments($str = true) {
   return [];
 }
 
-function get_connection($table){
+function get_connection($table) {
   static $connections = array();
   $db = table_db($table);
   $key = serialize($db);
@@ -566,7 +566,7 @@ function rm_encrypt($string,$key) {
   $iv_size = mcrypt_enc_get_iv_size($td);
   $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
   /* Initialize encryption handle */
-   if (mcrypt_generic_init($td, $key, $iv) != -1) {
+  if (mcrypt_generic_init($td, $key, $iv) != -1) {
       /* Encrypt data */
       $c_t = mcrypt_generic($td, $string);
       mcrypt_generic_deinit($td);

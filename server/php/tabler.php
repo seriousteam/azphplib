@@ -164,7 +164,7 @@ ST;
 }
 
 echo "</tr>\n<tfoot>\n";
-if(CHOOSER_MODE && $_REQUEST['add_empty'])
+if(CHOOSER_MODE && @$_REQUEST['add_empty'])
 	echo "<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>";
 echo <<<ST
 <tr if_no_rows><td colspan=100>
