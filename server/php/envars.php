@@ -9,7 +9,7 @@
 if(!isset($G_P_DOC_ROOT)) {
 	$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__)));
 }
-$G_PHP_PATH = "$G_P_DOC_ROOT/../../php/php.exe";//find this file, if it doesnt exists, uses 'php' command
+$G_PHP_PATH = realpath("$G_P_DOC_ROOT/../../php/php.exe") ?: 'php';//find this file, if it doesnt exists, uses 'php' command
 $CFG_SUBROOT = '/cfg';
 $G_ENV_CACHE_DIR = "$G_P_DOC_ROOT/cache";
 $CURRENT_USER_IP = $_SERVER['REMOTE_ADDR'];

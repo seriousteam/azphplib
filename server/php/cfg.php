@@ -142,11 +142,7 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 	}
 	$checks["SimpleXML"] = extension_loaded("SimpleXML");
 	
-	$phppath = $G_PHP_PATH;
-	if(!file_exists($phppath)) {
-		$phppath = "php";
-	}
-	system("$phppath >&0",$retval);
+	system("$G_PHP_PATH >&0",$retval);
 	$checks['PHP Cli'] = !$retval;
 	
 	if(@$G_ENV_CACHE_DIR && $checks['PHP Cli']) {
@@ -651,6 +647,7 @@ echo <<<XCFG
 	<tr><td>Roles<td>{$G(@$CURRENT_ROLES_CSV)}</tr>
 	<tr><td>Root<td>$G_P_DOC_ROOT</tr>
 	<tr><td>URI prefix<td>$G_ENV_URI_PREFIX</tr>
+	<tr><td>PHP Cli<td>$G_PHP_PATH</tr>
 	<tr><td>Main config<td>$G_ENV_MAIN_CFG</tr>	
 	<tr><td>Table mapping<td>$G_ENV_TABLE_DB_MAPPING</tr>
 	<tr><td>Lib mapping<td>$G_ENV_LIB_MAPPING</tr>
