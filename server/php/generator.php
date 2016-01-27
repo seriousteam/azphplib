@@ -26,7 +26,7 @@ class TemplaterCache {
 		@rename($tmpfile, $this->fphpname);
 		@unlink($tmpfile);
 	}
-	function generate($fromfile, $tofile, $sourcefle = "") {
+	function generate($fromfile, $tofile, $sourcefile = "") {
 		global $G_PHP_PATH;
 		$sourcefile = $sourcefile? "-s$sourcefile" : "";
 		system("$G_PHP_PATH -f ".
