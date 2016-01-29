@@ -110,6 +110,8 @@ class loop_helper extends IteratorIterator {
   function next (  ) { 
 	if($this->counter !== 0)
 		parent::next();
+	else
+		$this->counter = $this->offset;
 	++$this->counter;
   }
   function rewind (  ) {
@@ -117,7 +119,7 @@ class loop_helper extends IteratorIterator {
 	parent::rewind();
 	if($i = $this->offset) {
 		while($i--)
-			$this->next();
+			parent::next();
 	}
   }
   function valid() { 
@@ -425,7 +427,7 @@ function load_template($file) {
 	return $included_templates[$file];
 }
 
-$CURRENT_TEMPLATE_URI = $LOCALIZED_URI;
+$CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	

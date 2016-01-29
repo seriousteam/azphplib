@@ -528,6 +528,14 @@ EEE;
 					echo '<link rel="stylesheet" href="',file_URI('//az/lib/d3c.css', null, null),'">',"\\n";
 					echo '<script type="text/javascript" src="',file_URI('//az/lib/d3c.js', null, null),'"></script>',"\\n";
 EEE;
+			} else if(preg_match("/^LIB2$/i", $cmd, $m)) {
+				$res = <<<EEE
+					echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',"\\n";
+					echo '<link rel="stylesheet" href="',file_URI('//az/lib/main.css', null, TRUE),'">',"\\n";
+					echo '<link rel="stylesheet" href="',file_URI('//az/lib/local.css', null, TRUE),'">',"\\n";
+					echo '<script type="text/javascript" src="',file_URI('//az/lib/scripts.js', null, TRUE),'"></script>',"\\n";
+					echo '<script type="text/javascript" src="',file_URI('//az/lib/angular.js', null, TRUE),'"></script>',"\\n";
+EEE;
 			} else if(preg_match("/^QE$/i", $cmd, $m)) {
 				$res = sharing::load('d3');
 				$res .= <<<EEE
