@@ -1,0 +1,29 @@
+RewriteEngine on
+Options -MultiViews
+
+#patch to dynamic templates
+RewriteCond %{REQUEST_FILENAME}.t -f
+RewriteRule ^(.*)$ $1.t
+
+# RewriteCond %{HTTP_COOKIE} (?:^|;\s*)magic_name=([^;]*)
+# RewriteRule ^(.*)\.t$ /az-%1/server/php/templater-cache.php [E=file:$1,E=fullfile:%{REQUEST_FILENAME}]
+
+RewriteRule ^(.*)\.t$ /az/server/php/templater-cache.php [E=file:$1,E=fullfile:%{REQUEST_FILENAME}]
+# RewriteRule ^(.*)\.t$ /az/server/php/templater-cache.php [E=file:$1,E=cache:%{DOCUMENT_ROOT}/cache,E=fullfile:%{REQUEST_FILENAME}]
+
+RewriteCond %{ENV:REDIRECT_file} (.+)
+RewriteRule ^ - [E=file:%1,E=!REDIRECT_file]
+RewriteCond %{ENV:REDIRECT_fullfile} (.+)
+RewriteRule ^ - [E=fullfile:%1,E=!REDIRECT_fullfile]
+# RewriteCond %{ENV:REDIRECT_cache} (.+)
+# RewriteRule ^ - [E=cache:%1,E=!REDIRECT_cache]
+
+RewriteRule ^az/lib/(.*) http://213.208.189.135/az/lib/$1
+
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.*)$ $1.php
+RewriteCond %{REQUEST_FILENAME}.php.t -f
+RewriteRule ^(.*)$ $1.php.t
+
+RewriteRule ^$ start.php
+
