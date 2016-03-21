@@ -985,9 +985,11 @@ function get_filter_control($f)
 			]);
 		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
 		$descr['ref'] = 'Y';
-		$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+		if(@$f->target) {
+			$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
 				[ 'table' => $f->target->___name ]);
-		$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';
+			$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';
+		}
 	}
 	return $descr;
 }
@@ -1214,32 +1216,32 @@ function csv_file_output($file_name, $templ) {
 function qe_control_model() {
 	global $Tables;
 	$tbls = [];
-	foreach($Tables as $name=>$table) {
-		$fields = [];
-		$pk = "['".implode("','", $table->PK(true))."']";
-		$dict = @$table->table_props["DICT"] ? ",dict:true" : "";
-		$fields[] ="$:{name:'$name', caption:'{$table->___caption}', recaption:'{$table->___recaption}', pk: $pk$dict}";
-		
+	foreach($Tables as $name=>$table) {		
+		$fields = [
+			'$' => [
+				'name' => $name,
+				'caption' => $table->___caption,
+				'recaption' => $table->___recaption,
+				'pk' => $table->PK(true)
+			]
+		];
+		if(@$table->table_props["DICT"]) $fields['$']['dict'] = true;		
 		foreach($table->fields as $fld_name=>$props) {
-			$properties = [];
-			$properties[] = "$:{name: '$fld_name'}";
-			if($props->target) $properties[] = 'target:"'.$props->target->___name.'"';
-			$properties[] = $props->caption ? "caption:'{$props->caption}'" : "caption:\"$fld_name\"";
-			$properties[] = "recaption:'{$props->recaption}'" ;
-			$properties[] = "sicaption:'{$props->si_caption}'";
-			$properties[] = 'visibility:' .($props->vis ? 'true' : 'false');
-			$properties[] = "type:'{$props->type}'";
-			$ctrl = get_filter_control($props);
-			$ctrl = array_map( function($k,$v) {
-				return "$k:\"$v\"";
-			},array_keys($ctrl),array_values($ctrl) );
-			$properties[] = 'ctrl:{'.implode(',',$ctrl).'}';
-			$fields[] = $fld_name.':{'.implode(',', $properties).'}';
-		}
-		;
-		$tbls[]=$name.': {'.implode(',', $fields).'}';					
-	}
-	return "<script>var QEMODEL={".implode(',', $tbls)."}</script>";
+			$properties = [
+				'$' => [ 'name' => $fld_name ],
+				'caption' => $props->caption ?: $fld_name,
+				'recaption' => $props->recaption,
+				'sicaption' => $props->si_caption,
+				'visibility' => (bool)!$props->hidden,
+				'type' => $props->type
+			];
+			if($props->target) $properties['target'] = $props->target->___name;
+			$properties['ctrl'] = get_filter_control($props);
+			$fields[$fld_name] = $properties;
+		}		
+		$tbls[$name]=$fields;
+	}	
+	return json_encode($tbls,JSON_PRETTY_PRINT);
 }
 
 function make_request($url, $srv = 'http://localhost') {

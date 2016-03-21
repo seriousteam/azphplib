@@ -531,7 +531,7 @@ EEE;
 			} else if(preg_match("/^QE$/i", $cmd, $m)) {
 				$res = sharing::load('d3');
 				$res .= <<<EEE
-				echo qe_control_model();
+				echo '<script type="text/javascript">var QEMODEL=',qe_control_model(),'</script>',"\\n";
 				echo '<script type="text/javascript" src="',file_URI('//az/lib/qe.js', null, null),'"></script>',"\\n";
 				echo '<link rel="stylesheet" href="',file_URI('//az/lib/qe.css', null, null),'">',"\\n";
 EEE;
