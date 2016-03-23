@@ -125,8 +125,8 @@ body[bullfinch]
 [bullfinch] table[main]>tbody>tr>td 
 {
   font-size:12pt;
-  border-top:1px solid rgba(0,0,0,0.05);
-  padding:0.5em;
+  border-top:1px solid rgba(0,0,0,0.1);
+  padding:0.4em;
   vertical-align:middle;
 }
 [bullfinch] table[main]>tbody>tr.transit_row>td
@@ -134,28 +134,32 @@ body[bullfinch]
   font-size:12pt;
   border:none;
   padding:0em;
-  padding-left:2.8em;
+  padding-left:2.7em;
 }
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td,
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td[expander],
 [bullfinch] table[main]>tbody>tr:first-child+tr[joined_with_next_row]>td
 {
-  border-top:1px dashed rgba(0,0,0,0.2);
+  border-top:1px dashed rgba(0,0,0,0.3);
+  background:rgba(241,218,54,0.05);
 }
 [bullfinch] table[main]>tbody>tr.transit_row>td:first-child,
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td:first-child
 {
-  border-left:1px dashed rgba(0,0,0,0.2);
+  border-left:1px dashed rgba(0,0,0,0.3);
+  background:rgba(241,218,54,0.05);
 }
 [bullfinch] table[main]>tbody>tr.transit_row>td,
 [bullfinch] table[main]>tbody>tr.transit_row:last-child>td
 {
-  border-bottom:1px dashed rgba(0,0,0,0.2); 
+  border-bottom:1px dashed rgba(0,0,0,0.3);
+  background:rgba(241,218,54,0.05);
 }
 [bullfinch] table[main]>tbody>tr.transit_row>td:last-child,
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td:last-child
 {
-  border-right:1px dashed rgba(0,0,0,0.2);
+  border-right:1px dashed rgba(0,0,0,0.3);
+  background:rgba(241,218,54,0.05);
 }
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td:first-child
 {
@@ -178,14 +182,13 @@ body[bullfinch]
 [bullfinch] table[main]>tbody>tr>td[expander]
 {
   font-size:12pt;
-  text-align:right;
   min-width:3.5em;
   max-width:3.5em;
   width:3.5em;
   padding-left:0;
   padding-right:0;
   border:none;
-  border-top:0.8em solid transparent;
+  border-top:1px solid transparent;
   vertical-align:middle;
 }
 
@@ -254,6 +257,142 @@ body[bullfinch]
   white-space:nowrap;
 }
 
+/* add record ok */
+[bullfinch] tr[cmd^="-"] button[display_next_row]
+{
+  display:none;
+}
+[bullfinch] button[add="resume"]
+{
+  font-size:10pt;
+  border-radius:2.5em;
+  padding:0.25em;
+}
+[bullfinch] button[add="resume"]
+{
+  background: -moz-linear-gradient(top, rgba(143,196,0,1) 0%, rgba(143,196,0,0.52) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(143,196,0,1)), color-stop(100%,rgba(143,196,0,0.52))); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top, rgba(143,196,0,1) 0%,rgba(143,196,0,0.52) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top, rgba(143,196,0,1) 0%,rgba(143,196,0,0.52) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top, rgba(143,196,0,1) 0%,rgba(143,196,0,0.52) 100%); /* IE10+ */
+  background: linear-gradient(to bottom, rgba(143,196,0,1) 0%,rgba(143,196,0,0.52) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#8fc400', endColorstr='#858fc400',GradientType=0 ); /* IE6-9 */
+}
+[bullfinch] button[add="resume"]>*
+{
+  display:none
+}
+[bullfinch] button[add="resume"]:after
+{
+  content: "\0000a0";
+  display:inline-block;
+  width:2em;
+  height:2em;
+  line-height:2em;
+  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAEGElEQVR4Xu2dPY4UMRBGdyUEEhyDAxATEBNBygFAe6dNEDEkZJwAToDERYhIwBbT0migp8s/5S7390ZysJLd3fW9t7VjS7Nze8NLOoFb6eop/gYBxCVAAAQQT0C8fDoAAognIF4+HQABxBMQL58OgADiCYiXTwdAAPEExMunAyCAeALi5dMBEEA8AfHy6QAIIJ6AePl0AAQQT0C8fDoAAognIF4+HQABxBMQL58OgADiCYiXTwdAAPEE4pb/Nj3ajzS+eT4iHcAz3fpr36Wl92n8TOOlpwQIUA/Ja+UCf7m+qwQI4IWx7rqX8N0lQIA6UB6r1uC7SoAAHijLr7kF300CBCiH1XuFFb6LBAjQG2fZ9Urhn0vwPP3wvex2/85GgNYE69fXws93/JzGmzR+1d/+70oEaE2wbn0I+AhQB691VRj4CNCKsnx9KPgIUA6wZUU4+AjQgrNsbUj4CFAGsXZ2WPgIUIvUvi40fASwg6yZGR4+AtRgta2ZAj4C2GCWzpoGPgKUot2ePxV8BNgGWjJjOvgIUIL3+twp4SNAHwGmhY8A7QJMDR8B2gSYHj4C1AtwCPgIUCfAYeAjQLkAh4KPAGUCHA4+AtgFOCR8BLAJcFj4CLAtwKHhjxLgRbrR0zQ+bOcdasbh4Y8QIMP/ksbjNN6l8T4U4vWHkYDvLcAC/8kp59+TSCAD31OAS/jL71p0CaTgewmwBj+6BHLwPQTYgh9VAkn4vQWwwo8mgSz8ngI8Sxf7msbyhs/6Zn/v9wTS8HsK8Chd7FMar6zkz+btJYE8/J4C5GvNJAHwT7+Bvf9BxAwSAP+s/fYWIHonAP7F32gPAaJKAPz/vEHzEiCaBMBfeXfuKUAUCYB/ZWvmLcDeEgB/Y18+QoC9JAC+4VBmlACjJQC+AX7vgyDLLUecEwDfQsLpIMhya08JgG8h4HwQZHkEDwmAb0l+0EGQ5VF6SgB8S+KDD4Isj9RDggfpRvkLlmpe3f7rds3NI6wZuQtYq7dFgpYM5eHvsQuIIgHwd9wF7C0B8APsAvaSAPiBdgGjJQB+wF3AKAmAv5J0hF2AtwTAv7JXiixAfuzWLSLwNzbK0QVokQD4hlOSGQSokQD4BviRDoIsj2v9cwB8S5oBD4Isj70lAfAtKQY+CLI8/poEwLekN8FBkKWMh2lS/izi69Nk4FtSm+ggyFJOluBjGvnDpV2+SNly06PNmWUXsJZ7liC/mr9F+2hgrfXMLoC1TuatJIAA4mogAAKIJyBePh0AAcQTEC+fDoAA4gmIl08HQADxBMTLpwMggHgC4uXTARBAPAHx8ukACCCegHj5dAAEEE9AvHw6AAKIJyBePh0AAcQTEC+fDoAA4gmIl08HQADxBMTLpwMggHgC4uXTAcQF+AMaWBOQE0GU9QAAAABJRU5ErkJggg==');
+  background-size:100% 100%;
+  filter:invert(100%);
+  -webkit-filter:invert(100%);
+  -moz-filter:invert(100%);
+  -o-filter:invert(100%);
+  -ms-filter:invert(100%);
+}
+[bullfinch] tr[cmd]>[expander] button[add="resume"],
+[bullfinch] [subtable] tr[cmd]>[expander] button[add="resume"]
+{
+  display:none;
+}
+[bullfinch] tr[cmd^="-"]>[expander] button[add="resume"],
+[bullfinch] [subtable] tr[cmd^="-"]>[expander] button[add="resume"]
+{
+  display:inline-block;
+}
+[bullfinch] [subtable] button[add="resume"]
+{
+  margin-left:-2.5em;
+}
+
+/*add record + */
+[bullfinch] button[add=""],
+[bullfinch] button[add="suspend"]
+{ 
+  font-size:14pt;
+  border:none;
+  width:auto;
+  height:auto;
+  padding:0.5em;
+  background: -moz-linear-gradient(top, rgba(241,218,54,0.12) 0%, rgba(254,252,234,0.54) 100%); 
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(241,218,54,0.12)), color-stop(100%,rgba(254,252,234,0.54)));
+  background: -webkit-linear-gradient(top, rgba(241,218,54,0.12) 0%,rgba(254,252,234,0.54) 100%); 
+  background: -o-linear-gradient(top, rgba(241,218,54,0.12) 0%,rgba(254,252,234,0.54) 100%);
+  background: -ms-linear-gradient(top, rgba(241,218,54,0.12) 0%,rgba(254,252,234,0.54) 100%);
+  background: linear-gradient(to bottom, rgba(241,218,54,0.12) 0%,rgba(254,252,234,0.54) 100%); 
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1ff1da36', endColorstr='#8afefcea',GradientType=0 );
+  border-radius:1em;
+  display:inline-block;
+}
+[bullfinch] button[add=""]>span,
+[bullfinch] button[add="suspend"]>span
+{
+  font-size:14pt;
+  padding:0.5em;
+  padding-left:3em;
+  padding-right:3em;
+  min-width:5em;
+  color:rgba(0,0,0,0.3);
+  border-radius: 0.25em;
+  border:2px dashed rgba(0,0,0,0.1);
+  display:inline-block;
+}
+[bullfinch] button[add="suspend"]>span[resume],
+[bullfinch] button[add=""]>span[resume] 
+{ display:none }
+[bullfinch] button[add="resume"]>span[suspend],
+[bullfinch] button[add=""]>span[suspend] 
+{ display:none }
+
+[bullfinch] [subtable] button[add=""],
+[bullfinch] [subtable] button[add="suspend"]
+{
+  margin-left:-0.5em;
+}
+
+/* table count, next page */
+[bullfinch] [table-control]
+{
+  margin-bottom:2em;
+}
+[bullfinch] [table-control]>[show-control]:after
+{
+  content:none;
+}
+
+[bullfinch] [table-control]>[show-control]
+{
+  font-size:12pt;
+  vertical-align:middle;
+  padding:0.5em;
+  font-size:12pt;
+  width:2em;
+  height:2em;
+  border:none;
+  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACyklEQVR4Ae3aS27bMBQF0GygWVCbzPvbcFaQzXTWDtpRSwJ+gBEoqmiRfFJyBAgM/OEzz71IBvHdnYsAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECKwKfFh99hxPvoUzpEg/lqk/yv05ZXqfod8vZ/jYZ7v3s0sN/1e5/5b7d7nPWIIa/p/LGX6WVQkKwpbrobwowq8FOGMJrsOPMyjBhvSXwg/As/wmWAo/zqAEKyWo4VegwFpaj16CtfDjPEqwUIJPG8IPwPp39cvCHtkPbQk/zqAEV2m1hB+ARytBS/hxBiW4lOCprIHSsh6lBLeEH+esZ3/3130ReC53oLSs2SXYE349cz27qwicsQTC71zdM5VA+J3Dj+3OUALhR1qD1r0l+Droc9VthT8Q93rrI5ZA+NcJTfj5SCUQ/oTAl0YcoQTCX0pm4mOZJRD+xKDXRmWUQPhriSQ8t7cE3xo+s/AbsGa+dEYJhD8z0RtmjSyB8G8IJOMtI0og/Iwkd8zsWQLh7wgi8609SiD8zAQ7zN5bgvqdgpbvIMRr/T+/Q3i9tthTggi0ZRV+r+Q67jOrBMLvGFrvrUaXQPi9Exuw36gSCH9AWKO27F0C4Y9KauC+vUog/IEhjd56bwmEPzqhCfvfWgLhTwhn1ojWEgh/VjIT52wtgfAnhjJ71P9KIPzZiSTMe60Ewk8II2vkyxIIPyuJxLlRAuEnhpA9upag3i4CBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAQIrAP9RFUcRWBg6wAAAAAElFTkSuQmCC');
+  background-size:100% 100%;
+  opacity:0.3;
+  -webkit-transition: all 0.25s ease-out;
+  -moz-transition:  all 0.25s ease-out;
+  -o-transition:  all 0.25s ease-out;
+  transition: all 0.25s ease-out;
+}
+[bullfinch] [table-control]>[show-control][display_next="Y"]
+{
+  transform:rotate(90deg);
+  -webkit-transform:rotate(90deg);
+  -webkit-transition: all 0.25s ease-out;
+  -moz-transition:  all 0.25s ease-out;
+  -o-transition:  all 0.25s ease-out;
+  transition: all 0.25s ease-out;
+}
 
 
 /* FORM CONTROL */
@@ -273,8 +412,7 @@ body[bullfinch]
 [bullfinch] div[ctrl-container]
 {
   width:100%;
-  height:100%;
-  padding-bottom:0.7em;
+  padding-bottom:0.5em;
 }
 
 /* Overall controls */
@@ -287,12 +425,17 @@ body[bullfinch]
 {
   box-shadow:none;
   font-size:14pt;
-  line-height:1em;
-  padding:1em;
+  min-height:2em;
+  padding-left:0.5em;  
+  padding-right:0.8em;
   border-radius:0.25em;
-  background:transparent;
+  background:rgba(255,255,255,0.5);
   vertical-align:top;
   display:block;
+  box-sizing:border-box;
+  text-shadow:0 0 4px white;
+  position:relative;
+  z-index:2;
 }
 [bullfinch] div[ctrl-container]>input[tag]:focus,
 [bullfinch] div[ctrl-container]>textarea[tag]:focus,
@@ -306,7 +449,7 @@ body[bullfinch]
 {
   outline:none;
   box-shadow: 0 0 16px rgba(0,170,255,0.7);
-  border:2px solid rgba(0,0,0,0);
+  border:1px solid rgba(0,0,0,0);
 }
 [bullfinch] a[tag="A"]:empty:before
 {
@@ -317,6 +460,7 @@ body[bullfinch]
 [bullfinch] div[ctrl-inline]>input[tag],
 [bullfinch] div[ctrl-inline]>textarea[tag]
 {
+  -moz-appearance: none;
   -webkit-appearance: none;
 }
 
@@ -325,16 +469,33 @@ body[bullfinch]
 [bullfinch] div[ctrl-inline]>textarea[tag],
 [bullfinch] div[ctrl-inline]>a[tag="A"]
 {
-  border:2px solid transparent;
+  border:1px solid transparent;
   box-shadow:none;
-
+  padding-top:0.5em;
+  padding-bottom:0.5em;
+}
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag],
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag],
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"]
+{
+  padding-top:0.8em;
+  padding-bottom:0.2em;
+  border:1px solid rgba(0,0,0,0.1);
 }
 
 [bullfinch] [joined_with_next_row] div[ctrl-inline]>input[tag],
 [bullfinch] [joined_with_next_row] div[ctrl-inline]>textarea[tag],
 [bullfinch] [joined_with_next_row] div[ctrl-inline]>a[tag="A"]
 {
-  border:2px solid rgba(0,0,0,0.1);
+  border:1px solid rgba(0,0,0,0.1);
+}
+[bullfinch] div[ctrl-inline]>label
+{
+  display:none;
+}
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>label
+{
+  display:block;
 }
 
 /* Form input */
@@ -342,61 +503,64 @@ body[bullfinch]
 [bullfinch] div[ctrl-container]>input[tag],
 [bullfinch] div[ctrl-container]>textarea[tag]
 {
-  margin:0em;
-  border:2px solid rgba(0,0,0,0.1);
-  position:relative;
-  z-index:2;
+  padding-top:0.8em;
+  padding-bottom:0.2em;
+  border:1px solid rgba(0,0,0,0.1);
   font-family:sans-serif;  
   vertical-align:middle;
   width:100%;
-  margin-bottom:0.5em;
+  margin:0;
 }
 
+/* mini label */
 [bullfinch] div[ctrl-container]>input[tag][value=""]~label,
 [bullfinch] div[ctrl-container]>textarea[tag]:empty~label,
-[bullfinch] div[ctrl-container]>a[tag="A"]:empty~label
+[bullfinch] div[ctrl-container]>a[tag="A"]:empty~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][value=""]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag]:empty~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"]:empty~label
 {
-  margin-bottom:-1.7em;
-  top:-100%;
   font-size:14pt;
-  line-height:0;
-  padding:0;
-  padding-top:1em;
-  display:block;
-  color:rgba(0,0,0,0.3);
+  top:0;
+  padding:0.5em;
+  border:1px solid transparent;
+  color:rgba(0,0,0,0.6);
   text-align:left;
-  padding-left:1em;
+  padding-left:0.5em;
   padding-right:2em;
-  position:relative;
+  position:absolute;
 }
 
+/* macro label */
 [bullfinch] div[ctrl-container]>input[tag]~label,
 [bullfinch] div[ctrl-container]>textarea[tag]~label,
 [bullfinch] div[ctrl-container]>a[tag="A"]~label,
 [bullfinch] div[ctrl-container]>input[tag][value=""]:focus~label,
-[bullfinch] div[ctrl-container]>textarea[tag]:empty:focus~label
+[bullfinch] div[ctrl-container]>textarea[tag]:empty:focus~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][value=""]:focus~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag]:empty:focus~label
 {
-  margin-bottom:-1em;
-  padding-bottom:0.7em;
-  top:-100%;
-  font-size:10pt;
-  line-height:0;
-  display:block;
+  font-size:9pt;
+  top:0;
+  border:1px solid transparent;
   z-index:1;
   font-family:sans-serif;
-  color:rgba(0,0,0,0.5);
+  color:rgba(0,0,0,0.7);
   white-space:nowrap;
-  width:100%;
   padding:0;
-  padding-left:1.5em;
+  padding-top:0.1em;
+  padding-left:0.8em;
   text-align:left;
-  position:relative;
+  position:absolute;
+  text-shadow:0 0 4px white;
 }
 [bullfinch] div[ctrl-container]>textarea[tag]~label,
 [bullfinch] div[ctrl-container]>textarea[tag]:empty:focus~label
 {
-  margin-bottom:-0.9em;
-  padding-left:1.7em;
+  padding-left:1em;
 }
 [bullfinch] input[vtype="I"],
 [bullfinch] input[vtype="N"]
@@ -433,13 +597,13 @@ body[bullfinch]
 }
 [bullfinch] [calendcont]
 {
-  margin-top: 1em;
-  margin-right: 38px;
-  margin-left: auto;
+  margin-top:0.6em;
+  margin-right:1.8em;
+  margin-left:auto;
   z-index:3;
-  top: 0;
-  right: 0;
-  font-size: 14pt;
+  top:0;
+  right:0;
+  font-size:14pt;
   position: absolute;
   width:0;
 }

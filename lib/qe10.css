@@ -630,8 +630,8 @@ color:white;
 #l-history .stop0  { stop-color:darkgray; stop-opacity:0.7 }
 #l-history .stop100  { stop-color:gray; stop-opacity:0.7 }
 
-#l-extender-on .stop0  { stop-color:#333; stop-opacity:1 }
-#l-extender-on .stop100  { stop-color:#333; stop-opacity:0.5 }
+#l-extender-on .stop0  { stop-color:white; stop-opacity:1 }
+#l-extender-on .stop100  { stop-color:white; stop-opacity:0.5 }
 
 #l-extender-off .stop0  { stop-color:white; stop-opacity:0.3 }
 #l-extender-off .stop100  { stop-color:white; stop-opacity:0.3 }
@@ -725,9 +725,18 @@ svg [node-type="history"] text {
   fill:gold;
 }
 
-[node-type="extender"][turnon="false"] circle {
-  stroke: orange; 
+[extend-arrow] {
+  stroke:rgb(155,155,155);
+  fill:none;
   stroke-width:2px;
+}
+#extendarrow path {
+  fill:rgb(155,155,155);
+}
+
+[node-type="extender"]/*[turnon="false"]*/ circle {
+  stroke: black;
+  stroke-width:1px;
   stroke-opacity:0.5;
   fill-opacity:0.1;
 }

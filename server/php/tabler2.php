@@ -129,13 +129,20 @@ echo <<<ST
 	[[value@tr \$data-:a__$pk0]]
 	[[onclick@tr 'blockEvent(event);this.closeModal(this)']]
 	[[style@tr 'cursor: pointer']]
-	
 ST;
 }
-echo '[[$@tr $data.{SAMPLE}]]';
+echo <<<ST
+[[\$@tr \$data.{SAMPLE}]]
+[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
+ST;
 
 if(!CHOOSER_MODE){
 echo "<td expander>";
+echo <<<ST
+<button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
+		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
+	></button>
+ST;
 	ob_start(); $cnt = 0;
 echo <<<ST
 	<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
@@ -147,7 +154,7 @@ ST;
 			echo "<table ctrl-grid><tr>";
 			echo "<td>";
 			echo "<div ctrl-container>";
-			$size = 0.7 * mb_strlen($f->caption ?: $n);
+			$size = max(0.7 * mb_strlen($f->caption ?: $n), 13);
 			if($f->Target())
 				echo "[[\$data.a.$n._id_~e: style='min-width:{$size}em']]"; 
 			else
@@ -173,12 +180,15 @@ foreach($table_fields as $n=>$f)
 		else
 			echo "[[\$data.a.$n]]";
 	} else {
-		$size = 0.7 * mb_strlen($f->caption ?: $n);
+		$size = max(0.7 * mb_strlen($f->caption ?: $n), 13);
 		if($f->Target())
 			echo "[[\$data.a.$n._id_~e: style='min-width:{$size}em']]"; 
 		else
 			echo "[[\$data.a.$n~e: style='min-width:{$size}em']]"; 
 	}
+	echo "<label>";
+	output_html($f->caption ?: $n);
+	echo "</label>";
 	echo "</div>";
 }
 if($cnt<1 && !CHOOSER_MODE)
@@ -191,27 +201,27 @@ if(CHOOSER_MODE && @$_REQUEST['add_empty'])
 echo <<<ST
 <tr if_no_rows><td colspan=100>
 </table>
-[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
 [[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
 
 ST;
 if(!CHOOSER_MODE){
 	echo <<<ST
-	
-<button type=button onclick="startAddRow(this)" add=suspend unlocked=Y
+<div table-control>
+<button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
 		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span>
-	</button>
-<button type=button onclick="this.setDN(toggle)" display_next inline_next></button>
+</button>
+<button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
 <span>
 <button row_counter type=button
 	onclick="var e = this; X.XHR('GET','[[make_counting_command(\$statements->data)]]').done(function(t) { e.setV(e.V().replace(/\?|\d+/, t)); })"
 >[[@button \$data.{COUNT}~?]]Число записей: ?</button>
+[[PAGE CONTROLS]]
 </span>
+</div>
 ST;
 }
 echo <<<ST
-<div>[[PAGE CONTROLS]]</div>
 <!--FILTRED.--></div>
 </body>
 ST;
