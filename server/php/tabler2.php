@@ -141,7 +141,8 @@ echo "<td expander>";
 echo <<<ST
 <button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
 		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
-	></button>
+></button>
+<button tag type="button" onclick="doDelete(this, 'отменить добавление?')" cancel-add></button>
 ST;
 	ob_start(); $cnt = 0;
 echo <<<ST

@@ -874,7 +874,7 @@ static $a = [
 	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
 	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs>{$EXPR[\'ru_date(substr($value,0,16))\']}</dfn>'
-	, 'BOOL' => '<dfn tag vtype=2 fctl name="$name" $attrs>$value</dfn>'
+	, 'BOOL' => '<dfn tag vtype=2 mkii fctl name="$name" $attrs>$value</dfn>'
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
