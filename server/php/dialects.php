@@ -160,9 +160,16 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'mssql' => "(SELECT val FROM #svar_x_$1)",
 				'mysql' => "XSESSION!",
 				],
-		'PARTS' => 
+		'PARTS' =>
 				[
 				'pgsql' => '$1SELECT REGEXP_SPLIT_TO_TABLE($2, E\'#\')$3'
+				],
+		'SAME' =>
+				[
+				'pgsql' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3",
+				'oracle' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3",
+				'mssql' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3",
+				'mysql' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3"
 				]
 	];
 	static $frepl_from = null;

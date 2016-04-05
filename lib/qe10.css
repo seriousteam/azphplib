@@ -20,7 +20,8 @@
 }
 /*  CONTROLLER  */
 [sorts],
-[conditions]
+[conditions],
+[columns]
 {
   font-size:16pt;
   font-family:sans-serif;
@@ -32,7 +33,8 @@
   padding-top:0.5em;
 }
 [conditions][empty],
-[sorts][empty] {
+[sorts][empty],
+[columns][empty] {
   text-align:center;
   border:1px dashed #ccc;
   background:none;
@@ -40,7 +42,8 @@
   padding:0.1em;
   cursor:pointer;
 }
-[sorts] { margin-top:0.5em }
+[sorts],[columns] { margin-top:0.5em }
+
 [conditions][empty]:before
 {
   content:'+ фильтр';
@@ -50,6 +53,12 @@
 [sorts][empty]:before
 {
   content:'+ сортировка';
+  padding-left:1em;
+  padding-right:1em;
+}
+[columns][empty]:before
+{
+  content:'+ столбцы';
   padding-left:1em;
   padding-right:1em;
 }
@@ -84,7 +93,9 @@
 [active] [what],
 [conditions][empty][active],
 [sorts][empty][active],
-[sort-body][active] {
+[sort-body][active],
+[columns][empty][active],
+[column-body][active] {
   /*box-shadow:inset 0 0 5px 5px gold, 0 0 5px 5px gold;*/
   background: -moz-linear-gradient(top, rgba(255,215,0,0.2) 0%, rgba(247,123,0,0.15) 100%); /* FF3.6+ */
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,215,0,0.2)), color-stop(100%,rgba(247,123,0,0.15))); /* Chrome,Safari4+ */
@@ -170,7 +181,8 @@
   text-align:center;
 }
 [op],
-[sort-body] {
+[sort-body],
+[column-body] {
   vertical-align:middle;
   background-color:white;
   border-radius:1em;
@@ -183,11 +195,13 @@
   margin:0.4em;
   position:relative;
 }
-[sort-node]
+[sort-node],
+[column-node]
 {
   text-align:center;
 }
-[sort-id] {
+[sort-id],
+[column-id] {
   display:inline-block;
   vertical-align:middle;
 }
@@ -203,10 +217,7 @@
   padding-left:0.5em;
   padding-right:0.5em;
 }
-[sort-body]
-{
 
-}
 [what] {
   display:inline-block;
   vertical-align:baseline;
@@ -533,8 +544,12 @@
 {
   display:inline-table;
 }
-[editorcontrol] {margin-top:0.5em;}
-[editorcontrol] button {
+[qe-editor] [editorcontrol] 
+{margin-top:0.5em;}
+
+[editorcontrol] button[accept],
+[editorcontrol] button[cancel]
+ {
   border:none;
   margin:0.5em;
   margin-top:0;
@@ -752,4 +767,60 @@ svg [node-type="history"] text {
   fill:rgba(0,0,0,0.2);
 }
 
-/* CALENDAR */
+
+[columns]
+{
+/* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#e2e2e2+0,ffffff+49,e2e2e2+100&0.7+0,0.7+100 */
+background: -moz-linear-gradient(left,  rgba(226,226,226,0.7) 0%, rgba(255,255,255,0.7) 49%, rgba(226,226,226,0.7) 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(left,  rgba(226,226,226,0.7) 0%,rgba(255,255,255,0.7) 49%,rgba(226,226,226,0.7) 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to right,  rgba(226,226,226,0.7) 0%,rgba(255,255,255,0.7) 49%,rgba(226,226,226,0.7) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#b3e2e2e2', endColorstr='#b3e2e2e2',GradientType=1 ); /* IE6-9 */
+  border-radius:1em;
+  box-shadow:0 0 3px rgba(0,0,0,0.2);
+}
+[columns][empty]
+{
+  box-shadow:none;
+}
+[column-body] {
+  padding-right:0.5em;
+}
+[column-id],
+[sort-id]
+{
+  cursor:pointer;
+}
+[column-id]:first-letter
+{
+  color:rgba(0,0,0,0.2);
+}
+[column-dir] {
+  display:inline-block;
+  width:1em;
+  height:1em;
+  vertical-align:middle;
+  margin-left:0.7em;
+  position:relative;
+}
+[column-node][place="left"]  {
+  text-align:left;
+}
+[column-node][place="right"] {
+  text-align:right;
+}
+[column-dir]:before
+{
+  content:'';
+  width:100%;
+  height:100%;
+  display:inline-block;
+  cursor:pointer;
+}
+[place="left"] [column-dir]:before {
+  background:url('res/bf-qe-right.svg');
+  background-size:100% 100%;
+}
+[place="right"] [column-dir]:before {
+  background:url('res/bf-qe-left.svg');
+  background-size:100% 100%;
+}

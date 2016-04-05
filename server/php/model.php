@@ -15,6 +15,7 @@ function recaption(&$caption) {
 class Table {
   var $___name = '';
   var $___caption = '';
+  var $___recaption = '';
   var $fields = [];
   var $table_props = [];
   function __construct( $name, $caption = '' ) { $this->___name = $name; $this->___caption = $caption; $this->___recaption = recaption($this->___caption); }
@@ -85,8 +86,6 @@ class _Field {
   var $ctrl_min = '';
   var $ctrl_max = '';
   
-  var $vis = false;
-  
   var $required = false;
   
   var $expression = '';
@@ -96,10 +95,13 @@ class _Field {
   var $choose = false;
   
   var $ui_size = NULL;
+  var $ui_group = '';
+  var $ui_line = false;
   
   var $values = '';
   
   var $page = '';
+
 
   function __construct( $table = null) { 
     global $Tables;
@@ -270,6 +272,8 @@ class modelParser extends _PreCmd {
 					$fields = array_map('trim', $fields);
 					$fields = array_filter($fields);
 					$current_page = '';
+					$unnamed_group = 0;
+					$current_group = ['name'=>++$unnamed_group, 'closed'=>false];
 					//var_dump($fields);
 					foreach($fields as $f) {
 						if(preg_match("/^\s*+(?<name>$RE_ID):\s*+(?<value>(.*))/", $f, $m)) { // ID: 
@@ -283,8 +287,17 @@ class modelParser extends _PreCmd {
 								$props[ 'AUTO_KEY' ] = true;
 							else if($m['name'] == 'DICT')
 								$props[ 'DICT' ] = true;
-							else if($m['name'] == 'PAGE')
+							else if($m['name'] == 'PAGE') {
 								$current_page = $m['value'];
+								$current_group = ['name'=>++$unnamed_group, 'closed'=>false];
+							}
+							else if($m['name'] == 'UI_GROUP') {
+								if(preg_match("/^CLOSED:(.*)$/i",$m['value'],$g)) {
+									$current_group = [ 'name'=>$g[1], 'closed'=>true ];					
+								} else {
+									$current_group = [ 'name'=>$m['value'], 'closed'=>false ];	
+								}
+							}								
 							continue;
 						}
 
@@ -353,8 +366,7 @@ class modelParser extends _PreCmd {
 								   $fld->search_re = $this->unescape($m[3]); 
 								}
 							else if(preg_match('/^REQUIRED$/', $p)) $fld->required = true;
-							else if(preg_match("/^VIS$/", $p))  $fld->vis = true;
-							else if(preg_match('/^HIDDEN$/', $p)) $fld->hidden = true;
+							else if(preg_match('/^HIDDEN$/', $p)) $fld->hidden = true;					
 							else if(preg_match("/^SI'(\d+)'/i", $p, $m)) 
 								$fld->si_caption = $this->unescape($m[1]);
 							else if(preg_match("/^RE:'(\d+)'/i", $p, $m))  
@@ -363,13 +375,19 @@ class modelParser extends _PreCmd {
 								$fld->ctrl_min = $this->unescape($m[1]); 
 							else if(preg_match("/^MAX:'(\d+)'/i", $p, $m)) 
 								$fld->ctrl_max = $this->unescape($m[1]);							
-							else if(preg_match("/^UI_SIZE:(\d+)/i", $p, $m)) 
-								$fld->ui_size = (int)$m[1];							
+							else if(preg_match("/^UI_SIZE:(\d+)/i", $p, $m))
+								$fld->ui_size = (int)$m[1];
+							else if(preg_match('/^UI_LINE$/', $p)) $fld->ui_line = true;				
 							else if(preg_match("/^VALUES:\s*($RE_ID)/i", $p, $m)) 
 								$fld->values = $m[1];							
 							else if(preg_match("/^='(\d+)'/", $p, $m)) 
 								$fld->expression = $this->unescape($m[1]); 
 						$fld->page = $current_page;
+						$fld->ui_group = $current_group;
+						if($fld->type==='SUBTABLE') {
+							$fld->ui_group = [ 'name'=>++$unnamed_group, 'closed'=>false ];	
+							$current_group = [ 'name'=>++$unnamed_group, 'closed'=>false ];
+						}
 						$fres[$fname] = $fld;
 					}
 				}

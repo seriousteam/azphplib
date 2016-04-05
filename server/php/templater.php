@@ -599,13 +599,16 @@ EEE;
 									);
 								switch($f) {
 								case 'NPP': return "\$counters->$m[1]";
+								case 'EXTRA': 
+									$select->extra = true;
+									return "''";
 								case 'COUNT': return "(\$counters->$m[1]-1)";
 								case 'FIRST': return "(\$counters->$m[1] === 1)";
 								case 'SAMPLE': return "(\$counters->$m[1] === 0? 'sample' : '')";
 								case 'SQL': return "make_counting_command(\$statements->$m[1])";
 								}
 								global $RE_ID;
-								if(preg_match("/^CMD([ID])?(\\+PK)?\\s+(.*)/", $f, $mc)) {
+								if(preg_match("/^CMD([ID])?(\\+PK)?\\s+(.*)/", $f, $mc)) { 
 									$ins = $mc[1];
 									$with_pk = $mc[2];
 									$cmd_fields = $mc[3];
@@ -846,6 +849,10 @@ EEE;
 			array_map(function($a,$b) { return "( $b->select ) AS ARRAY $a"; }
 			,array_keys($s->arrays), array_values($s->arrays)
 		));
+		if(@$s->extra) {
+			$alias = key($selects);
+			$fields[] = "%%X$alias%%";
+		}
 		$fields = implode(', ', $fields);
 		$s->select = preg_replace('/(^SELECT\s(?:DISTINCT\s)?|\sSELECT\s(?:DISTINCT\s)?|,|^)\s*\*\s*(?=,|FROM\s|$)/', "$1 $fields ", $s->select);
 		prev($selects);
@@ -855,6 +862,13 @@ EEE;
 	if(!$selects) $selects = [ '-' ];
 	if(!$main_select_alias) $main_select_alias = array_keys($selects)[0];
 	//var_dump($selects);
+	$extras = 0;
+	foreach($selects as $alias=>$s) {
+		if(@$s->extra) {
+			echo "\n\t\$xf['$alias']=[];";
+			$extras++;
+		}
+	}
 	$select = $selects[$main_select_alias];
 	unset($selects[$main_select_alias]);
 	
@@ -864,9 +878,15 @@ EEE;
 		$select->select = "['dummy' => null]";
 	}
 
+	//xf[]=l:a.syrecordidw & xf[]=r:a.syrecordidw
+	//for now extra fields will be added to root table only. 
+	//but you can easily add xf to subqueries if you find a way to tell it in url params.
+	if($extras>0) {
+		echo "\n\tif(isset(\$xf) && \$params->xf && is_array(\$params->xf)) { extra_fields(\$xf,'$main_select_alias',\$params); }";
+	}
 	echo "\n\t\$counters = new stdClass;";
 	echo "\n\t\$statements = new stdClass;";
-	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit);";
+	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, @\$xf);";
 	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
 	//for paging
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";

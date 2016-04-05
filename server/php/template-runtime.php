@@ -169,8 +169,48 @@ class everything_you_want {
 	function ns($name) { return new namedString($name, null, $this); }
 
 }
-
-function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
+function extra_fields(&$xf, $root, $params)
+{
+	global $RE_ID;
+	global $Tables;
+	foreach($params->xf as $x) {
+		if(preg_match("/^[lr]:($RE_ID)+(\.$RE_ID)*$/i",$x,$m)) {
+			$field = new stdClass;
+			$x = explode(':',$x);
+			$name = [];
+			if($params->table) {
+				$caption = [];
+				$path = explode('.',$x[1]);
+				$name[] = array_shift($path);
+				$t = $Tables->{$params->table};
+				while(count($path)>0) {
+					$p = array_shift($path);
+					if(array_key_exists($p,$t->fields)) {
+						$f = $t->fields[$p];
+						$name[] = $p;
+						$caption[] = $f->target ? ($f->recaption ?: "*$p*") : $f->caption;
+						$t = $f->target ?: $t;
+					} else 
+						break;						
+				}
+				$field->caption = [array_pop($caption)];
+				$field->caption = implode(' ',array_merge($field->caption, 
+					array_map(function($v) { 
+						return mb_strtolower($v); 
+					}, 
+					array_reverse($caption))
+				));
+			} else {
+				$field->caption = $x[1];
+			}
+			$field->name = $x[1];
+			$field->alias = str_replace('.','__',$field->name);
+			$field->floating = mb_strtolower($x[0]);
+			$xf[$root][] = $field;
+		}
+	}
+}
+function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $xf = null) {
 	global $SELECT_STRUCT, $RE_ID;
 
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
@@ -181,7 +221,15 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 			$target .= " LIMIT $page";
 		$limit = $page;
 	}
-	
+	if($xf) {//target is always string when extra fields added
+		foreach($xf as $alias=>$e) {
+			$e = array_map(function($f) {
+				return "{$f->name} AS {$f->alias}";
+			},$e);
+			$s = count($e)>0 ? ', '.implode(', ',$e) : '';
+			$target = preg_replace("/,\s*%%X$alias%%/i",$s,$target);
+		}
+	}
 	if(!$cmd) return $target;
 	//take where, order, group from source and add it to target
 	//or, if source is not a select, use data as is
@@ -824,7 +872,7 @@ function output_editor($mode, $value, $attrs = '')
 			$table = $Tables->{$value->container->getName()};
 			if(!isset($table->fields[$name])) echo $value->name;
 			$f = $table->fields[$name];
-			$rel_target = file_URI('//az/server/php/chooser.php', [ 'table' => $f->target->___name ]);
+			$rel_target = file_URI('//az/server/php/chooser2.php', [ 'table' => $f->target->___name ]);
 		}
 		if(preg_match('/^\\$(.*)/',$rel_target, $m)) {
 			$b = $m[1];
@@ -883,8 +931,8 @@ static $a = [
 	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
 	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2>$rel_target</menu>'
 	, 'SUBTABLE' =>
-					'<button type=button onclick="this.setDN(toggle)" display_next $attrs></button>
-					<div subtable ref=Y>"/az/server/php/tabler.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
+					'<button subtable-show type=button onclick="this.setDN(toggle)" display_next $attrs></button>
+					<div subtable ref=Y>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
 				'
 	, 'FILE' =>
 		'<span lobload=filer accept="" filetypes="*">
@@ -969,7 +1017,7 @@ function get_filter_control($f)
 	$ct = $f->getControlType();
 	$descr['mc'] = $ct;
 	if($ct=='DL' && @$f->target) {
-		$descr['rel_target'] = file_URI('//az/server/php/chooser.php', 
+		$descr['rel_target'] = file_URI('//az/server/php/chooser2.php', 
 				[ 'table' => $f->target->___name 
 				  , 'add_empty' => ''
 				]);
@@ -1022,7 +1070,7 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 		}
 	
 		if(@$value->rel_target || $f->target) {
-			$rel_target = file_URI('//az/server/php/chooser.php', 
+			$rel_target = file_URI('//az/server/php/chooser2.php', 
 				[ 'table' => 
 						@$value->rel_target ?: $f->target->___name 
 				  , 'add_empty' => $f->required ? '' : 'Y'
@@ -1220,20 +1268,22 @@ function qe_control_model() {
 		$fields = [
 			'$' => [
 				'name' => $name,
-				'caption' => $table->___caption,
-				'recaption' => $table->___recaption,
+				'c' => $table->___caption,
+				'rc' => $table->___recaption,
 				'pk' => $table->PK(true)
 			]
 		];
 		if(@$table->table_props["DICT"]) $fields['$']['dict'] = true;		
 		foreach($table->fields as $fld_name=>$props) {
+			if($props->type=='SUBTABLE') 
+				continue;
 			$properties = [
 				'$' => [ 'name' => $fld_name ],
-				'caption' => $props->caption ?: $fld_name,
-				'recaption' => $props->recaption,
-				'sicaption' => $props->si_caption,
-				'visibility' => (bool)!$props->hidden,
-				'type' => $props->type
+				'c' => $props->caption ?: $fld_name,
+				'rc' => $props->recaption,
+				'si' => $props->si_caption,
+				'h' => (bool)$props->hidden,
+				't' => $props->type
 			];
 			if($props->target) $properties['target'] = $props->target->___name;
 			$properties['ctrl'] = get_filter_control($props);
