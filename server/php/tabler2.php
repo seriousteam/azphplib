@@ -28,20 +28,69 @@ $pk_s = implode(',', array_map(function($a){ return "a.$a";}, $pk));
 $sql_fields[] = $table->ID('a')." AS a__table__id";
 $table_fields = $table->fields;
 
-	if(CHOOSER_MODE) {
-		$has_choose = false;
-		foreach($table_fields as $f) if($f->choose) $has_choose = true;
-		if($has_choose) {
-			$tf = [];
-			foreach($table_fields as $n=>$f) 
-				if($f->choose) $tf[$n] = $f;
-			$table_fields =  $tf;
+if(CHOOSER_MODE) {
+	$has_choose = false;
+	foreach($table_fields as $f) if($f->choose) $has_choose = true;
+	if($has_choose) {
+		$tf = [];
+		foreach($table_fields as $n=>$f) 
+			if($f->choose) $tf[$n] = $f;
+		$table_fields =  $tf;
+	}
+}
+if(!isset($table_fields[$n = $table->PK()]))
+	$sql_fields[] = "a.$n AS a__$n";
+$sql_fields = implode(', ', $sql_fields);
+
+$view = [];
+foreach($table_fields as $n=>$f) {
+	if($f->type && !$f->hidden && !$f->page && $n != $link) {
+
+	}
+}
+$ui = [];
+foreach($table_fields as $n=>$f) {
+	if($f->type && !$f->hidden && $f->page && $n != $link) {
+		$p = $f->page;
+		$g = (string)$f->ui_group['name'];
+		if( !isset($ui[$p]) )
+			$ui[$p] = [];
+		
+		if( !isset($ui[$p][$g]) ) {
+			$ui[$p][$g] = new stdClass;
+			$ui[$p][$g]->subtable = $f->type==='SUBTABLE';
+			$ui[$p][$g]->ungrouped = !is_string($f->ui_group['name']);
+			$ui[$p][$g]->caption = is_string($f->ui_group['name']) ? $f->ui_group['name'] : null;
+			$ui[$p][$g]->lines = [];
+			$ui[$p][$g]->closed = $f->ui_group['closed'];
+		}
+		$lines = &$ui[$p][$g]->lines;
+		if(!$f->ui_line) {
+			$lines[] = [];
+		}
+		$elem = new stdClass;
+		$elem->n = $n;
+		$elem->f = $f;
+		$elem->col = 1;
+		$lines[count($lines)-1][] = $elem;
+	}
+}
+foreach($ui as &$page) {
+	foreach($page as &$group) {
+		$maxcol = 0;
+		foreach($group->lines as $line1) {
+			if($maxcol < count($line1))
+				$maxcol = count($line1);
+		}
+		foreach($group->lines as &$line2) {
+			if(count($line2)>0) {
+				$line2[count($line2)-1]->col += $maxcol - count($line2);
+			}					
 		}
 	}
-	if(!isset($table_fields[$n = $table->PK()]))
-		$sql_fields[] = "a.$n AS a__$n";
-	$sql_fields = implode(', ', $sql_fields);
-	
+}
+
+
 echo <<<ST
 [[PROLOG global \$Tables; \$table = \$Tables->{\$params->table};]]
 [[PROLOG if(\$params->empty_start && !\$cmd) \$cmd = "*WHERE 1=0 "]]
@@ -51,6 +100,10 @@ echo <<<ST
  \$title = \$table->___caption ? 
  	"{\$table->___caption}({\$params->table})" :  
  	"{\$params->table}";
+ \$has_group = '';
+ if(preg_match('/\s+GROUP\s+BY\s+/ix', \$cmd)) {
+ 	\$has_group = 'has_group';
+ }
 ]]
 [[PAGE BY 20]]
 
@@ -131,7 +184,7 @@ ST;
 
 
 echo <<<ST
-<div style="clear:both"><!--FILTRED:-->
+<div style="clear:both" [[\$has_group]]><!--FILTRED:-->
 [[ob_start();]]
 <table main onrefresh="refreshNoRowStatus(this)">
 ST;
@@ -176,92 +229,50 @@ if(!CHOOSER_MODE){
 echo "<td expander>";
 echo <<<ST
 <div><button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
-		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
+		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 ></button></div>
 <div><button tag type="button" onclick="doDelete(this, 'отменить добавление?')" cancel-add></button></div>
 ST;
-ob_start(); $cnt = 0;
+
+// EDITABLE FORM
+ob_start();
 echo <<<ST
 	<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
 	<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
 ST;
-	
-	$ui = [];
-	foreach($table_fields as $n=>$f) 
-		if($f->type && !$f->hidden && $f->page && $n != $link) {
-			++$cnt;
-			$p = $f->page;
-			$g = (string)$f->ui_group['name'];
-			if( !isset($ui[$p]) )
-				$ui[$p] = [];
-			
-			if( !isset($ui[$p][$g]) )
-				$ui[$p][$g] = [
-					'subtable' => $f->type==='SUBTABLE',
-					'ungrouped' => !is_string($f->ui_group['name']),
-					'caption' => is_string($f->ui_group['name']) ? $f->ui_group['name'] : null, 
-					'lines' => [],
-					'closed' => $f->ui_group['closed']
-				];
-			
-			$lines = &$ui[$p][$g]['lines'];
-			if(!$f->ui_line) {
-				$lines[] = [];
-			}
-			$lines[count($lines)-1][] = [ 'n'=>$n, 'f' => $f, 'col' => 1 ];
-		}	
-	if($cnt>1) {
-		//echo '<pre>';
-		//var_dump($ui);
-		foreach($ui as &$page) {
-			foreach($page as &$group) {
-				$maxcol = 0;
-				foreach($group['lines'] as $line1) {
-					if($maxcol < count($line1))
-						$maxcol = count($line1);
-				}
-				foreach($group['lines'] as &$line2) {
-					if(count($line2)>0) {
-						$line2[count($line2)-1]['col'] += $maxcol - count($line2);
-					}					
-				}
-			}
-		}
-		//echo '================================================================';
-		//var_dump($ui);
 		foreach($ui as $page) {
 			foreach($page as $grp) {
 				echo '<table ctrl-grid';
-				if($grp['closed'] && !$grp['subtable'] && !$grp['ungrouped'])
+				if($grp->closed && !$grp->subtable && !$grp->ungrouped)
 					echo ' grp-display="N"';
 				else
 					echo ' grp-display="Y"';			
 				echo '>';
-				if( $grp['caption'] ) {
+				if( $grp->caption ) {
 					echo <<<ST
 		<tr ctrl-group-head>
 			<td colspan=100>
-				<span onclick="group(this,toggle)">{$grp['caption']}</span>
+				<span onclick="group(this,toggle)">{$grp->caption}</span>
 			</td>
 		</tr>
 ST;
 				}
-				foreach($grp['lines'] as $cline) {
+				foreach($grp->lines as $cline) {
 					echo '<tr ctrl-group>';
 					foreach($cline as $f) {
-						if($f['col']>1)
-							echo "<td colspan='{$f['col']}'>";
+						if($f->col>1)
+							echo "<td colspan='{$f->col}'>";
 						else
 							echo "<td>";
 						echo "<div ctrl-container>";
-						$size = "style='min-width:".max(0.7 * mb_strlen($f['f']->caption ?: $n), 13)."em'";
-						if($f['f']->Target())
-							echo "[[\$data.a.{$f['n']}._id_~e: $size]]"; 
+						$size = "style='min-width:".max(0.7 * mb_strlen($f->f->caption ?: $n), 13)."em'";
+						if($f->f->Target())
+							echo "[[\$data.a.{$f->n}._id_~e: $size]]"; 
 						else
-							echo "[[\$data.a.{$f['n']}~e: $size]]"; 
+							echo "[[\$data.a.{$f->n}~e: $size]]"; 
 						echo "\n";
 						echo "<label>";
-						output_html($f['f']->caption ?: $f['n']);
+						output_html($f->f->caption ?: $f->n);
 						echo "</label>";		 
 						echo "</div>";
 						echo "</td>";
@@ -271,33 +282,11 @@ ST;
 				echo '</table>';
 			}
 		}
-	}
-	
-	/*
-	foreach($table_fields as $n=>$f) 
-		if($f->type && !$f->hidden && $f->page && $n != $link) { ++$cnt;			
-			echo '<table ctrl-grid>';			
-			echo "<tr ctrl-group><td>{$cur_group}</td></tr>";		
-			echo "<td><div ctrl-container>";
-			$size = "style='min-width:".max(0.7 * mb_strlen($f->caption ?: $n), 13)."em'";
-			if($f->Target())
-				echo "[[\$data.a.$n._id_~e: $size]]"; 
-			else
-				echo "[[\$data.a.$n~e: $size]]"; 
-			echo "\n";
-			echo "<label>";
-			output_html($f->caption ?: $n);
-			echo "</label>";		 
-			echo "</div></td>";
-		}
-	if($cnt>1) echo '</table>';
-	*/
 echo <<<ST
-
 <button tag type="button" onclick="doDelete(this, 'удалить?')" del></button>
 </div>
 ST;
-	if($cnt>1) ob_end_flush(); else ob_end_clean();
+	if(count($ui)) ob_end_flush(); else ob_end_clean();
 }
 echo <<<ST
 [[if(isset(\$xf))foreach(\$xf['data'] as \$f) { if(\$f->floating==='l') {]]
@@ -315,7 +304,7 @@ foreach($table_fields as $n=>$f)
 			echo "[[\$data.a.$n._id_]]";
 		else
 			echo "[[\$data.a.$n]]";
-	} else {		
+	} else {
 		$size = "style='min-width:".max(0.7 * mb_strlen($f->caption ?: $n), 13)."em'";
 		if($f->Target())
 			echo "[[\$data.a.$n._id_~e: $size]]"; 
@@ -353,14 +342,11 @@ if(!CHOOSER_MODE){
 	echo <<<ST
 <div table-control>
 <button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
-		[[foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
+		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span>
 </button>
 <button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
 <span>
-<button row_counter type=button
-	onclick="var e = this; X.XHR('GET','[[make_counting_command(\$statements->data)]]').done(function(t) { e.setV(e.V().replace(/\?|\d+/, t)); })"
->[[@button \$data.{COUNT}~?]]Число записей: ?</button>
 [[PAGE CONTROLS]]
 </span>
 </div>

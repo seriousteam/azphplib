@@ -61,6 +61,7 @@ class Table {
   }
   function TRIGGER_VAR() { return @$this->table_props['TRIGGER_VAR']; }
   function AUTO_KEY() { return @$this->table_props['AUTO_KEY'] ? $this->PK() : ''; }
+  function AUTO_GROUP() { return @$this->table_props['AUTO_GROUP']; }
 }
 
 class _Field {
@@ -285,6 +286,8 @@ class modelParser extends _PreCmd {
 								$props[ 'TRIGGER_VAR' ] = $m['value']; //TRIGGER_VAR: ID
 							else if($m['name'] == 'AUTO_KEY')
 								$props[ 'AUTO_KEY' ] = true;
+							else if($m['name'] == 'AUTO_GROUP')
+								$props[ 'AUTO_GROUP' ] = true;
 							else if($m['name'] == 'DICT')
 								$props[ 'DICT' ] = true;
 							else if($m['name'] == 'PAGE') {

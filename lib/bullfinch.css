@@ -188,6 +188,16 @@ body[bullfinch]
   border-bottom:1px solid rgba(0,0,0,0.1);
 }
 
+/*hide controls in group*/
+[bullfinch] [has_group]>table>tbody>tr>td[expander]>*
+{
+  display:none;
+}
+[bullfinch] [has_group]>[table-control]>[add]
+{
+  display:none;
+}
+
 [bullfinch] table[main]>tbody>tr>td 
 {
   font-size:12pt;

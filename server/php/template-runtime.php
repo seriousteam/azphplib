@@ -169,6 +169,11 @@ class everything_you_want {
 	function ns($name) { return new namedString($name, null, $this); }
 
 }
+
+function handle_xtraz(&$xtraz, $params, $root)
+{
+
+}
 function extra_fields(&$xf, $root, $params)
 {
 	global $RE_ID;
@@ -210,7 +215,7 @@ function extra_fields(&$xf, $root, $params)
 		}
 	}
 }
-function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $xf = null) {
+function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $xtraz = null, $xf = null) {
 	global $SELECT_STRUCT, $RE_ID;
 
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
@@ -228,6 +233,15 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $xf = n
 			},$e);
 			$s = count($e)>0 ? ', '.implode(', ',$e) : '';
 			$target = preg_replace("/,\s*%%X$alias%%/i",$s,$target);
+		}
+	}
+	if($xtraz) {//target is always string when extra fields added
+		foreach($xtraz as $alias=>$e) {
+			$e = array_map(function($f) {
+				return "{$f->name} AS {$f->alias}";
+			},$e);
+			$s = count($e)>0 ? ', '.implode(', ',$e) : '';
+			$target = preg_replace("/,\s*%%XTRAZ$alias%%/i",$s,$target);
 		}
 	}
 	if(!$cmd) return $target;
@@ -1270,7 +1284,8 @@ function qe_control_model() {
 				'name' => $name,
 				'c' => $table->___caption,
 				'rc' => $table->___recaption,
-				'pk' => $table->PK(true)
+				'pk' => $table->PK(true),
+				'g' => $table->AUTO_GROUP()
 			]
 		];
 		if(@$table->table_props["DICT"]) $fields['$']['dict'] = true;		

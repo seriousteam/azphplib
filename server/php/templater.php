@@ -853,6 +853,8 @@ EEE;
 			$alias = key($selects);
 			$fields[] = "%%X$alias%%";
 		}
+		$alias = key($selects);
+		$fields[] = "%%XTRAZ$alias%%";
 		$fields = implode(', ', $fields);
 		$s->select = preg_replace('/(^SELECT\s(?:DISTINCT\s)?|\sSELECT\s(?:DISTINCT\s)?|,|^)\s*\*\s*(?=,|FROM\s|$)/', "$1 $fields ", $s->select);
 		prev($selects);
@@ -868,6 +870,7 @@ EEE;
 			echo "\n\t\$xf['$alias']=[];";
 			$extras++;
 		}
+		echo "\n\tif(!isset(\$xtraz['$alias'])) \$xtraz['$alias'] = [];"; 
 	}
 	$select = $selects[$main_select_alias];
 	unset($selects[$main_select_alias]);
@@ -886,7 +889,8 @@ EEE;
 	}
 	echo "\n\t\$counters = new stdClass;";
 	echo "\n\t\$statements = new stdClass;";
-	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, @\$xf);";
+	echo "\n\thandle_xtraz(\$xtraz,\$params,'$main_select_alias');";
+	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, \$xtraz, @\$xf);";
 	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
 	//for paging
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";

@@ -184,7 +184,7 @@ const _SQL_FUNC_KWD =
   VARCHAR|CHAR|DECIMAL|INTEGER|DATE|TIMESTAMPTZ|TIMESTAMP|TIME|CLOB|BLOB|
   STRING_TO_INTEGER|
   XSESSION_[A-Z_0-9]+)$/ix';
-
+const _SQL_GROUP_KWD = '/^(SUM|MIN|MAX|AVG|COUNT|SAME)$/ix';
 //parts
 $SELECT_STRUCT = [ 'SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'LIMIT' ];
 $INSERT_STRUCT_VALUES = [ 'INSERT INTO', 'VALUES' ];
@@ -382,8 +382,7 @@ class _Cmd extends _PreCmd {
 		debug_print_backtrace ();
       throw new Exception("bad select structire: $s");
 	}
-    
-   
+	
     $select = $parsed->SELECT;
     $from = $parsed->FROM;
 
@@ -448,13 +447,19 @@ class _Cmd extends _PreCmd {
     //replace placeholder ANY (*) with nothing
     //FIXME: make it works for our subselects!
     //$select = preg_replace("/(^|,)\s*($RE_ID\s*\.\s*)?\*\s*(,|$)/", '$3', $select);
-    $select = preg_replace('/,+/', ',', $select);
-    $select = preg_replace('/^\s*+,/', '', $select);
-    $parsed->SELECT = $this->process_ids( $select, $tree, $externals );
-    $parsed->process_ids('WHERE', $this, $tree, $externals );
-    $parsed->process_ids('GROUP BY', $this, $tree, $externals );
-    $parsed->process_ids('ORDER BY', $this, $tree, $externals );
-
+  $select = preg_replace('/,+/', ',', $select);
+  $select = preg_replace('/^\s*+,/', '', $select);	
+  $parsed->SELECT = $this->process_ids( $select, $tree, $externals );	
+  $parsed->process_ids('WHERE', $this, $tree, $externals );    
+  $parsed->process_ids('ORDER BY', $this, $tree, $externals );
+	$parsed->process_ids('GROUP BY', $this, $tree, $externals );
+	//echo '<pre>';
+	//var_dump($parsed);
+	if(preg_match("/^\s*($RE_ID)/", $from, $mt))
+        if($Tables->{$mt[1]}->AUTO_GROUP()) {
+			$this->process_same($parsed);
+	}
+	
     $this->pop_root_from_tree($parsed->FROM, $tree, false);
     if($from) {
 	    $ret = make_dbspecific_select($this, $parsed, $this->dialect);
@@ -465,6 +470,40 @@ class _Cmd extends _PreCmd {
     		, $this->dialect).')';
     }
    return $ret;
+  }
+  function replace_to_same(&$s,$grp) {
+	global $RE_PATH;
+	$closest_agg = null;
+	$s = preg_replace_callback($RE_PATH,
+      function($m) use(&$closest_agg) {
+        if(preg_match(_SQL_GROUP_KWD, $m[0])) {
+          $closest_agg = $m[0];
+        } else {
+          if(!preg_match(_SQL_FUNC_KWD, $m[0])) {
+            if( $closest_agg === null && !isset($grp[$m[0]]) ) {
+              return "SAME({$m[0]})";
+            }
+          }
+          $closest_agg = null;
+        }        
+        return $m[0];
+      }, $s);
+  }
+  function process_same(&$p) {
+  	global $RE_PATH;
+  	foreach(explode(',',$p->{'GROUP BY'}) as $f) {
+  		if(preg_match($RE_PATH,$f,$m)) {		
+  			if(!preg_match(_SQL_FUNC_KWD, $m[0])) {
+  				$grp[ $m[0] ] = 1;
+  			}
+  		}		
+  	}
+    if(isset($grp)) {
+       if(@$p->{'SELECT'})
+	       $this->replace_to_same($p->{'SELECT'},$grp);
+	     if(@$p->{'ORDER BY'})
+         $this->replace_to_same($p->{'ORDER BY'},$grp);
+    }
   }
   function process_path($p, &$tree, &$externals) {
 	global $RE_ID;
@@ -499,7 +538,7 @@ class _Cmd extends _PreCmd {
 	foreach($path as $key=>$name) {		
 		if($name==='join') {
 			//var_dump(_XNode::$ext);
-			 //accessed left and right fields, but in different nodes!
+			//accessed left and right fields, but in different nodes!
 			// this is for check rights especially			
 			//now, we use direct link generation and dont check access to linked key fields
 			//$node = new _XPath($node, $name);
