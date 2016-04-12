@@ -455,9 +455,8 @@ class _Cmd extends _PreCmd {
 	$parsed->process_ids('GROUP BY', $this, $tree, $externals );
 	//echo '<pre>';
 	//var_dump($parsed);
-	if(preg_match("/^\s*($RE_ID)/", $from, $mt))
-        if($Tables->{$mt[1]}->AUTO_GROUP()) {
-			$this->process_same($parsed);
+  if(!isset($Tables->{$tree->___name}) || $Tables->{$tree->___name}->AUTO_GROUP()) {
+		$this->process_same($parsed, $tree);
 	}
 	
     $this->pop_root_from_tree($parsed->FROM, $tree, false);
@@ -471,16 +470,27 @@ class _Cmd extends _PreCmd {
     }
    return $ret;
   }
-  function replace_to_same(&$s,$grp) {
+  function replace_to_same(&$s, $grp, $tree) {
+  //echo '<pre>';
+  //var_dump($tree);
 	global $RE_PATH;
 	$closest_agg = null;
 	$s = preg_replace_callback($RE_PATH,
-      function($m) use(&$closest_agg) {
+      function($m) use(&$closest_agg, $tree) {
         if(preg_match(_SQL_GROUP_KWD, $m[0])) {
           $closest_agg = $m[0];
         } else {
           if(!preg_match(_SQL_FUNC_KWD, $m[0])) {
             if( $closest_agg === null && !isset($grp[$m[0]]) ) {
+              $parts = explode('.',$m[0]);
+              foreach($tree->roots as $node) if(isset($node->alias) && $node->alias===$parts[0]) break;
+              if($node) {
+                if(isset($node->table->fields[ $parts[1] ])) {
+                  $field = $node->table->fields[ $parts[1] ];
+                  if($field->type==='CLOB' || $field->type==='BLOB')
+                    return "NULL";
+                } 
+              }
               return "SAME({$m[0]})";
             }
           }
@@ -489,7 +499,7 @@ class _Cmd extends _PreCmd {
         return $m[0];
       }, $s);
   }
-  function process_same(&$p) {
+  function process_same(&$p, $tree) {
   	global $RE_PATH;
   	foreach(explode(',',$p->{'GROUP BY'}) as $f) {
   		if(preg_match($RE_PATH,$f,$m)) {		
@@ -500,9 +510,9 @@ class _Cmd extends _PreCmd {
   	}
     if(isset($grp)) {
        if(@$p->{'SELECT'})
-	       $this->replace_to_same($p->{'SELECT'},$grp);
+	       $this->replace_to_same($p->{'SELECT'},$grp, $tree);
 	     if(@$p->{'ORDER BY'})
-         $this->replace_to_same($p->{'ORDER BY'},$grp);
+         $this->replace_to_same($p->{'ORDER BY'},$grp, $tree);
     }
   }
   function process_path($p, &$tree, &$externals) {
@@ -524,14 +534,14 @@ class _Cmd extends _PreCmd {
 	    else $roots = $tree->stack[$level];
 		}
 	    //echo "\n^^^^$p in $alias ";
-			   if(!$roots)
-			     { $externals[] = $alias.'.'.implode('.', $path); return '?'; }
+		if(!$roots)
+			{ $externals[] = $alias.'.'.implode('.', $path); return '?'; }
 		if(!@$roots[$alias]) {
 	      $r = 'stack level: '.count($tree->stack).' roots: ';
 		 
 	      foreach($roots as $a => $v) 
-		if(is_object($v))
-		  $r .= "$a => {$v->table->___name} ";
+		      if(is_object($v))
+		        $r .= "$a => {$v->table->___name} ";
 	      throw new Exception("alias '$alias' not found in $r (source:$p)");
 	   }
 	   $node = $roots[$alias];

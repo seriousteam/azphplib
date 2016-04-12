@@ -169,53 +169,144 @@ class everything_you_want {
 	function ns($name) { return new namedString($name, null, $this); }
 
 }
-
-function handle_xtraz(&$xtraz, $params, $root)
-{
-
+class uiGroup {
+	var $caption = null;
+	var $free = true;
+	var $subtable = false;
+	var $closed = false;
+	var $lines = [];
 }
-function extra_fields(&$xf, $root, $params)
-{
-	global $RE_ID;
-	global $Tables;
-	foreach($params->xf as $x) {
-		if(preg_match("/^[lr]:($RE_ID)+(\.$RE_ID)*$/i",$x,$m)) {
-			$field = new stdClass;
-			$x = explode(':',$x);
-			$name = [];
-			if($params->table) {
-				$caption = [];
-				$path = explode('.',$x[1]);
-				$name[] = array_shift($path);
-				$t = $Tables->{$params->table};
-				while(count($path)>0) {
-					$p = array_shift($path);
-					if(array_key_exists($p,$t->fields)) {
-						$f = $t->fields[$p];
-						$name[] = $p;
-						$caption[] = $f->target ? ($f->recaption ?: "*$p*") : $f->caption;
-						$t = $f->target ?: $t;
-					} else 
-						break;						
-				}
-				$field->caption = [array_pop($caption)];
-				$field->caption = implode(' ',array_merge($field->caption, 
-					array_map(function($v) { 
-						return mb_strtolower($v); 
-					}, 
-					array_reverse($caption))
-				));
-			} else {
-				$field->caption = $x[1];
-			}
-			$field->name = $x[1];
-			$field->alias = str_replace('.','__',$field->name);
-			$field->floating = mb_strtolower($x[0]);
-			$xf[$root][] = $field;
-		}
+class uiSearchField {
+	var $name = null;
+	var $caption = null;
+	var $op = '=';
+	var $re = null;
+	var $priority = 0;
+	function __ToString() {
+		return "{$this->name} $this->op ?{$this->alias}";
+	}
+	function __construct($name, $caption, $op, $re, $priority) {
+		$this->name = "a.$name";
+		$this->alias = str_replace('.','__',$this->name);
+		$this->caption = $caption;
+		$this->op = $op;
+		$this->re = $re;
+		$this->priority = $priority;
 	}
 }
-function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $xtraz = null, $xf = null) {
+class uiField {
+	var $name = null;
+	var $alias = null;
+	var $caption = null;
+	var $target = false;
+	var $readonly = false;
+	var $position = 0;
+	var $col = 1;
+	static function gencaption($table, $name) {
+		global $Tables;
+		$table = $table ? $Tables->{$table} : null;
+		if($table) {
+			$caption = [];
+			$path = explode('.',$name);
+			array_shift($path);
+			$t = $table;
+			while(count($path)>0) {
+				$p = array_shift($path);
+				if(array_key_exists($p,$t->fields)) {
+					$f = $t->fields[$p];
+					$caption[] = ($f->target && count($path)>1) ? ($f->recaption ?: "*$p*") : $f->caption;
+					$t = $f->target ?: $t;
+				} else 
+					break;				
+			}
+			$first = [ array_pop($caption) ];
+			return implode(' ',array_merge($first,
+				array_map(function($v) { 
+					return mb_strtolower($v); 
+				}, 
+				array_reverse($caption))
+			));
+		} else {
+			return $name;
+		}
+	}
+	static function genalias($name) {
+		return str_replace('.','__',$name);
+	}
+	function __ToString() {
+		return "{$this->name} AS {$this->alias}";
+	}
+	function min_width() {
+		return max(0.7 * mb_strlen($this->caption), 13);
+	}
+	function from_field($to, $fo, $name) {//root, leaf, path
+		$this->name = "a.$name";
+		$this->alias = uiField::genalias($this->name);
+		$this->caption = uiField::gencaption($to->___name, $this->name);
+		return $this;
+	}
+	function from_rel($to, $fo, $name) {//root, leaf, path
+		$this->from_field($to, $fo, $name);
+		$this->name = "{$this->name}._id_";
+		$this->alias = uiField::genalias($this->name);
+		return $this;
+	}
+	function from_url_param($tablename, $param) {
+		global $RE_ID;
+		global $Tables;
+		if(preg_match("/^[lr]:($RE_ID)+(\.$RE_ID)*$/i",$param,$m)) {//a.rel.f1
+			$param = explode(':',$param);
+			if($to = $Tables->{$tablename}) {
+				$path = explode('.',$param[1]);
+				array_shift($path);
+				$t = $to;
+				foreach($path as $p) {
+					$fo = $t->fields[$p];
+					if($fo->target) {
+						$t = $fo->target;
+					}
+				}
+				if(isset($fo)) {
+					$this->from_field($to,$fo,implode('.',$path));
+					$this->begin = mb_strtolower($param[0])=='l';
+					return $this;
+				}
+			}
+		}
+		return null;
+	}
+}
+function CE(&$ce_fields, $params) {
+	global $RE_ID;
+	global $Tables;
+	if($params->xf) {	
+		foreach($params->xf as $x) {
+			if(preg_match("/^($RE_ID):($RE_ID):($RE_ID)+(\.$RE_ID)*$/i",$x,$m)) {
+				//section_name:table_name:a.rel.f1
+				$x = explode(':',$param);					
+				$section = $x[0];
+				$table = @$Tables->{$x[1]};
+				if($table) {
+					$path = explode('.',$x[2]);
+					array_shift($path);
+					$t = $table;
+					foreach($path as $p) {
+						$field = $t->fields[$p];
+						if($field->target) {
+							$t = $field->target;
+						}
+					}
+					if(isset($field)) {
+						$uif = (new uiField)->from_field($table,$field,implode('.',$path));				
+						$uif->section = $section;
+						$ce_fields[] = $uif;
+					}
+				}								
+			}				
+		}		
+	}
+}
+function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $ce_fields = null) {
 	global $SELECT_STRUCT, $RE_ID;
 
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
@@ -226,24 +317,17 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $xtraz 
 			$target .= " LIMIT $page";
 		$limit = $page;
 	}
-	if($xf) {//target is always string when extra fields added
-		foreach($xf as $alias=>$e) {
-			$e = array_map(function($f) {
-				return "{$f->name} AS {$f->alias}";
-			},$e);
-			$s = count($e)>0 ? ', '.implode(', ',$e) : '';
-			$target = preg_replace("/,\s*%%X$alias%%/i",$s,$target);
-		}
+
+	if(is_string($target) && $ce_fields) {			
+		$target = preg_replace_callback("/(\s*,\s*)?%%CE_($RE_ID)%%(\s*,\s*)?/xi", 
+		function($m) use($ce_fields) {
+			if(isset($ce_fields[$m[2]]) && count($ce_fields[ $m[2] ])) {
+				return ($m[1] ? ',' : '').implode(',', $ce_fields[ $m[2] ] ).($m[3] ? ',' : '');
+			}
+			return $m[1] && $m[3] ? ',' : '';
+		}, $target);
 	}
-	if($xtraz) {//target is always string when extra fields added
-		foreach($xtraz as $alias=>$e) {
-			$e = array_map(function($f) {
-				return "{$f->name} AS {$f->alias}";
-			},$e);
-			$s = count($e)>0 ? ', '.implode(', ',$e) : '';
-			$target = preg_replace("/,\s*%%XTRAZ$alias%%/i",$s,$target);
-		}
-	}
+
 	if(!$cmd) return $target;
 	//take where, order, group from source and add it to target
 	//or, if source is not a select, use data as is
