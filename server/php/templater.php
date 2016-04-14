@@ -626,7 +626,10 @@ EEE;
 									"make_manipulation_command(\$$m[1], -1, \$statements->$m[1], '$with_pk')"
 									:
 									"make_manipulation_command(\$$m[1], \$counters->$m[1], \$statements->$m[1], '$with_pk')");
-								}								
+								}	
+								if(preg_match("/^(\\$.*)$/",$f,$mc)) {
+									return "\${$m[1]}->{{$mc[1]}}";
+								}
 								$alias = 'x_'.count($select->fields);
 							} else {
 								$f = preg_replace('/\s+/s', '', $m[2]);
@@ -741,11 +744,11 @@ EEE;
 					if(!$cmd_part) $cmd_part = ['.'];
 					$res = 
 						preg_replace('/^output_editor_([a-zA-Z0-9]+)\(([^-]+)->([^,]+)(,(.*))?\)$/s'
-							, 'output_editor(\'$1\',$2->ns(\'$3\')$4)'
+							, 'output_editor(\'$1\',$2->ns("$3")$4)'
 							, $res );
 					$res = 
 						preg_replace('/^output_editor2\(([^-]+)->([^,]+)(,(.*))?\)$/s'
-							, 'output_editor2($1->ns(\'$2\')$3)'
+							, 'output_editor2($1->ns("$2")$3)'
 							, $res );
 					$cmd_part[] = 
 						preg_replace('/^output_editor_[a-zA-Z0-9]+\(.*/s'
@@ -755,6 +758,11 @@ EEE;
 						preg_replace('/^output_editor2\(.*/s'
 							, 'output_editor'
 							, array_splice($cmd_part, -1)[0] );
+					/*echo '##########';
+					echo $res;
+					echo "\n";
+					var_dump(end($cmd_part));
+					echo '##########';*/
 					switch( end($cmd_part) )
 					{
 						case 'Days':
@@ -784,12 +792,16 @@ EEE;
 							if(end($cmd_part)[0] == '$')
 								$res .= ';';
 							else if(preg_match('/^\?:/',end($cmd_part))) { $res.=';'; }
-							else
-							switch(substr(rtrim($res),-1,1)) {
-								case ';': case '{' : case '}':
-									break;
-								default:
-									$res = "output_$escape_mode($res);";
+							else {
+								if(preg_match("/^\\$$RE_ID->\{.*\}$/s",$res,$m)) {
+									$res = "output_$escape_mode($res);"; 
+								} else
+								switch(substr(rtrim($res),-1,1)) {
+									case ';': case '{' : case '}':
+										break;
+									default:
+										$res = "output_$escape_mode($res);";
+								}
 							}
 					}
 					
