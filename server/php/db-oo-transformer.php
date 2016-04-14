@@ -223,8 +223,8 @@ class _Cmd extends _PreCmd {
 
   //make new parsed command
   function __construct($cmd) { parent::__construct($cmd);
-  //echo "!!!!",$cmd;
-    
+  //echo "!!!!",$cmd,"<br>";
+	
     //reset aliasing
     _XNode::$a_num = 0;
     //debug_backtrace();
@@ -380,7 +380,7 @@ class _Cmd extends _PreCmd {
     //var_dump($parsed);
     if(!$parsed->ok) {
 		debug_print_backtrace ();
-      throw new Exception("bad select structire: $s");
+      throw new Exception("Bad select structure: $s");
 	}
 	
     $select = $parsed->SELECT;

@@ -49,12 +49,9 @@ if(!isset($table_fields[$n = $table->PK()]))
 foreach($table_fields as $n=>$f) {
 	if($f->type && !$f->hidden && !$f->page && $n != $link) {
 	//view
-		if($f->Target()) {
-			$uif = (new uiField)->from_rel($table, $f, $n);
-		} else {
-			$uif = (new uiField)->from_field($table, $f, $n);
-		}
-		$ui_view[] = $uif;
+		$uif = new uiField($table, $f->Target() ? "$n._id_" : $n);
+		$uif->readonly = $ui->readonly;
+		$ui_view[] = $uif;		
 	}
 	if(!CHOOSER_MODE && $f->type && !$f->hidden && $f->page && $n != $link) {
 	//form
@@ -75,12 +72,7 @@ foreach($table_fields as $n=>$f) {
 		if(!$f->ui_line) {
 			$lines[] = [];
 		}
-		if($f->Target()) {
-			$elem = (new uiField)->from_rel($table, $f, $n);
-		} else {
-			$elem = (new uiField)->from_field($table, $f, $n);
-		}
-		$lines[count($lines)-1][] = $elem;
+		$lines[count($lines)-1][] = new uiField($table, $f->Target() ? "$n._id_" : $n);
 	}
 	if($f->search_op) {
 	//search
@@ -133,24 +125,9 @@ echo <<<ST
 	\$ui->groupby = preg_match('/\s*GROUP\s+BY\s+/ix', \$cmd);	
 	
 	//full control on used fields
-	//if(\$params->xf) {
-	//	foreach(\$params->xf as \$x) {
-	//		\$uif = (new uiField)->from_url_param(\$params->table, \$x);
-	//		if(\$uif) {
-	//			if(\$uif->begin) {
-	//				array_unshift(\$ui_view, \$uif);
-	//			} else {
-	//				\$ui_view[]=\$uif;	
-	//			}
-	//		}
-	//	}
-	//}
 	if(\$ui->groupby) {
 		\$ui->readonly = true;
 		\$ui_form = [];
-	}
-	foreach(\$ui_view as &\$ff) {
-		\$ff->readonly = \$ui->readonly;
 	}
 
 	//put fields to query
@@ -245,41 +222,39 @@ function group(o, st) {
 	[[\$@tr \$ui-:chooser~?"style@tr 'cursor: pointer'"]]
 	[[\$@tr \$data.{SAMPLE}]]
 	[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
-	[[if(count(\$ui_form)){]]
-	<td expander>
-	<div><button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
-		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
-></button></div>
-	<div><button tag type="button" onclick="doDelete(this, 'отменить добавление?')" cancel-add></button></div>
-	<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
-	<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
-		[[foreach(\$ui_form as \$page) { foreach(\$page as \$grp) {]]
-		<table ctrl-grid>
-		[[grp-display@table (\$grp-:subtable || \$grp-:free || !\$grp-:closed) ? "Y" : "N"]]
-			<tr ctrl-group-head>
-			[[@tr \$grp-:caption~?]]<td colspan=100>
-				<span onclick='group(this,toggle)''>[[\$grp-:caption]]</span>
-			</td></tr>
-			[[foreach(\$grp-:lines as \$cline){]]
-			<tr ctrl-group>
-				[[foreach(\$cline as \$f) {]]
-				<td>
-				[[$@td \$f-:col>1 ~?"colspan='{\$f-:col}'"]]
-					<div ctrl-container>
-						[[output_editor2(\$data-:ns("{\$f-:alias}"), 
-							default_templated_editor(''), 
-								"style='min-width:{\$f-:min_width()}em'","");]]
-						<label>[[\$f-:caption]]</label>
-					</div>
-				</td>
-				[[}]]
-			</tr>
-			[[}]]
-		</table>
-		[[} }]]
-		<button tag type="button" onclick="doDelete(this, 'удалить?')" del></button>
-	</div>
-	[[}]]
+ST;
+if(count($ui_form)) {
+echo <<<ST
+	[[if(true){]]
+		<td expander>
+		<div><button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
+			[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
+	></button></div>
+		<div><button tag type="button" onclick="doDelete(this, 'отменить добавление?')" cancel-add></button></div>
+		<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
+		<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
+ST;
+	foreach($ui_form as $page) { foreach($page as $grp) {
+		$grp_display = ($grp->subtable || $grp->free || !$grp->closed) ? 'grp-display=Y' : 'grp-display=N';
+		echo "\n<table ctrl-grid $grp_display>";
+		if($grp->caption)
+		echo "<tr ctrl-group-head><td colspan=100><span onclick='group(this,toggle)'>{$grp->caption}</span></td></tr>";
+		foreach($grp->lines as $cline) {
+			echo "\n<tr ctrl-group>";
+			foreach($cline as $f) {
+				$colspan = $f->col>1 ? " colspan={$f->col}" : '';
+				echo "\n<td$colspan><div ctrl-container>";
+				echo "[[\$data.{$f->name}~e: style='min-width:{$f->min_width()}em']]";					
+				echo "<label>{$f->caption}</label>";
+				echo "\n</td></div>";
+			}
+			echo "\n</tr>";
+		}
+		echo "\n</table>\n";
+	}}
+	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del></button></div>[[}]]';
+}
+echo <<<ST
 	[[foreach(\$ui_view as \$f){]]
 	<td><div ctrl-inline>
 	[[if(\$f-:readonly){]]

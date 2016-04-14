@@ -83,6 +83,8 @@ $SQL_EMULATION = FALSE;
 function Select($cmd, $args = null) {
   if(!preg_match('/^\s*(SELECT|ESCAPE)\s/i',$cmd)) $cmd = 'SELECT '.$cmd;
   $cmd = get_cached_cmd_object($cmd);
+  //echo '<pre>';
+  //var_dump($cmd);
   $stmt = __recPrepare(get_connection($cmd->root()), $cmd);
   if($args !== null) 
     try {

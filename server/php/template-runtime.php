@@ -214,7 +214,7 @@ class uiField {
 				$p = array_shift($path);
 				if(array_key_exists($p,$t->fields)) {
 					$f = $t->fields[$p];
-					$caption[] = ($f->target && count($path)>1) ? ($f->recaption ?: "*$p*") : $f->caption;
+					$caption[] = ($f->target && count($path)>0) ? ($f->recaption ?: "*$p*") : $f->caption;
 					$t = $f->target ?: $t;
 				} else 
 					break;				
@@ -239,74 +239,73 @@ class uiField {
 	function min_width() {
 		return max(0.7 * mb_strlen($this->caption), 13);
 	}
-	function from_field($to, $fo, $name) {//root, leaf, path
-		$this->name = "a.$name";
+	function __construct($table, $path) {
+		$path1 = explode('.',$path);
+		$this->name = $path1[0]==='a' ? $path : "a.$path";		
 		$this->alias = uiField::genalias($this->name);
-		$this->caption = uiField::gencaption($to->___name, $this->name);
+		$this->caption = uiField::gencaption($table ? $table->___name : null, $this->name);
 		return $this;
-	}
-	function from_rel($to, $fo, $name) {//root, leaf, path
-		$this->from_field($to, $fo, $name);
-		$this->name = "{$this->name}._id_";
-		$this->alias = uiField::genalias($this->name);
-		return $this;
-	}
-	function from_url_param($tablename, $param) {
-		global $RE_ID;
-		global $Tables;
-		if(preg_match("/^[lr]:($RE_ID)+(\.$RE_ID)*$/i",$param,$m)) {//a.rel.f1
-			$param = explode(':',$param);
-			if($to = $Tables->{$tablename}) {
-				$path = explode('.',$param[1]);
-				array_shift($path);
-				$t = $to;
-				foreach($path as $p) {
-					$fo = $t->fields[$p];
-					if($fo->target) {
-						$t = $fo->target;
-					}
-				}
-				if(isset($fo)) {
-					$this->from_field($to,$fo,implode('.',$path));
-					$this->begin = mb_strtolower($param[0])=='l';
-					return $this;
-				}
-			}
-		}
-		return null;
 	}
 }
-function CE(&$ce_fields, $params) {
+class ceNode {
+	var $select_alias = null;
+	var $sections = [];
+	function __construct($tablename, $select_alias) {
+		global $Tables;
+		$this->select_alias = $select_alias;
+		$this->table = $Tables->{$tablename};
+	}
+}
+
+function get_ce(&$ce, $params) {
 	global $RE_ID;
-	global $Tables;
-	if($params->xf) {	
+	if($params->xf) {
 		foreach($params->xf as $x) {
 			if(preg_match("/^($RE_ID):($RE_ID):($RE_ID)+(\.$RE_ID)*$/i",$x,$m)) {
-				//section_name:table_name:a.rel.f1
-				$x = explode(':',$param);					
-				$section = $x[0];
-				$table = @$Tables->{$x[1]};
-				if($table) {
-					$path = explode('.',$x[2]);
-					array_shift($path);
-					$t = $table;
-					foreach($path as $p) {
-						$field = $t->fields[$p];
-						if($field->target) {
-							$t = $field->target;
-						}
-					}
-					if(isset($field)) {
-						$uif = (new uiField)->from_field($table,$field,implode('.',$path));				
-						$uif->section = $section;
-						$ce_fields[] = $uif;
-					}
-				}								
+				//data:section_name:a.rel.f1
+				$x = explode(':',$m[0]);
+				$select_alias = $x[0];
+				$section = $x[1];
+				$path = $x[2];
+				$cenode = @$ce[ $select_alias ];
+				if($cenode) {
+					$cenode->sections[ $section ][] = new uiField( $cenode->table, $path );	
+				}						
 			}				
 		}		
 	}
 }
-function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $ce_fields = null) {
+function merge_ce($target, &$ce) {
+	global $RE_ID;
+	return preg_replace_callback("/(\s*,\s*)?%%CE($RE_ID)%%(\s*,\s*)?/xi", 
+	function($m) use($ce) {
+		$select = @$ce[ $m[2] ];
+		if( isset($select) && count($select->sections) ) {
+			$fields = [];
+			foreach($select->sections as $section)
+				$fields = array_merge($fields, $section);
+			
+			return ($m[1] ? ',' : '').implode(',', $fields ).($m[3] ? ',' : '');
+		}
+		return $m[1] && $m[3] ? ',' : '';
+	}, $target);
+	
+	
+	/*
+	global $RE_ID, $Tables;
+	if(preg_match("/^\s*($RE_ID)(\s|$)/",$parsed_target->FROM, $mt)) {
+		$table = $mt[1];
+		foreach($ce as &$section) {
+			foreach($section as &$path) {
+				$path = new uiField($table, $path);
+			}
+		}
+	}*/	
+	//echo '<pre>';
+	//var_dump($parsed_target);
+	return (string)$parsed_target;
+}
+function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	global $SELECT_STRUCT, $RE_ID;
 
 	if(!$target && !$cmd) { return '[{"":""}]'; } 
@@ -317,17 +316,7 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $ce_fie
 			$target .= " LIMIT $page";
 		$limit = $page;
 	}
-
-	if(is_string($target) && $ce_fields) {			
-		$target = preg_replace_callback("/(\s*,\s*)?%%CE_($RE_ID)%%(\s*,\s*)?/xi", 
-		function($m) use($ce_fields) {
-			if(isset($ce_fields[$m[2]]) && count($ce_fields[ $m[2] ])) {
-				return ($m[1] ? ',' : '').implode(',', $ce_fields[ $m[2] ] ).($m[3] ? ',' : '');
-			}
-			return $m[1] && $m[3] ? ',' : '';
-		}, $target);
-	}
-
+	
 	if(!$cmd) return $target;
 	//take where, order, group from source and add it to target
 	//or, if source is not a select, use data as is
@@ -341,10 +330,10 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page, $ce_fie
 	if(preg_match('/^\s*\[/', $cmd)) return $cmd;
 	//SQL:
 	//TODO: cache!
-	
 	$parsed_target = is_string($target) ?
 			new parsedCommandSmart($SELECT_STRUCT, $target)
 			: $target;
+
 	if(preg_match('/^\s*OFFSET:(\d+)/', $cmd, $m)) {
 		if($args) return merge_queries($parsed_target, array_shift($args), $args, $offset, $limit, $page); //ignore not last offset
 		$offset = intval ($m[1]);

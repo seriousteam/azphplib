@@ -61,13 +61,14 @@ function cached($zone, $key, $fval = null, $fkey = null) {
   global $cache_local_get, $cache_local_set, $DELETE_CACHE_ENTRY;
   static $x_cache_info = array();
   $isfunc = is_callable($fval);
-  if(!array_key_exists($zone, $x_cache_info))
-    $x_cache_info[$zone] = array();
+  $cli = PHP_SAPI === 'cli';
+  if(!$cli && !array_key_exists($zone, $x_cache_info))
+	$x_cache_info[$zone] = array();
   //1. get memorized
-  if($isfunc && array_key_exists($key, $x_cache_info[$zone]))
-      return $x_cache_info[$zone][$key];
+  if(!$cli && $isfunc && array_key_exists($key, $x_cache_info[$zone]))
+	return $x_cache_info[$zone][$key];
   //2. get APC/XCACHE
-  $val = $isfunc ? $cache_local_get("$zone:$key") : null;
+  $val = (!$cli && $isfunc) ? $cache_local_get("$zone:$key") : null;   
   if(!$val) 
   {
   //3. ...
@@ -80,6 +81,8 @@ function cached($zone, $key, $fval = null, $fkey = null) {
     if($fkey) $key = call_user_func_array($fkey, $args);
     $val = $isfunc? call_user_func_array($fval, $args) : fval;
   }
+  if($cli) 
+	  return $val;
   if($val !== $DELETE_CACHE_ENTRY) {
     if(is_a($fval, '__WRAP_SET_CACHE_ENTRY')) $val = $fval->val;
     $x_cache_info[$zone][$key] = $val;

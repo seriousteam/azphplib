@@ -1,7 +1,7 @@
 <?php
 //require_once(__DIR__.'/cfg.php');
-require_once(__DIR__.'/parser-common.php');
-
+//require_once(__DIR__.'/parser-common.php');
+require_once(__DIR__.'/template-runtime.php');
 /* 
 
 [-[ ----> [[
@@ -506,7 +506,7 @@ CTX;
 					$res = "foreach(with_loop_info$sample(\${$m[2]}->$m[1], \$counters->{$m[1]}, \$statements->{$m[1]} = \${$m[2]}->subselect_info('$m[1]')) as \$$m[1])";
 				else
 					$res = "foreach(with_loop_info$sample(\$rowsets['$m[1]'], \$counters->{$m[1]}, \$statements->{$m[1]} = @\$rowsets['$m[1]']->exInfo) as \$$m[1])";
-			} 
+			}
 			else if(preg_match("/^ESC\s+(.*)/i", $cmd, $m)) {
 				$escape_mode = $m[1];
 				$res = "";
@@ -550,6 +550,9 @@ EEE;
 						.phpDQuote(@$m['cmd']).", \$command_args,\$call_params, \$TEMPLATE_FILE, $perm);"; 
 			} else if(preg_match("/^\s*[{}]\s*$/si", $cmd, $m)){
 				$res = $cmd;
+			}
+			else if(preg_match("/^\s*\\$($RE_ID)\.\{CE\s+($RE_ID)\}\s*$/si", $cmd, $m)) {
+				$res = "foreach(\$ce['{$m[1]}']->sections['{$m[2]}'] as \${$m[2]})";
 			} else {
 					//field parsing
 					$pre = '';
@@ -602,7 +605,7 @@ EEE;
 								case 'COUNT': return "(\$counters->$m[1]-1)";
 								case 'FIRST': return "(\$counters->$m[1] === 1)";
 								case 'SAMPLE': return "(\$counters->$m[1] === 0? 'sample' : '')";
-								case 'SQL': return "make_counting_command(\$statements->$m[1])";
+								case 'SQL': return "make_counting_command(\$statements->$m[1])"; 
 								}
 								global $RE_ID;
 								if(preg_match("/^CMD([ID])?(\\+PK)?\\s+(.*)/", $f, $mc)) { 
@@ -623,7 +626,7 @@ EEE;
 									"make_manipulation_command(\$$m[1], -1, \$statements->$m[1], '$with_pk')"
 									:
 									"make_manipulation_command(\$$m[1], \$counters->$m[1], \$statements->$m[1], '$with_pk')");
-								}
+								}								
 								$alias = 'x_'.count($select->fields);
 							} else {
 								$f = preg_replace('/\s+/s', '', $m[2]);
@@ -836,6 +839,7 @@ EEE;
 	// so we just go backward
 	//var_dump($selects);
 	end($selects);
+	global $SELECT_STRUCT, $RE_ID;
 	while($s = current($selects)) {
 		//var_dump($s);
 		$fields = 
@@ -845,9 +849,13 @@ EEE;
 		$fields = array_merge($fields, 
 			array_map(function($a,$b) { return "( $b->select ) AS ARRAY $a"; }
 			,array_keys($s->arrays), array_values($s->arrays)
-		));
-		$alias = key($selects);
-		$fields[] = "%%CE_$alias%%";
+		));			
+		$parsed = new parsedCommandSmart($SELECT_STRUCT, $s->select);
+		if(preg_match("/^\s*($RE_ID)(\s|$)/",$parsed->FROM, $m)) {
+			$alias = key($selects);
+			echo "\n\t\$ce['$alias'] = new ceNode('{$m[1]}','$alias');";
+			$fields[] = "%%CE$alias%%";
+		}		
 		$fields = implode(', ', $fields);
 		$s->select = preg_replace('/(^SELECT\s(?:DISTINCT\s)?|\sSELECT\s(?:DISTINCT\s)?|,|^)\s*\*\s*(?=,|FROM\s|$)/', "$1 $fields ", $s->select);
 		prev($selects);
@@ -855,9 +863,7 @@ EEE;
 	//take first select as 'MAIN'
 	if(!$selects) $selects = [ '-' ];
 	if(!$main_select_alias) $main_select_alias = array_keys($selects)[0];
-	foreach($selects as $alias=>$select) {
-		echo "\n\t\$ce_fields['$alias'] = [];";
-	}
+
 	$select = $selects[$main_select_alias];
 	unset($selects[$main_select_alias]);
 		
@@ -869,7 +875,9 @@ EEE;
 
 	echo "\n\t\$counters = new stdClass;";
 	echo "\n\t\$statements = new stdClass;";
-	echo "\n\t\$qcmd = merge_queries(".phpDQuote($select->select).", \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, \$ce_fields);";
+	echo "\n\tget_ce(\$ce,\$params);";
+	echo "\n\t\$qcmd = merge_ce(".phpDQuote($select->select).",\$ce);";
+	echo "\n\t\$qcmd = merge_queries(\$qcmd, \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, \$ce);";
 	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
 	//for paging
 	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";
@@ -883,7 +891,7 @@ EEE;
 				echo "\n\t\$rowsets['$n'] = $m[1];";
 			} 
 			else if(@$sel->call_args)
-				echo "\n\t\$rowsets['$n'] = process_query(".phpDQuote($sel->select).", $sel->call_args);";
+				echo "\n\t\$rowsets['$n'] = process_query(".phpDQuote($sel->select).", {$sel->call_args});";
 			else
 				echo "\n\t\$rowsets['$n'] = process_query(".phpDQuote($sel->select).");";
 		}

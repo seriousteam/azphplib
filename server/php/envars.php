@@ -12,7 +12,7 @@ if(!isset($G_P_DOC_ROOT)) {
 $G_PHP_PATH = realpath("$G_P_DOC_ROOT/../../php/php.exe") ?: 'php';//find this file, if it doesnt exists, uses 'php' command
 $CFG_SUBROOT = '/cfg';
 $G_ENV_CACHE_DIR = "$G_P_DOC_ROOT/cache";
-$CURRENT_USER_IP = $_SERVER['REMOTE_ADDR'];
+$CURRENT_USER_IP = @$_SERVER['REMOTE_ADDR'];
 $G_ENV_LOAD_MODEL = FALSE;
 $G_ENV_LOCAL_USERS  = [
    '/.*/' => "SQL:SELECT rd.enf_rolenamew AS ROLE, CASE r.enf_defaultw WHEN 1 THEN 'D' ELSE 'C' END AS STATUS "
