@@ -552,7 +552,7 @@ EEE;
 				$res = $cmd;
 			}
 			else if(preg_match("/^\s*\\$($RE_ID)\.\{CE\s+($RE_ID)\}\s*$/si", $cmd, $m)) {
-				$res = "foreach(\$ce['{$m[1]}']->sections['{$m[2]}'] as \${$m[2]})";
+				$res = "foreach(@\$ce['{$m[1]}']->sections['{$m[2]}']?:[] as \${$m[2]})";
 			} else {
 					//field parsing
 					$pre = '';

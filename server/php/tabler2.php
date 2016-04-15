@@ -13,15 +13,20 @@ if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
 ob_start();
 
 
+//////////TABLER PREPARED DATA////////////
+$ui = new stdClass;
+$ui->chooser = CHOOSER_MODE;
+$ui->tabler = !CHOOSER_MODE;
+
 global $Tables;
 $table = $Tables->{$table};
-$pk = $table->PK(true);//full pk
-$pk0 = $table->PK();//single field pk
-$pk_s = implode(',', array_map(function($a){ return "a.$a";}, $pk));
+$ui->table = $table->___name;
+$ui->cmd_key = implode(',', array_map(function($a){ return "a.$a";}, $table->PK(true))); //full pk
+$ui->choose_key = $table->PK(); //single field pk
 
+//define initial set of fields
 $table_fields = $table->fields;
-
-if(CHOOSER_MODE) {
+if($ui->chooser) {
 	$has_choose = false;
 	foreach($table_fields as $f) if($f->choose) $has_choose = true;
 	if($has_choose) {
@@ -32,25 +37,18 @@ if(CHOOSER_MODE) {
 	}
 }
 
-function phpQuote($v) { return '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $v).'\''; }
-
-//////////TABLER PREPARED DATA////////////
-$ui = new stdClass;
-$ui->chooser = CHOOSER_MODE;
-$ui->table = $table->___name;
-$ui->readonly = $ui->chooser;
+//define field structures
 $ui_view = [];
 $ui_search = [];
 $ui_form = [];
 $used_fields[] = $table->ID('a')." AS a__table__id";
-if(!isset($table_fields[$n = $table->PK()]))
-	$used_fields[] = "a.$n AS a__$n";
+if(!isset($table_fields[$ui->choose_key]))
+	$used_fields[] = "a.{$ui->choose_key} AS a__{$ui->choose_key}";
 
 foreach($table_fields as $n=>$f) {
 	if($f->type && !$f->hidden && !$f->page && $n != $link) {
 	//view
 		$uif = new uiField($table, $f->Target() ? "$n._id_" : $n);
-		$uif->readonly = $ui->readonly;
 		$ui_view[] = $uif;		
 	}
 	if(!CHOOSER_MODE && $f->type && !$f->hidden && $f->page && $n != $link) {
@@ -93,7 +91,10 @@ foreach($ui_form as &$page) {
 		}
 	}
 }
+$used_fields = implode(', ',$used_fields);
 
+
+////////////INSTANCE INITIALIZATION////////////
 echo <<<ST
 [[PROLOG
 	global \$Tables; \$table = \$Tables->{\$params->table};
@@ -102,60 +103,28 @@ echo <<<ST
 	if(!\$cmd && \$table->default_filter())
 		\$cmd = "*WHERE ".\$table->default_filter();
 	\$sc = seqCookie();
-	\$title = \$table->___caption ? 
- 		"{\$table->___caption}({\$params->table})" :  
- 		"{\$params->table}";
- 	\$has_group = '';
- 	if(preg_match('/\s+GROUP\s+BY\s+/ix', \$cmd)) {
- 		\$has_group = 'has_group';
- 	}
+
+	//UI control parameters
+	\$UI = new stdClass;
+	\$UI->title = \$table->___caption ? 
+ 		"{\$table->___caption}({\$table->___name})" :  
+ 		"{\$table->___name}";
+	\$UI->groupby = preg_match('/\s*GROUP\s+BY\s+/ix', \$cmd) ?: null;
 ]]
 ST;
 
-////////////DATA GATE////////////
-echo "[[PROLOG ";
-echo "\n\t\$ui = unserialize(".phpQuote(serialize($ui)).");";
-echo "\n\t\$ui_view = unserialize(".phpQuote(serialize($ui_view)).");";
-echo "\n\t\$ui_form = unserialize(".phpQuote(serialize($ui_form)).");";
-echo "\n\t\$ui_search = unserialize(".phpQuote(serialize($ui_search)).");";
-echo "\n\t\$used_fields = unserialize(".phpQuote(serialize($used_fields)).");";
-echo <<<ST
-\n\t//calculate UI control parameters	
-	\$ui->add_empty = @\$_REQUEST['add_empty'];
-	\$ui->groupby = preg_match('/\s*GROUP\s+BY\s+/ix', \$cmd);	
-	
-	//full control on used fields
-	if(\$ui->groupby) {
-		\$ui->readonly = true;
-		\$ui_form = [];
-	}
-
-	//put fields to query
-	foreach(\$ui_view as \$f) {
-		\$used_fields[] = \$f;
-	}
-	foreach(\$ui_form as \$page) {
-		foreach(\$page as \$group) {
-			foreach(\$group->lines as \$line) {
-				foreach(\$line as \$f) {
-					\$used_fields[\$f->alias] = \$f;
-				}
-			}
-		}
-	}
-	\$used_fields = implode(', ',\$used_fields);
-]]
-ST;
-
-//////////RENDER CODE//////////
+//////////RENDER TEMPLATE//////////
 echo <<<ST
 [[PAGE BY 20]]
 <html>
 <head>
-<title>[[\$title]]</title>
+<title>[[\$UI-:title]]</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 [[LIB]]
-[[if(!\$ui-:chooser){]][[QE]][[}]]
+ST;
+if($ui->tabler) 
+	echo "\n[[QE]]\n";
+echo <<<ST
 <link rel="stylesheet" href="/az/lib/bullfinch.css">
 <script>
 function group(o, st) {
@@ -174,58 +143,79 @@ function group(o, st) {
 </head>
 <body bullfinch>
 <div edit-view></div>
-<div edit-panel>
-	[[$@div !count(\$ui_search)~?'empty-filter']]
-	[[if(!\$ui-:chooser){]]
-	<button type=button qe-start qe-root="[[\$params-:table]]" qe-output="B().QS('[edit-view]')" qe-hide="this.parentNode"></button>
-	[[}]]
-	[[if(count(\$ui_search)) {]]
+ST;
+
+//////////////////////TABLE CONTROL PANEL/////////////////////
+$empty_search = !count($ui_search) ? 'empty-filter' : '';
+echo "\n<div edit-panel $empty_search>";
+if($ui->tabler)
+	echo "\n<button type=button qe-start qe-root={$ui->table} qe-output=\"B().QS('[edit-view]')\" qe-hide=\"this.parentNode\"></button>";
+if(count($ui_search)) {
+	$filter_def = implode(', ', $ui_search);
+	$restore = $ui->tabler ? " onrefresh='restoreFuncFilter(this, def, [[\$sc]])'" : '';
+	$filter_hint = implode('', array_map(function($f) {
+		return "\n<span filter_hint={$f->alias}>{$f->caption}</span>";
+	}, $ui_search));
+	$filter_ctrl = implode(' ', array_map(function($f) {
+		return "\nfilter_ctrl-{$f->priority}-{$f->alias}='{$f->re}'";
+	}, $ui_search));
+	echo <<<ST
 	<div id=filter_def 
 		filter_for="this.parentNode.nextElementSibling" 
-		filter_def="[ EQ(1,1), [[implode(', ', \$ui_search)]] ]"
-		selfref="[[CURRENT_URI()]]"
-		[[if(!\$ui-:chooser) {]] onrefresh="restoreFuncFilter(this, def, [[\$sc]])"[[}]]>
-		<div>
-		[[foreach(\$ui_search as \$f) {]]
-			<span filter_hint=[[\$f-:alias]]>[[\$f-:caption]]</span> 
-		[[}]]
-		</div>
-		<input filter_ctrl onkeyup="applyFuncFilterT(this)"
-		[[foreach(\$ui_search as \$f) {]]
-			filter_ctrl-[[\$f-:priority]]-[[\$f-:alias]]="[[\$f-:re]]"
-		[[}]]>
+		filter_def="[ EQ(1,1), $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
+		<div>$filter_hint</div>
+		<input filter_ctrl onkeyup="applyFuncFilterT(this)" $filter_ctrl>
 	</div>
-	[[}]]
-</div>
+ST;
+}
+echo "\n</div>";
+
+///////////////////////TABLE////////////////////////
+echo <<<ST
 <div style="clear:both"><!--FILTRED:-->
 [[ob_start();]]
 <table main onrefresh="refreshNoRowStatus(this)">
-[[$@table \$ui-:readonly~?"readonly"]]
-<thead>
-	[[if(count(\$ui_view)>1){]]
-	<tr>
-		[[if(count(\$ui_form)){]]<th>[[}]]
-		[[foreach(\$ui_view as \$f) {]]
-		<th>[[\$f-:caption]]
-		[[}]]
-		[[if(!count(\$ui_form) && !\$ui-:readonly){]]<th>[[}]]
-	</tr>
-	[[}]]
-</thead>
+ST;
+//[[$@table \$UI-:groupby~?"readonly"]]
+
+//////////////////////TABLE HEAD//////////////////
+if(count($ui_view)>1) {
+	echo "<thead><tr>";
+	if($ui->tabler && count($ui_form))	echo '<th>';
+	if($ui->tabler) {
+		echo "<th>[[@th \$data.{CE left}]][[\$left->caption]]</th>";
+	}
+	echo implode(array_map(function($f) {
+		return "<th>{$f->caption}</th>";
+	},$ui_view));
+	if($ui->tabler) {
+		echo "<th>[[@th \$data.{CE right}]][[\$right->caption]]</th>";
+	}
+	if($ui->tabler && !count($ui_form)) echo '<th>';
+	echo "</tr></thead>";
+}
+
+////////////////////TABLE BODY/////////////////////
+echo <<<ST
 <tbody>
 	<tr>
-	[[@tr \$data : SAMPLE AND SELECT *, \$used_fields FROM \$ui->table]]
-	[[cmd@tr \$data.{CMD $pk_s}]]
-	[[\$@tr \$ui-:chooser~?"rt='{\$data-:a__table__id}'"]]
-	[[\$@tr \$ui-:chooser~?"value='{\$data-:a__$pk0}'"]]
-	[[\$@tr \$ui-:chooser~?"onclick='blockEvent(event);this.closeModal(this)'"]]
-	[[\$@tr \$ui-:chooser~?"style@tr 'cursor: pointer'"]]
+	[[@tr \$data : SAMPLE AND SELECT *, $used_fields FROM {$ui->table}]]
+	[[cmd@tr \$data.{CMD {$ui->cmd_key}}]]
+ST;
+if($ui->chooser) {
+	echo <<<ST
+	[[rt@tr \$data-:a__table__id]]
+	[[value@tr \$data-:a__{$ui->choose_key}]]
+	[[onclick@tr 'blockEvent(event);this.closeModal(this)']]
+	[[style@tr 'cursor: pointer']]
+ST;
+}
+echo <<<ST
 	[[\$@tr \$data.{SAMPLE}]]
 	[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
 ST;
-if(count($ui_form)) {
+if($ui->tabler && count($ui_form)) {
 echo <<<ST
-	[[if(true){]]
 		<td expander>
 		<div><button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
 			[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
@@ -238,48 +228,75 @@ ST;
 		$grp_display = ($grp->subtable || $grp->free || !$grp->closed) ? 'grp-display=Y' : 'grp-display=N';
 		echo "\n<table ctrl-grid $grp_display>";
 		if($grp->caption)
-		echo "<tr ctrl-group-head><td colspan=100><span onclick='group(this,toggle)'>{$grp->caption}</span></td></tr>";
+		echo "\n<tr ctrl-group-head><td colspan=100><span onclick='group(this,toggle)'>{$grp->caption}</span></td></tr>";
 		foreach($grp->lines as $cline) {
 			echo "\n<tr ctrl-group>";
 			foreach($cline as $f) {
 				$colspan = $f->col>1 ? " colspan={$f->col}" : '';
-				echo "\n<td$colspan><div ctrl-container>";
-				echo "[[\$data.{$f->name}~e: style='min-width:{$f->min_width()}em']]";					
-				echo "<label>{$f->caption}</label>";
-				echo "\n</td></div>";
+				echo <<<ST
+				<td$colspan>
+					<div ctrl-container>
+						[[\$data.{$f->name}~e: style='min-width:{$f->min_width()}em']]					
+						<label>{$f->caption}</label>
+					</div>
+				</td>
+ST;
 			}
 			echo "\n</tr>";
 		}
 		echo "\n</table>\n";
 	}}
-	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del></button></div>[[}]]';
+	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del></button></div>';
 }
+if($ui->tabler) {
+	echo <<<ST
+	<td>[[@td \$data.{CE left}]]
+		<div ctrl-inline>
+			[[\$data.{\$left->alias}~e: style='min-width:{\$left->min_width()}em']]
+			<label>[[\$left->caption]]</label>
+		</div>
+	</td>
+ST;
+}
+foreach($ui_view as $f) {
+	$editable = $ui->tabler ? "~e: style='min-width:{$f->min_width()}em'" : '';
+	echo <<<ST
+	<td>
+		<div ctrl-inline>
+			[[\$data.{$f->name}$editable]]
+			<label>{$f->caption}</label>
+		</div>
+	</td>
+ST;
+}
+if($ui->tabler) {
+	echo <<<ST
+	<td>[[@td \$data.{CE right}]]
+		<div ctrl-inline>
+			[[\$data.{\$right->alias}~e: style='min-width:{\$right->min_width()}em']]
+			<label>[[\$right->caption]]</label>
+		</div>
+	</td>
+ST;
+}
+
+if($ui->tabler && !count($ui_form)) {
+	echo "\n<td><button tag type=\"button\" onclick=\"doDelete(this, 'удалить?')\" del></button>";
+}
+echo "\n</tr></tbody>";
+
+//////////////////TABLE FOOT//////////////////
+echo "\n<tfoot>";
+if($ui->chooser)
+	echo "[[if(@\$_REQUEST['add_empty']){]]<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>[[}]]";
+echo "\n<tr if_no_rows><td colspan=100>";
+echo "\n</tfoot>";
 echo <<<ST
-	[[foreach(\$ui_view as \$f){]]
-	<td><div ctrl-inline>
-	[[if(\$f-:readonly){]]
-		<text>[[output_html(\$data-:{\$f-:alias});]]</text>
-	[[}]]
-	[[if(!\$f-:readonly){]]
-		[[output_editor2(\$data-:ns("{\$f-:alias}"), 
-			default_templated_editor(''),
-				"style='min-width:{\$f-:min_width()}em'","");]]
-	[[}]]
-	<label>[[\$f-:caption]]</label>
-	</div></td>
-	[[}]]
-	[[if(!count(\$ui_form) && !\$ui-:readonly){]]<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del></button>[[}]]
-	</tr>
-</tbody>
-<tfoot>
-	[[if(\$ui-:chooser && \$ui-:add_empty){]]
-	<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>
-	[[}]]
-	<tr if_no_rows><td colspan=100>
-</tfoot>
 </table>
 [[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
-[[if( !\$ui-:readonly ){]]
+ST;
+if($ui->tabler) {
+echo <<<ST
 <div table-control>
 	<button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
@@ -289,7 +306,9 @@ echo <<<ST
 	[[PAGE CONTROLS]]
 	</span>
 </div>
-[[}]]
+ST;
+}
+echo <<<ST
 <!--FILTRED.--></div>
 </body>
 ST;

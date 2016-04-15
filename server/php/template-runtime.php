@@ -210,11 +210,13 @@ class uiField {
 			$path = explode('.',$name);
 			array_shift($path);
 			$t = $table;
+			if(end($path)==='_id_')
+				array_pop($path);
 			while(count($path)>0) {
 				$p = array_shift($path);
 				if(array_key_exists($p,$t->fields)) {
 					$f = $t->fields[$p];
-					$caption[] = ($f->target && count($path)>0) ? ($f->recaption ?: "*$p*") : $f->caption;
+					$caption[] = ($f->target && count($path)>0) ? ($f->recaption ?: "*$p*") : ($f->caption ?: $p);
 					$t = $f->target ?: $t;
 				} else 
 					break;				
@@ -289,21 +291,6 @@ function merge_ce($target, &$ce) {
 		}
 		return $m[1] && $m[3] ? ',' : '';
 	}, $target);
-	
-	
-	/*
-	global $RE_ID, $Tables;
-	if(preg_match("/^\s*($RE_ID)(\s|$)/",$parsed_target->FROM, $mt)) {
-		$table = $mt[1];
-		foreach($ce as &$section) {
-			foreach($section as &$path) {
-				$path = new uiField($table, $path);
-			}
-		}
-	}*/	
-	//echo '<pre>';
-	//var_dump($parsed_target);
-	return (string)$parsed_target;
 }
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	global $SELECT_STRUCT, $RE_ID;
