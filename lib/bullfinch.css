@@ -205,11 +205,19 @@ body[bullfinch]
   padding:0.4em;
   vertical-align:middle;
 }
-[bullfinch] table[main][readonly]>tbody>tr>td
+[bullfinch] table[main][grouped]>tbody>tr>td
 {
   padding:0.9em;
 }
-[mctl][bullfinch] table[main][readonly]>tbody>tr>td
+[mctl][bullfinch] table[main]>tbody>tr>td:first-child
+{
+  padding-left:1em;
+}
+[mctl][bullfinch] table[main]>tbody>tr>td:last-child
+{
+  padding-right:1em;
+}
+[mctl][bullfinch] table[main][grouped]>tbody>tr>td
 {
   padding:0.5em;
   padding-left:1em;
@@ -221,7 +229,8 @@ body[bullfinch]
   border-top:none;
 }
 [subtable][bullfinch]>div>table[main]>tbody>tr:first-child>td[expander],
-[subtable][bullfinch]>div>table[main]>tbody>tr[sample]+tr>td[expander]
+[subtable][bullfinch]>div>table[main]>tbody>tr[sample]+tr>td[expander],
+[subtable][bullfinch]>div>table[main]>tbody>tr>td[expander][empty-form]
 {
   border-top:1px solid rgba(0,0,0,0.1);
 }
@@ -234,7 +243,7 @@ body[bullfinch]
   font-size:12pt;
   border:none;
   padding:0em;
-  padding-left:1.5em;
+  padding-left:1.9em;
 }
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td,
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td[expander],
@@ -263,6 +272,19 @@ body[bullfinch]
   border-right:1px dashed rgba(0,0,0,0.3);
   background:rgba(241,218,54,0.1);
 }
+
+[subtable][bullfinch] table[main]>tbody>tr.transit_row>td:first-child,
+[subtable][bullfinch] table[main]>tbody>tr[joined_with_next_row]>td:first-child
+{
+  border-left:1px solid transparent;
+}
+[subtable][bullfinch] table[main]>tbody>tr.transit_row>td:last-child,
+[subtable][bullfinch] table[main]>tbody>tr[joined_with_next_row]>td:last-child
+{
+  border-right:1px solid transparent;
+}
+
+
 [bullfinch] table[main]>tbody>tr[joined_with_next_row]>td:first-child
 {
   border-top-left-radius:1em;
@@ -290,6 +312,7 @@ body[bullfinch]
   max-width:2.5em;
   width:2.5em;
   border-top:1px solid transparent;
+  padding-left:0.4em;
   vertical-align:middle;
   text-align:center;
 }
@@ -668,6 +691,7 @@ body[bullfinch]
   font-size:14pt;
   display:inline-block; 
   padding:0;
+  min-height:1em;
   position: relative;
 }
 [bullfinch] div[ctrl-inline]>text:first-child
@@ -856,7 +880,7 @@ body[bullfinch]
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]~label,
 [mctl][bullfinch] tr>td>div[ctrl-inline]>label,
-[bullfinch] table[main][readonly]>tbody>tr>td>div[ctrl-inline]>label
+[bullfinch] table[main][grouped]>tbody>tr>td>div[ctrl-inline]>label
 {
   display:none;
 }

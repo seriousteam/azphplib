@@ -4,20 +4,31 @@ if(!defined('CHOOSER_MODE')) define('CHOOSER_MODE', '');
 
 require_once(__DIR__.'/template-runtime.php');
 
+$ui = new stdClass;
+$ui->chooser = CHOOSER_MODE;
+$ui->tabler = !CHOOSER_MODE;
+if($ui->grouped = preg_match('/\s*GROUP\s+BY\s+/ix', preg_replace( '/\(.*\)/', '', main_argument() ) ) ?: null) {
+	//to keep things simple, group mode will be taken from first 'cmd' in URL
+	$ui->tabler = false;
+	$ui->chooser = false;
+}
+
+if($ui->chooser)
+	$mode = 'chooser2';
+else if($ui->tabler)
+	$mode = 'table2';
+else if($ui->grouped)
+	$mode = 'group';
+
 $table = $_REQUEST['table'];
 $link = @$_REQUEST['link'];
-
-$cache = new TemplaterCache("$table.".($link?".$link":"").(CHOOSER_MODE?'choose2':'table2').".php.t");
+$cache = new TemplaterCache("$table.".($link?"$link.":"")."$mode.php.t");
 $cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
 if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
 ob_start();
 
 
 //////////TABLER PREPARED DATA////////////
-$ui = new stdClass;
-$ui->chooser = CHOOSER_MODE;
-$ui->tabler = !CHOOSER_MODE;
-
 global $Tables;
 $table = $Tables->{$table};
 $ui->table = $table->___name;
@@ -122,7 +133,7 @@ echo <<<ST
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 [[LIB]]
 ST;
-if($ui->tabler) 
+if($ui->tabler || $ui->grouped) 
 	echo "\n[[QE]]\n";
 echo <<<ST
 <link rel="stylesheet" href="/az/lib/bullfinch.css">
@@ -148,47 +159,50 @@ ST;
 //////////////////////TABLE CONTROL PANEL/////////////////////
 $empty_search = !count($ui_search) ? 'empty-filter' : '';
 echo "\n<div edit-panel $empty_search>";
-if($ui->tabler)
+if($ui->tabler || $ui->grouped)
 	echo "\n<button type=button qe-start qe-root={$ui->table} qe-output=\"B().QS('[edit-view]')\" qe-hide=\"this.parentNode\"></button>";
-if(count($ui_search)) {
-	$filter_def = implode(', ', $ui_search);
-	$restore = $ui->tabler ? " onrefresh='restoreFuncFilter(this, def, [[\$sc]])'" : '';
-	$filter_hint = implode('', array_map(function($f) {
-		return "\n<span filter_hint={$f->alias}>{$f->caption}</span>";
-	}, $ui_search));
-	$filter_ctrl = implode(' ', array_map(function($f) {
-		return "\nfilter_ctrl-{$f->priority}-{$f->alias}='{$f->re}'";
-	}, $ui_search));
-	echo <<<ST
-	<div id=filter_def 
-		filter_for="this.parentNode.nextElementSibling" 
-		filter_def="[ EQ(1,1), $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
-		<div>$filter_hint</div>
-		<input filter_ctrl onkeyup="applyFuncFilterT(this)" $filter_ctrl>
-	</div>
+
+//we need filter even for paging
+if($ui->grouped)
+	$ui_search = [];
+$filter_def = implode(', ', array_merge([''],$ui_search));
+$restore = $ui->tabler ? " onrefresh='restoreFuncFilter(this, def, [[\$sc]])'" : '';
+$filter_hint = count($ui_search) ? "<div>".implode('', array_map(function($f) {
+	return "\n<span filter_hint={$f->alias}>{$f->caption}</span>";
+}, $ui_search))."</div>" : '';
+$filter_ctrl = count($ui_search) ? "<input filter_ctrl onkeyup='applyFuncFilterT(this)' ".implode(' ', array_map(function($f) {
+	return "\nfilter_ctrl-{$f->priority}-{$f->alias}='{$f->re}'";
+}, $ui_search)).'>' : '';
+echo <<<ST
+<div id=filter_def 
+	filter_for="this.parentNode.nextElementSibling" 
+	filter_def="[ EQ(1,1) $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
+	$filter_hint
+	$filter_ctrl
+</div>
 ST;
-}
+
 echo "\n</div>";
 
 ///////////////////////TABLE////////////////////////
+$mode = $ui->grouped ? 'grouped' : '';
 echo <<<ST
 <div style="clear:both"><!--FILTRED:-->
 [[ob_start();]]
-<table main onrefresh="refreshNoRowStatus(this)">
+<table main $mode onrefresh="refreshNoRowStatus(this)">
 ST;
-//[[$@table \$UI-:groupby~?"readonly"]]
 
 //////////////////////TABLE HEAD//////////////////
 if(count($ui_view)>1) {
 	echo "<thead><tr>";
-	if($ui->tabler && count($ui_form))	echo '<th>';
-	if($ui->tabler) {
+	if($ui->tabler)	echo '<th>';
+	if($ui->tabler || $ui->grouped) {
 		echo "<th>[[@th \$data.{CE left}]][[\$left->caption]]</th>";
 	}
 	echo implode(array_map(function($f) {
 		return "<th>{$f->caption}</th>";
 	},$ui_view));
-	if($ui->tabler) {
+	if($ui->tabler || $ui->grouped) {
 		echo "<th>[[@th \$data.{CE right}]][[\$right->caption]]</th>";
 	}
 	if($ui->tabler && !count($ui_form)) echo '<th>';
@@ -214,13 +228,17 @@ echo <<<ST
 	[[\$@tr \$data.{SAMPLE}]]
 	[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
 ST;
-if($ui->tabler && count($ui_form)) {
+if($ui->tabler) {
+$emptyform = count($ui_form) ? '' : 'empty-form'; 
 echo <<<ST
-		<td expander>
+		<td expander $emptyform>
 		<div><button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
 			[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	></button></div>
 		<div><button tag type="button" onclick="doDelete(this, 'отменить добавление?')" cancel-add></button></div>
+ST;
+if(count($ui_form)) {
+echo <<<ST
 		<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
 		<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
 ST;
@@ -247,18 +265,22 @@ ST;
 		echo "\n</table>\n";
 	}}
 	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del></button></div>';
+}	
 }
-if($ui->tabler) {
+if($ui->tabler || $ui->grouped) {
+	//FIXME: readonly for e:
+	$editable = $ui->tabler ? "~e: style='min-width:{\$left->min_width()}em" : '';
 	echo <<<ST
 	<td>[[@td \$data.{CE left}]]
 		<div ctrl-inline>
-			[[\$data.{\$left->alias}~e: style='min-width:{\$left->min_width()}em']]
+			[[\$data.{\$left->alias}$editable]]
 			<label>[[\$left->caption]]</label>
 		</div>
 	</td>
 ST;
 }
 foreach($ui_view as $f) {
+	//FIXME: readonly for e:
 	$editable = $ui->tabler ? "~e: style='min-width:{$f->min_width()}em'" : '';
 	echo <<<ST
 	<td>
@@ -269,11 +291,13 @@ foreach($ui_view as $f) {
 	</td>
 ST;
 }
-if($ui->tabler) {
+if($ui->tabler || $ui->grouped) {
+	//FIXME: readonly for e:
+	$editable = $ui->tabler ? "~e: style='min-width:{\$right->min_width()}em" : '';
 	echo <<<ST
 	<td>[[@td \$data.{CE right}]]
 		<div ctrl-inline>
-			[[\$data.{\$right->alias}~e: style='min-width:{\$right->min_width()}em']]
+			[[\$data.{\$right->alias}$editable]]
 			<label>[[\$right->caption]]</label>
 		</div>
 	</td>
@@ -302,6 +326,15 @@ echo <<<ST
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span></button>
 	<button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
+	<span>
+	[[PAGE CONTROLS]]
+	</span>
+</div>
+ST;
+}
+if($ui->grouped) {
+echo <<<ST
+<div table-control>
 	<span>
 	[[PAGE CONTROLS]]
 	</span>
