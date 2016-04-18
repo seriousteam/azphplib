@@ -472,11 +472,11 @@ class _Cmd extends _PreCmd {
   }
   function replace_to_same(&$s, $grp, $tree) {
   //echo '<pre>';
-  //var_dump($tree);
+  //var_dump($grp);
 	global $RE_PATH;
 	$closest_agg = null;
 	$s = preg_replace_callback($RE_PATH,
-      function($m) use(&$closest_agg, $tree) {
+      function($m) use(&$closest_agg, $tree, $grp) {
         if(preg_match(_SQL_GROUP_KWD, $m[0])) {
           $closest_agg = $m[0];
         } else {
