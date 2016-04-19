@@ -34,6 +34,9 @@ body[bullfinch]
 [subtable][bullfinch]>[edit-panel]
 {
   border-bottom:1px solid rgba(0,0,0,0.05);
+  background: rgba(255,255,255,0.8);
+  border-top-left-radius: 1em;
+  border-top-right-radius: 1em;
 }
 [mctl][bullfinch]>[edit-panel][empty-filter],
 [subtable][bullfinch]>[edit-panel][empty-filter]
@@ -298,6 +301,16 @@ body[bullfinch]
   border-bottom-left-radius:1em;
   border-bottom-right-radius:1em;
 }
+[bullfinch] table[main]>tbody>tr:first-child+tr[joined_with_next_row]>td
+{
+  vertical-align:top;
+}
+[bullfinch] table[main]>tbody>tr[joined_with_next_row]>td[expander]
+{
+  vertical-align:top;
+  padding-top:0.7em;
+}
+
 [bullfinch] table[main]>tbody>tr.transit_row+tr>td,
 [bullfinch] table[main]>tbody>tr.transit_row+tr>td[expander]
 {
@@ -718,6 +731,7 @@ body[bullfinch]
 {
   box-shadow:none;
   font-size:14pt;
+  font-family:sans-serif;
   min-height:2em;
   padding-left:0.5em;  
   padding-right:0.8em;

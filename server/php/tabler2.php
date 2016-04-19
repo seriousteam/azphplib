@@ -174,7 +174,7 @@ $filter_ctrl = count($ui_search) ? "<input filter_ctrl onkeyup='applyFuncFilterT
 	return "\nfilter_ctrl-{$f->priority}-{$f->alias}='{$f->re}'";
 }, $ui_search)).'>' : '';
 echo <<<ST
-<div id=filter_def 
+<div
 	filter_for="this.parentNode.nextElementSibling" 
 	filter_def="[ EQ(1,1) $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
 	$filter_hint
@@ -187,7 +187,7 @@ echo "\n</div>";
 ///////////////////////TABLE////////////////////////
 $mode = $ui->grouped ? 'grouped' : '';
 echo <<<ST
-<div style="clear:both"><!--FILTRED:-->
+<div style="clear:both" filtred><!--FILTRED:-->
 [[ob_start();]]
 <table main $mode onrefresh="refreshNoRowStatus(this)">
 ST;
@@ -319,24 +319,23 @@ echo <<<ST
 </table>
 [[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
 ST;
-if($ui->tabler) {
-echo <<<ST
+if($ui->tabler || $ui->grouped) {
+	echo <<<ST
 <div table-control>
+ST;
+	if($ui->tabler) {
+	echo <<<ST
 	<button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span></button>
 	<button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
-	<span>
-	[[PAGE CONTROLS]]
-	</span>
-</div>
 ST;
-}
-if($ui->grouped) {
+	}
 echo <<<ST
-<div table-control>
 	<span>
-	[[PAGE CONTROLS]]
+	<button first_page type=button onclick="applyFuncFilter(this.UA('filtred').QSattrPrevious('filter_def'), null, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
+		<button prev_page type=button onclick="applyFuncFilter(this.UA('filtred').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
+		<button next_page type=button onclick="applyFuncFilter(this.UA('filtred').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$main_counter > \$requested_limit? \$requested_offset + \$page_limit : '')]]"></button>
 	</span>
 </div>
 ST;
