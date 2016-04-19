@@ -393,8 +393,8 @@ dfn[tag][type="radio"][checked]:before {
 [next_page][offset=""] { display: none; }
 [prev_page][offset=""], [first_page][offset=""] { display: none; }
 [next_page]:after { content: ">"; }
-[prev_page]:before { content: "<"; }
-[first_page]:before { content: "|-"; }
+[prev_page]:after { content: "<"; }
+[first_page]:after { content: "|-"; }
 
 ul.echoose > LI { list-style: circle; }
 ul.echoose > LI[checked] { list-style: disc; }

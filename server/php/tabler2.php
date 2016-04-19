@@ -167,7 +167,7 @@ if($ui->grouped)
 	$ui_search = [];
 $filter_def = implode(', ', array_merge([''],$ui_search));
 $restore = $ui->tabler ? " onrefresh='restoreFuncFilter(this, def, [[\$sc]])'" : '';
-$filter_hint = count($ui_search) ? "<div>".implode('', array_map(function($f) {
+$filter_hint = count($ui_search) ? "<div filter-hints>".implode('', array_map(function($f) {
 	return "\n<span filter_hint={$f->alias}>{$f->caption}</span>";
 }, $ui_search))."</div>" : '';
 $filter_ctrl = count($ui_search) ? "<input filter_ctrl onkeyup='applyFuncFilterT(this)' ".implode(' ', array_map(function($f) {
@@ -328,15 +328,15 @@ ST;
 	<button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span></button>
-	<button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
 ST;
 	}
 echo <<<ST
-	<span>
+	<!--button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
+	<span-->
 	<button first_page type=button onclick="applyFuncFilter(this.UA('filtred').QSattrPrevious('filter_def'), null, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
 		<button prev_page type=button onclick="applyFuncFilter(this.UA('filtred').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$requested_offset? \$requested_offset - \$page_limit : '')]]"></button>
 		<button next_page type=button onclick="applyFuncFilter(this.UA('filtred').QSattrPrevious('filter_def'), this, this)" offset="[[(\$page_limit && \$main_counter > \$requested_limit? \$requested_offset + \$page_limit : '')]]"></button>
-	</span>
+	<!--/span-->
 </div>
 ST;
 }
