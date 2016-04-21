@@ -54,7 +54,7 @@ class Table {
 	$id = @$this->table_props['ID'];
 	if(!$id && $path)
 		$id = '$a.'.$this->PK();
-	return $path ? preg_replace('/(?<=^|\s)\$a(?=\.)/', $path, $id)  : $id;
+	return $path ? preg_replace('/(?:^|[^\$])\$a(?=\.)/', $path, $id)  : $id;
   }
   function default_filter() {
 	return @$this->table_props['DEFAULT_FILTER'];
@@ -92,6 +92,7 @@ class _Field {
   var $expression = '';
   
   var $hidden = false;
+  var $readonly = false;
   
   var $choose = false;
   
@@ -131,6 +132,9 @@ class _Field {
 					}
 					, $this->sources, $this->targets)
 			);
+  }
+  function getExpression($alias) {
+  	return $this->expression ? preg_replace('/(?<=^|[^\$])\$a(?=\.)/', $alias, $this->expression)  : 'NULL';
   }
   function getControlType() {
   	global $ModelDB;
@@ -383,8 +387,10 @@ class modelParser extends _PreCmd {
 							else if(preg_match('/^UI_LINE$/', $p)) $fld->ui_line = true;				
 							else if(preg_match("/^VALUES:\s*($RE_ID)/i", $p, $m)) 
 								$fld->values = $m[1];							
-							else if(preg_match("/^='(\d+)'/", $p, $m)) 
-								$fld->expression = $this->unescape($m[1]); 
+							else if(preg_match("/^='(\d+)'/", $p, $m)) {
+								$fld->expression = $this->unescape($m[1]);
+								$fld->readonly = true;
+							} 
 						$fld->page = $current_page;
 						$fld->ui_group = $current_group;
 						if($fld->type==='SUBTABLE') {

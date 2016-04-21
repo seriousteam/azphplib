@@ -241,11 +241,10 @@ class uiField {
 	function min_width() {
 		return max(0.7 * mb_strlen($this->caption), 13);
 	}
-	function __construct($table, $path) {
-		$path1 = explode('.',$path);
-		$this->name = $path1[0]==='a' ? $path : "a.$path";		
+	function __construct($table, $path, $caption = null) {
+		$this->name = explode('.',$path)[0]==='a' ? $path : "a.$path";		
 		$this->alias = uiField::genalias($this->name);
-		$this->caption = uiField::gencaption($table ? $table->___name : null, $this->name);
+		$this->caption = $caption ?: uiField::gencaption($table ? $table->___name : null, $this->name);
 		return $this;
 	}
 }
@@ -260,15 +259,27 @@ class ceNode {
 }
 
 function get_ce(&$ce, $params) {
-	global $RE_ID;
+	global $RE_ID,$RE_PATH;
 	if($params->xf) {
 		foreach($params->xf as $x) {
-			if(preg_match("/^($RE_ID):($RE_ID):($RE_ID)+(\.$RE_ID)*$/i",$x,$m)) {
+			if(preg_match("/^($RE_ID):($RE_ID):([^:]+)(:(.*))?$/i",$x,$m)) {
 				//data:section_name:a.rel.f1
 				$x = explode(':',$m[0]);
 				$select_alias = $x[0];
 				$section = $x[1];
 				$path = $x[2];
+				//$closest_agg
+				/*
+				preg_replace_callback($RE_PATH,
+					function($m) use($path) {
+						if(preg_match(_SQL_FUNC_KWD, $m[0])) {
+
+		    			} else {
+							$path = $m[0];
+	        			}
+						return $m[0];
+					}, $x[2]);
+				*/
 				$cenode = @$ce[ $select_alias ];
 				if($cenode) {
 					$cenode->sections[ $section ][] = new uiField( $cenode->table, $path );	
@@ -1006,7 +1017,7 @@ static $a = [
 	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2>$rel_target</menu>'
 	, 'SUBTABLE' =>
 					'<button subtable-show type=button onclick="this.setDN(toggle)" display_next $attrs></button>
-					<div subtable ref=Y>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
+					<div subtable ref=Y $attrs2>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
 				'
 	, 'FILE' =>
 		'<span lobload=filer accept="" filetypes="*">
@@ -1142,7 +1153,14 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 				$f->getControlType()
 			);
 		}
-	
+		
+		if($f->readonly) {
+			if($f->type==='SUBTABLE')
+				$attrs2 .= ' disabled ';
+			else
+				$attrs .= ' disabled ';
+		}
+			
 		if(@$value->rel_target || $f->target) {
 			$rel_target = file_URI('//az/server/php/chooser2.php', 
 				[ 'table' => 

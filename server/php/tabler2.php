@@ -269,7 +269,7 @@ ST;
 }
 if($ui->tabler || $ui->grouped) {
 	//FIXME: readonly for e:
-	$editable = $ui->tabler ? "~e: style='min-width:{\$left->min_width()}em" : '';
+	$editable = $ui->tabler ? "~e: style='min-width:{\$left->min_width()}em'" : '';
 	echo <<<ST
 	<td>[[@td \$data.{CE left}]]
 		<div ctrl-inline>
@@ -293,7 +293,7 @@ ST;
 }
 if($ui->tabler || $ui->grouped) {
 	//FIXME: readonly for e:
-	$editable = $ui->tabler ? "~e: style='min-width:{\$right->min_width()}em" : '';
+	$editable = $ui->tabler ? "~e: style='min-width:{\$right->min_width()}em'" : '';
 	echo <<<ST
 	<td>[[@td \$data.{CE right}]]
 		<div ctrl-inline>

@@ -100,17 +100,22 @@ class _XPath {
 	if($this->___name == '_id_') {
 		return $this->___node->table->ID($this->___node->alias);
 	}
+  $field = @$this->___node->table->fields[$this->___name];
+  if(!$this->___rel_to_node && $field && $field->expression && !$field->target) {
+    //for now expression is only for ordinary fields, not for relations
+    return $field->getExpression($this->___node->alias);
+  }
     return
         $this->___rel_to_node 
 			?: (
-			@$this->___node->table->fields[$this->___name]->type == "SUBTABLE"
+			@$field->type == "SUBTABLE"
 			||
-			@$this->___node->table->fields[$this->___name]->type == "ACTION"
+			@$field->type == "ACTION"
 			?
 			"NULL":
 			(
-			(@$this->___node->table->fields[$this->___name]->type == "FILE" ||
-       @$this->___node->table->fields[$this->___name]->type == "FILES") ?
+			(@$field->type == "FILE" ||
+       @$field->type == "FILES") ?
 				$this->___node->alias .'.'. $this->___node->table->PK()
 			:
 			$this->___node->alias .'.'. $this->fieldName()
@@ -603,7 +608,7 @@ class _Cmd extends _PreCmd {
       $parsed = new parsedCommand($INSERT_STRUCT_SELECT, $s);
     if(!@$parsed->ok) {
 		var_dump($parsed);
-      throw new Exception("bad insert structire: $s");
+      throw new Exception("Bad insert structure: $s");
     }
     
     $into = $parsed->{'INSERT INTO'};

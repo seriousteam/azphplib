@@ -409,10 +409,11 @@ function make_dbspecific_delete($parsed, $dialect) {
 		case 'mysql': $ret = "DELETE $alias FROM $from $parsed->_WHERE"; break;
 		}
 	} else
-	if($dialect === 'mysql') {
+	if($dialect === 'mysql' || $dialect === 'mssql') {
 		//mysql use special syntax even for delete from one table only
 		// and don't allow use aliases, but we need
 		// so, convert it to multitable case
+		//mssql's behavior similar to mysql
 		$ret = "DELETE $alias FROM $from $parsed->_WHERE";
 	}
 	return replace_dbspecific_funcs($ret, $dialect);

@@ -18,7 +18,6 @@ body[bullfinch]
   background:rgba(255,255,255,1);
   border:none;
   padding:0em;
-  padding-bottom:0.5em;
   margin-left:-0.5em;
   border-radius:1em;
   box-shadow:0 0 5px rgba(0,0,0,0.2);
@@ -73,9 +72,14 @@ body[bullfinch]
 {
   display:none;
 }
-[subtable][bullfinch]>div>table>tfoot>[if_no_rows]
+
+[subtable][bullfinch]>[filtred]>table>tfoot>[if_no_rows]
 {
   display:none;
+}
+[subtable][disabled][bullfinch]>[filtred]>table[no_rows]>tfoot>[if_no_rows]
+{
+  display:table-row;
 }
 
 /* LINE FILTER */
@@ -347,7 +351,7 @@ body[bullfinch]
 [bullfinch] [if_no_rows]>td
 {
   text-align:center;
-  padding:0.5em;
+  padding:1em;
 }
 [bullfinch] [if_no_rows]>td:after
 {
@@ -445,6 +449,10 @@ body[bullfinch]
    background:url('res/bf-menu-black.svg');
    opacity:0.5;
 }
+[bullfinch] button[subtable-show][loading]:before
+{
+  opacity:0;
+}
 [bullfinch] [display_next_row="Y"]:before,
 [bullfinch] button[subtable-show][display_next="Y"]:before,
 [bullfinch] [grp-display="Y"]>tbody>tr[ctrl-group-head]>td>span:before
@@ -467,6 +475,8 @@ body[bullfinch]
 {
   opacity:0.3;
 }
+
+/* delete record button */
 [bullfinch] button[del],
 [subtable][bullfinch] button[del]
 {
@@ -493,6 +503,10 @@ body[bullfinch]
 {
   color: black;
   border: 2px solid rgba(0, 0, 0, 0.5);
+}
+[bullfinch][disabled] tr>td>button[del]
+{
+  display:none;
 }
 
 /* add record ok, cancel */
@@ -607,9 +621,13 @@ body[bullfinch]
 [subtable][bullfinch] button[add=""],
 [subtable][bullfinch] button[add="suspend"]
 {
-  margin-left:-0.5em;
-  margin:0;
+  margin:0.5em;
 }
+[subtable][disabled][bullfinch] button[add="suspend"]
+{
+  display:none;
+}
+
 
 /* table count, next page */
 [bullfinch] [table-control]
@@ -619,8 +637,8 @@ body[bullfinch]
 [subtable][bullfinch] [table-control] 
 {
   margin-bottom:0;
-  margin-left:0.5em;
-  margin-top:0.5em;
+  /*margin-left:0.5em;
+  margin-top:0.5em;*/
 }
 [bullfinch] [table-control]>[show-control]:after
 {
@@ -736,10 +754,11 @@ body[bullfinch]
   padding-left:0.5em;  
   padding-right:0.8em;
   border-radius:0.25em;
-  background:rgba(255,255,255,0.5);
+  background:rgba(255,255,255,0.6);
   vertical-align:top;
   display:block;
   box-sizing:border-box;
+  color:black;
   text-shadow:0 0 4px white;
   position:relative;
   z-index:2;
@@ -760,6 +779,28 @@ body[bullfinch]
   outline:none;
   box-shadow: 0 0 16px rgba(0,170,255,0.7);
   border:1px solid rgba(0,0,0,0);
+}
+[bullfinch] div[ctrl-container]>input[tag][disabled],
+[bullfinch] div[ctrl-container]>textarea[tag][disabled],
+[bullfinch] div[ctrl-container]>a[tag="A"][disabled],
+[bullfinch] div[ctrl-container]>[bool-state][disabled],
+[bullfinch] div[ctrl-container]>[bool2][disabled],
+[bullfinch] div[ctrl-inline]>input[tag][disabled],
+[bullfinch] div[ctrl-inline]>textarea[tag][disabled],
+[bullfinch] div[ctrl-inline]>a[tag="A"][disabled],
+[bullfinch] div[ctrl-inline]>[bool-state][disabled],
+[bullfinch] div[ctrl-inline]>[bool2][disabled]
+{
+  background:transparent;
+  cursor:default;
+}
+[bullfinch] div[ctrl-container]>a[tag="A"][disabled]:focus,
+[bullfinch] div[ctrl-inline]>a[tag="A"][disabled]:focus,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"][disabled]:focus,
+[bullfinch] [joined_with_next_row] div[ctrl-inline]>a[tag="A"][disabled]:focus
+{
+  box-shadow: none;
+  border:1px solid rgba(0,0,0,0.1);
 }
 [bullfinch] a[tag="A"]:empty:before
 {
@@ -855,11 +896,23 @@ body[bullfinch]
   top:0;
   padding:0.5em;
   border:1px solid transparent;
-  color:rgba(0,0,0,0.6);
+  color:rgba(0,0,0,0.7);
   text-align:left;
   padding-left:0.5em;
   padding-right:2em;
   position:absolute;
+}
+[bullfinch] div[ctrl-container]>input[tag][value=""][disabled]~label,
+[bullfinch] div[ctrl-container]>textarea[tag][disabled]:empty~label,
+[bullfinch] div[ctrl-container]>a[tag="A"][disabled]:empty~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][value=""][disabled]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag][disabled]:empty~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"][disabled]:empty~label,
+[bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""][disabled]~label,
+[bullfinch] tr>td>div[ctrl-inline]>textarea[tag][disabled]:empty~label,
+[bullfinch] tr>td>div[ctrl-inline]>a[tag="A"][disabled]:empty~label
+{
+  color:rgba(0,0,0,0.2);
 }
 
 /* mini label */
@@ -881,7 +934,7 @@ body[bullfinch]
   border:1px solid transparent;
   z-index:1;
   font-family:sans-serif;
-  color:rgba(0,0,0,0.7);
+  color:rgba(0,0,0,0.8);
   white-space:nowrap;
   padding:0;
   padding-top:0.1em;
@@ -890,6 +943,22 @@ body[bullfinch]
   position:absolute;
   text-shadow:0 0 4px white;
 }
+[bullfinch] div[ctrl-container]>input[tag][disabled]~label,
+[bullfinch] div[ctrl-container]>textarea[tag][disabled]~label,
+[bullfinch] div[ctrl-container]>a[tag="A"][disabled]~label,
+[bullfinch] div[ctrl-container]>input[tag][value=""][disabled]:focus~label,
+[bullfinch] div[ctrl-container]>textarea[tag][disabled]:empty:focus~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][disabled]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag][disabled]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"][disabled]~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][value=""][disabled]:focus~label,
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag][disabled]:empty:focus~label,
+[bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""][disabled]:focus~label,
+[bullfinch] tr>td>div[ctrl-inline]>textarea[tag][disabled]:empty:focus~label
+{
+  color:rgba(0,0,0,0.4);
+}
+
 [bullfinch] tr>td>div[ctrl-inline]>input[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]~label,
@@ -1005,6 +1074,11 @@ body[bullfinch]
   background-size:100% 100%;
   opacity:0.5;
 }
+[bullfinch] table[main]>tbody>.transit_row a[callmenu][tag="A"][disabled]:after,
+[bullfinch] table[main]>tbody>[joined_with_next_row] a[callmenu][tag="A"][disabled]:after
+{
+  content:none;
+}
 [bullfinch] [close-box]:before
 {
   content:none;
@@ -1019,6 +1093,8 @@ body[bullfinch]
 /* BOOL */
 
 /* bool3state */
+[bullfinch] div[ctrl-inline]>[bool-state],
+[bullfinch] div[ctrl-container]>[bool-state],
 [bullfinch] [bool-state]
 {
   color:rgba(0,0,0,0.1);
@@ -1105,6 +1181,10 @@ body[bullfinch]
 [bullfinch] [if_no_rows]>td
 {  
   border-top:1px solid rgba(0,0,0,0.05);
+}
+[bullfinch]>[filtred]>table[no_rows]>tfoot>[if_no_rows]>td
+{
+  border-top:none;
 }
 [bullfinch] MENU[mctl] li[empty],
 [bullfinch] [empty_row]>td,
@@ -1212,12 +1292,13 @@ body[bullfinch]
 {
   border: none;
   z-index:99999;
-  padding:1em;
-  border-radius:1em;
-  border:1px dashed orange;
-  box-shadow: 0 0 1em gold;
+  padding:0.5em;
+  border-radius:1.5em;
+  border:none;
+  box-shadow: 0 0 0.5em gold;
   position: absolute;
 }
+[bullfinch] button[subtable-show][loading]:after, 
 [bullfinch] .loader:after {
   content:'';
   -moz-animation: bf-spinner-loader 1500ms infinite linear;
@@ -1226,16 +1307,22 @@ body[bullfinch]
   -moz-border-radius: 0.5em;
   -webkit-border-radius: 0.5em;
   border-radius: 0.5em;
-  -moz-box-shadow: rgba(0, 0, 51, 0.3) 1.5em 0 0 0, rgba(0, 0, 51, 0.3) 1.1em 1.1em 0 0, rgba(0, 0, 51, 0.3) 0 1.5em 0 0, rgba(0, 0, 51, 0.3) -1.1em 1.1em 0 0, rgba(0, 0, 51, 0.3) -1.5em 0 0 0, rgba(0, 0, 51, 0.3) -1.1em -1.1em 0 0, rgba(0, 0, 51, 0.3) 0 -1.5em 0 0, rgba(0, 0, 51, 0.3) 1.1em -1.1em 0 0;
-  -webkit-box-shadow: rgba(0, 0, 51, 0.3) 1.5em 0 0 0, rgba(0, 0, 51, 0.3) 1.1em 1.1em 0 0, rgba(0, 0, 51, 0.3) 0 1.5em 0 0, rgba(0, 0, 51, 0.3) -1.1em 1.1em 0 0, rgba(0, 0, 51, 0.3) -1.5em 0 0 0, rgba(0, 0, 51, 0.3) -1.1em -1.1em 0 0, rgba(0, 0, 51, 0.3) 0 -1.5em 0 0, rgba(0, 0, 51, 0.3) 1.1em -1.1em 0 0;
-  box-shadow: rgba(0, 0, 51, 0.3) 1.5em 0 0 0, rgba(0, 0, 51, 0.3) 1.1em 1.1em 0 0, rgba(0, 0, 51, 0.3) 0 1.5em 0 0, rgba(0, 0, 51, 0.3) -1.1em 1.1em 0 0, rgba(0, 0, 51, 0.3) -1.5em 0 0 0, rgba(0, 0, 51, 0.3) -1.1em -1.1em 0 0, rgba(0, 0, 51, 0.3) 0 -1.5em 0 0, rgba(0, 0, 51, 0.3) 1.1em -1.1em 0 0;
+  -moz-box-shadow: gold 1.5em 0 0 0, gold 1.1em 1.1em 0 0, gold 0 1.5em 0 0, gold -1.1em 1.1em 0 0, gold -1.5em 0 0 0, gold -1.1em -1.1em 0 0, gold 0 -1.5em 0 0, gold 1.1em -1.1em 0 0;
+  -webkit-box-shadow: gold 1.5em 0 0 0, gold 1.1em 1.1em 0 0, gold 0 1.5em 0 0, gold -1.1em 1.1em 0 0, gold -1.5em 0 0 0, gold -1.1em -1.1em 0 0, gold 0 -1.5em 0 0, gold 1.1em -1.1em 0 0;
+  box-shadow: gold 1.5em 0 0 0, gold 1.1em 1.1em 0 0, gold 0 1.5em 0 0, gold -1.1em 1.1em 0 0, gold -1.5em 0 0 0, gold -1.1em -1.1em 0 0, gold 0 -1.5em 0 0, gold 1.1em -1.1em 0 0;
   display: inline-block;
-  font-size: 4pt;
+  font-size: 6pt;
   width: 1em;
   height: 1em;
   margin: 1.5em;
   overflow: hidden;
   text-indent: 100%;
   padding:0;
-  background: white;
+  background:none;
+  border:none;
+}
+[bullfinch] button[subtable-show][loading]:after
+{
+  position:absolute;
+  left:0;
 }
