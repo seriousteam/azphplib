@@ -29,6 +29,7 @@ class _XNode {
     if(array_key_exists($name, $this->childs)) return $this->childs[$name];
     return $this->childs[$name] = new _XNode($table);
   }
+
   function __get($name) {
     if($name === 'PK')
      $name =  $this->table->PK();  //one only
@@ -83,7 +84,7 @@ class _XNode {
 class _XPath {
   var $___node;
   var $___name;
-  var $___rel_to_node = null;
+  var $___rel_expression = null;
   function __construct($node, $name) { 
     $this->___node = $node;
     $this->___name = $name;
@@ -96,17 +97,19 @@ class _XPath {
       ?: $this->___name
   ;
   }
+  function isExpression() {
+	return @$this->___node->table->fields[$this->___name]->expression;
+  }
+  function getExpression($alias) {
+	return @$this->___node->table->fields[$this->___name]->getExpression($alias);
+  }
   function __toString() {
 	if($this->___name == '_id_') {
 		return $this->___node->table->ID($this->___node->alias);
 	}
-  $field = @$this->___node->table->fields[$this->___name];
-  if(!$this->___rel_to_node && $field && $field->expression && !$field->target) {
-    //for now expression is only for ordinary fields, not for relations
-    return $field->getExpression($this->___node->alias);
-  }
+	$field = @$this->___node->table->fields[$this->___name];  
     return
-        $this->___rel_to_node 
+        $this->___rel_expression
 			?: (
 			@$field->type == "SUBTABLE"
 			||
@@ -138,8 +141,8 @@ class _XPath {
     //if($this->___rel_to_node) return $this;
     if($name === 'PK')
       $name = $this->___node->table->PK(); //one only
-      if(!isset($this->___node->table->fields[$this->___name]))
-	throw new Exception("rel $this->___name not found in {$this->___node->table->___name}");
+    if(!isset($this->___node->table->fields[$this->___name]))
+		throw new Exception("rel $this->___name not found in {$this->___node->table->___name}");
     $n = $this->___node->addChild($this->___name, 
 			  $this->___node->table->fields[$this->___name]->target);
     return new _XPath($n, $name);
@@ -528,15 +531,13 @@ class _Cmd extends _PreCmd {
 		$path = explode('.', $p);
 		$roots = $tree->roots;
 		reset($roots);
-		$alias = count($path)>1? array_shift($path) : key($roots);
-		//$alias = count($path)>1? array_shift($path) : 'a'; //FIXME:alias - more smart
+		$alias = count($path)>1? array_shift($path) : key($roots);		
 	    
-		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $alias, $mi)) {
-			   
-			    $level = (int)(@$mi[1]?:0);
-	    $alias = @$mi[2] ?: 'a';	    
-	    if($level + 1 >= count($tree->stack)) $roots = null;
-	    else $roots = $tree->stack[$level];
+		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $alias, $mi)) {			   
+			$level = (int)(@$mi[1]?:0);
+			$alias = @$mi[2] ?: 'a';	    
+			if($level + 1 >= count($tree->stack)) $roots = null;
+			else $roots = $tree->stack[$level];
 		}
 	    //echo "\n^^^^$p in $alias ";
 		if(!$roots)
@@ -567,7 +568,7 @@ class _Cmd extends _PreCmd {
 			
 			$rel_node =  $this->process_path( implode('.', $joinpath), $tree, $externals );			
 
-			$node->___rel_to_node = $node->___node->table->fields[$node->___name]
+			$node->___rel_expression = $node->___node->table->fields[$node->___name]
 			->getCondition($node->___node->alias, count($joinpath) ? explode('.', $rel_node->alias)[0] : _XNode::$ext['a']->alias);
 			
 			break;
@@ -575,12 +576,16 @@ class _Cmd extends _PreCmd {
 		if($name==='update') {
 			$node->add_u_filter();
 			break;
-		}
-		else {			
+		} else {			
 			$node = $node->$name;
 		}	       
 	}
-	//record name in last node as accessed from commend
+	if($node->isExpression()) {
+		//$node->alias;
+		//$expr = new _PreCmd($node->getExpression($alias));
+		//return process_ids($expr->cmd, $tree, $externals);
+	}
+	//record name in last node as accessed from command
 	$node->add_ro_filter();
 	return $node;
   }
@@ -598,7 +603,10 @@ class _Cmd extends _PreCmd {
 		$this->process_select($this->selects[(int)$sn]->str, $externals, $tree));
     return $ret;
   }
-  
+  function process_expressions($s, &$tree, &$externals = null)
+  {
+	  
+  }
   function process_insert($s) {
     global $RE_ID, $RE_FULL_ID, $RE_ID_DONE;
     global $Tables, $INSERT_STRUCT_VALUES, $INSERT_STRUCT_SELECT, $SELECT_STRUCT;

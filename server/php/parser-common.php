@@ -120,6 +120,7 @@ class _PreCmd {
           $cmd);
       }
     );
+	//return $cmd;
     $this->cmd = $cmd;
     return $this;
   }
@@ -214,9 +215,8 @@ class parsedCommand
 class parsedCommandSmart extends parsedCommand {
   var $pre = null;
   var $params = 0;
-  function __construct($parts, $cmd, $pre=null) {
+  function __construct($parts, $cmd, $pre = null) {
     $this->pre = $pre ? $pre->preprocess($cmd) : new _PreCmd($cmd);
-    //$this->params = substr_count($this->pre->cmd, '?');
     $this->params = $this->pre->paramscount;
     parent::__construct($parts, $this->pre->cmd);
   }
