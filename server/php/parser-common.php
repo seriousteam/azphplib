@@ -63,7 +63,7 @@ class _PreCmd {
   var $cmd = '';
   var $strings = [];
   var $selects = [];
-  var $paramscount = 0;
+  var $paramscount = 0;//count of paramaters of cmd of last call of preprocess
 
   function unescape($d) { return str_replace("''","'",substr($this->strings[(int)$d], 1,-1)); }
   static function escape($s, $quote = true) { 
@@ -71,7 +71,7 @@ class _PreCmd {
 		$quote ? "'".str_replace("'","''", $s)."'" : str_replace("'","''", $s);
 	}
 
-  function __construct($cmd, $safe_source = false) { $this->preprocess($cmd, $safe_source); }
+  function __construct($cmd, $safe_source = false) { $this->cmd = $this->preprocess($cmd, $safe_source); }
   function preprocess($cmd, $safe_source = false) { 
     $cmd = trim($cmd);
     if(!$safe_source && strcspn($cmd,_SQL_FORBIDDEN) != strlen($cmd))
@@ -120,9 +120,9 @@ class _PreCmd {
           $cmd);
       }
     );
-	//return $cmd;
-    $this->cmd = $cmd;
-    return $this;
+	return $cmd;
+    //$this->cmd = $cmd;
+    //return $this;
   }
   function subst($a) {
     return preg_replace_callback('/\(%([0-9]+)\)/', 
@@ -216,7 +216,10 @@ class parsedCommandSmart extends parsedCommand {
   var $pre = null;
   var $params = 0;
   function __construct($parts, $cmd, $pre = null) {
-    $this->pre = $pre ? $pre->preprocess($cmd) : new _PreCmd($cmd);
+	if($pre) {
+		$pre->cmd = $pre->preprocess($cmd);
+	}
+    $this->pre = $pre ?: new _PreCmd($cmd);
     $this->params = $this->pre->paramscount;
     parent::__construct($parts, $this->pre->cmd);
   }

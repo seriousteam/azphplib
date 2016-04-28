@@ -98,17 +98,17 @@ class _XPath {
   ;
   }
   function isExpression() {
-	return @$this->___node->table->fields[$this->___name]->expression;
+	return @$this->___node->table->fields[$this->___name] ? @$this->___node->table->fields[$this->___name]->expression : null;
   }
   function getExpression($alias) {
-	return @$this->___node->table->fields[$this->___name]->getExpression($alias);
+	return $this->___node->table->fields[$this->___name]->getExpression($alias);
   }
   function __toString() {
 	if($this->___name == '_id_') {
 		return $this->___node->table->ID($this->___node->alias);
 	}
 	$field = @$this->___node->table->fields[$this->___name];  
-    return
+    return 
         $this->___rel_expression
 			?: (
 			@$field->type == "SUBTABLE"
@@ -123,22 +123,9 @@ class _XPath {
 			:
 			$this->___node->alias .'.'. $this->fieldName()
 			)
-      );
+	  );
   }
   function __get($name) {
-   /* if($name==='join') {
-      //accessed left and right fields, but in different nodes!
-      // this is for check rights especially
-      // $this->___rel_to_node = 
-      //    _XNode::$ext['a']->{$this->___node->table->fields[$this->___name]->target->PK()}; 
-      //now, we use direct link generation and dont check access to linked key fields
-      //$this->___node->alias.rel = _XNode::$ext['a']->alias.id
-      //$this->___node->alias.rel = _XNode::$ext['a']->alias.rel.id
-      $this->___rel_to_node = $this->___node->table->fields[$this->___name]
-        ->getCondition($this->___node->alias, _XNode::$ext['a']->alias);
-      return $this;
-    }*/
-    //if($this->___rel_to_node) return $this;
     if($name === 'PK')
       $name = $this->___node->table->PK(); //one only
     if(!isset($this->___node->table->fields[$this->___name]))
@@ -317,7 +304,23 @@ class _Cmd extends _PreCmd {
     //var_dump($aout);
     return $aout;
   }
-
+  function stage_alias_tree($node, $alias, &$tree) {
+	  //used when expression table must become origin of 'ext' hierarchy, keeping alias numeration of old tree
+	  //relations keep counting from $node 'join' sequence 
+	  $x = new stdClass;
+	  $x->roots = [$alias => $node];
+	  $x->stack = [ array() ];
+	  $x->___name = $node->table->___name;
+	  $x->toplevelext = ['a' => $node];
+	  $x->staged = $tree;
+	  $tree = $x;
+  }
+  function unstage_alias_tree(&$tree) {
+	  if($tree->staged) {
+		  $x = $tree->staged;
+		  $tree = $x;
+	  }
+  }
   function start_alias_tree($from, &$tree = null) {
     $this->toplevel = false; //for subselects we say, that we're inside command now
     
@@ -333,7 +336,7 @@ class _Cmd extends _PreCmd {
     $tree->roots = array();
     $joins = $this->parse_joins($from);
     if(count($joins)<1) {
-	debug_print_backtrace();
+	  debug_print_backtrace();
       throw new Exception("No tables to select from: <<<$from>>>");
     }
     $joins[0]->alias = $joins[0]->alias ?: 'a'; //set default  ('a') alias for root table
@@ -353,7 +356,7 @@ class _Cmd extends _PreCmd {
     $tree->___name = $joins[0]->tbl[0] === '(' ? $joins[0]->alias : $joins[0]->tbl;
       
     if(!$this->alias) $this->alias = reset($tree->roots)->alias;
-    _XNode::$ext = @$tree->stack[0];
+    $tree->toplevelext = @$tree->stack[0];
     //echo "\nstack level: ".count($tree->stack);
   }
   function pop_root_from_tree(&$prop, &$tree, $extract_filter = false) {
@@ -457,7 +460,7 @@ class _Cmd extends _PreCmd {
     //$select = preg_replace("/(^|,)\s*($RE_ID\s*\.\s*)?\*\s*(,|$)/", '$3', $select);
   $select = preg_replace('/,+/', ',', $select);
   $select = preg_replace('/^\s*+,/', '', $select);	
-  $parsed->SELECT = $this->process_ids( $select, $tree, $externals );	
+  $parsed->SELECT = $this->process_ids( $select, $tree, $externals );
   $parsed->process_ids('WHERE', $this, $tree, $externals );    
   $parsed->process_ids('ORDER BY', $this, $tree, $externals );
 	$parsed->process_ids('GROUP BY', $this, $tree, $externals );
@@ -491,6 +494,7 @@ class _Cmd extends _PreCmd {
           if(!preg_match(_SQL_FUNC_KWD, $m[0])) {
             if( $closest_agg === null && !isset($grp[$m[0]]) ) {
               $parts = explode('.',$m[0]);
+			  $node = null;
               foreach($tree->roots as $node) if(isset($node->alias) && $node->alias===$parts[0]) break;
               if($node) {
                 if(isset($node->table->fields[ $parts[1] ])) {
@@ -525,43 +529,43 @@ class _Cmd extends _PreCmd {
   }
   function process_path($p, &$tree, &$externals) {
 	global $RE_ID;
-		
+		//echo '<pre>';
 	    //echo "\n^^^^$p", preg_match(_SQL_FUNC_KWD, $m[0])?"-F-":'-I-';
 		if(preg_match(_SQL_FUNC_KWD, $p)) return $p;
+		
 		$path = explode('.', $p);
 		$roots = $tree->roots;
-		reset($roots);
-		$alias = count($path)>1? array_shift($path) : key($roots);		
-	    
-		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $alias, $mi)) {			   
+		reset($roots);//we are using first table of join chain. last element of roots is '-' service member
+		$user_alias = count($path)>1? array_shift($path) : key($roots);
+		
+		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $user_alias, $mi)) {
 			$level = (int)(@$mi[1]?:0);
-			$alias = @$mi[2] ?: 'a';	    
+			$user_alias = @$mi[2] ?: 'a';
 			if($level + 1 >= count($tree->stack)) $roots = null;
 			else $roots = $tree->stack[$level];
 		}
-	    //echo "\n^^^^$p in $alias ";
+		//echo "\n^^^^$p in $user_alias ";
 		if(!$roots)
-			{ $externals[] = $alias.'.'.implode('.', $path); return '?'; }
-		if(!@$roots[$alias]) {
-	      $r = 'stack level: '.count($tree->stack).' roots: ';
+			{ $externals[] = $user_alias.'.'.implode('.', $path); return '?'; }
+		if(!@$roots[$user_alias]) {
+		  $r = 'stack level: '.count($tree->stack).' roots: ';
 		 
-	      foreach($roots as $a => $v) 
-		      if(is_object($v))
-		        $r .= "$a => {$v->table->___name} ";
-	      throw new Exception("alias '$alias' not found in $r (source:$p)");
+		  foreach($roots as $a => $v) 
+			  if(is_object($v))
+				$r .= "$a => {$v->table->___name} ";
+		  throw new Exception("alias '$user_alias' not found in $r (source:$p)");
 	   }
-	   $node = $roots[$alias];
+	   $node = $roots[$user_alias];
+				
+	
 	foreach($path as $key=>$name) {		
 		if($name==='join') {
-			//var_dump(_XNode::$ext);
 			//accessed left and right fields, but in different nodes!
 			// this is for check rights especially			
 			//now, we use direct link generation and dont check access to linked key fields
 			//$node = new _XPath($node, $name);
-			//echo '<pre>';
 			
 			$joinpath =  array_splice( $path, $key+1 );
-			//var_dump($joinpath);
 			
 			if(count($joinpath) && !preg_match("/^ext([0-9]*)(_$RE_ID)?/", $joinpath[0], $mi))
 				array_unshift($joinpath, 'ext');
@@ -569,21 +573,25 @@ class _Cmd extends _PreCmd {
 			$rel_node =  $this->process_path( implode('.', $joinpath), $tree, $externals );			
 
 			$node->___rel_expression = $node->___node->table->fields[$node->___name]
-			->getCondition($node->___node->alias, count($joinpath) ? explode('.', $rel_node->alias)[0] : _XNode::$ext['a']->alias);
+			->getCondition($node->___node->alias, count($joinpath) ? explode('.', $rel_node->alias)[0] : $tree->toplevelext['a']->alias);
 			
 			break;
 		} else
 		if($name==='update') {
 			$node->add_u_filter();
 			break;
-		} else {			
+		} else {	
 			$node = $node->$name;
 		}	       
 	}
 	if($node->isExpression()) {
-		//$node->alias;
-		//$expr = new _PreCmd($node->getExpression($alias));
-		//return process_ids($expr->cmd, $tree, $externals);
+		$this->stage_alias_tree($node->___node, $user_alias, $tree);
+		$expr = '( '.$this->process_ids( 
+			$this->preprocess($node->getExpression($user_alias)), 
+				$tree, $externals)
+			.' )';
+		$this->unstage_alias_tree($tree);
+		return $expr;
 	}
 	//record name in last node as accessed from command
 	$node->add_ro_filter();
@@ -591,21 +599,18 @@ class _Cmd extends _PreCmd {
   }
   function process_ids($s, &$tree, &$externals = null) {
     global $RE_ID, $RE_PATH;
-    if(!$s) return $s;
-    
+    if(!$s) return $s;    
+	
     $ret = preg_replace_callback($RE_PATH,
 			function($m) use(&$tree, &$externals) { return $this->process_path($m[0], $tree, $externals); },
 			' '.$s);
+	
     //process subselects here! it's has only side effect
     preg_match_all('/\(%([0-9]+)\)/', $s, $subs);
     foreach($subs[1] as $sn)
       $this->selects[(int)$sn] =  new processedSubselect(
 		$this->process_select($this->selects[(int)$sn]->str, $externals, $tree));
     return $ret;
-  }
-  function process_expressions($s, &$tree, &$externals = null)
-  {
-	  
   }
   function process_insert($s) {
     global $RE_ID, $RE_FULL_ID, $RE_ID_DONE;
