@@ -1126,7 +1126,7 @@ function get_filter_control($f)
 	}
 	return $descr;
 }
-function output_editor2($value, $template, $attrs, $attrs2 = '')
+function output_editor2($value, $template, $attrs, $attrs2 = '', $readonly = false)
 {
 	global $Tables;
 	
@@ -1153,8 +1153,8 @@ function output_editor2($value, $template, $attrs, $attrs2 = '')
 				$f->getControlType()
 			);
 		}
-		
-		if($f->readonly) {
+		$readonly = $f->readonly || $readonly;
+		if($readonly) {
 			if($f->type==='SUBTABLE')
 				$attrs2 .= ' disabled ';
 			else

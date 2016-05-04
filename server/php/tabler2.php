@@ -268,36 +268,37 @@ ST;
 }	
 }
 if($ui->tabler || $ui->grouped) {
-	//FIXME: readonly for e:
-	$editable = $ui->tabler ? "~e: style='min-width:{\$left->min_width()}em'" : '';
+	if($ui->tabler) $edit = "~e: style='min-width:{\$left->min_width()}em'";
+	if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$left->min_width()}em'";
 	echo <<<ST
 	<td>[[@td \$data.{CE left}]]
 		<div ctrl-inline>
-			[[\$data.{\$left->alias}$editable]]
+			[[\$data.{\$left->alias}$edit]]
 			<label>[[\$left->caption]]</label>
 		</div>
 	</td>
 ST;
 }
 foreach($ui_view as $f) {
-	//FIXME: readonly for e:
-	$editable = $ui->tabler ? "~e: style='min-width:{$f->min_width()}em'" : '';
+	if($ui->chooser) $edit = '';
+	if($ui->tabler) $edit = "~e: style='min-width:{$f->min_width()}em'";
+	if($ui->grouped) $edit = "~e:RO: style='min-width:{$f->min_width()}em'";
 	echo <<<ST
 	<td>
 		<div ctrl-inline>
-			[[\$data.{$f->name}$editable]]
+			[[\$data.{$f->name}$edit]]
 			<label>{$f->caption}</label>
 		</div>
 	</td>
 ST;
 }
 if($ui->tabler || $ui->grouped) {
-	//FIXME: readonly for e:
-	$editable = $ui->tabler ? "~e: style='min-width:{\$right->min_width()}em'" : '';
+	if($ui->tabler) $edit = "~e: style='min-width:{\$right->min_width()}em'";
+	if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$right->min_width()}em'";
 	echo <<<ST
 	<td>[[@td \$data.{CE right}]]
 		<div ctrl-inline>
-			[[\$data.{\$right->alias}$editable]]
+			[[\$data.{\$right->alias}$edit]]
 			<label>[[\$right->caption]]</label>
 		</div>
 	</td>
