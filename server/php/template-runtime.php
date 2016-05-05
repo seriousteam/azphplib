@@ -997,36 +997,36 @@ function default_templated_editor($t) {
 static $a = [
 	'' => NULL
 	, 'V' => '$value'
-	, 'SPAN' => '<span $attrs>$value</span>'
-	, 'NAMED_SPAN' => '<span name="$name" $attrs>$value</span>'
-	, 'TAG' => '<$name $attrs>$value</$name>'
-	, 'TAGV' => '<$name $attrs value="$value" />'
+	, 'SPAN' => '<span $attrs $disabled>$value</span>'
+	, 'NAMED_SPAN' => '<span name="$name" $attrs $disabled>$value</span>'
+	, 'TAG' => '<$name $attrs $disabled>$value</$name>'
+	, 'TAGV' => '<$name $attrs $disabled value="$value" />'
 
-	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs>$value</dfn>'
-	, 'LONGVARCHAR' => '<dfn tag=TEXTAREA vtype=S fctl name="$name" $attrs  content-resizable=F>$value</dfn>'
-	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
-	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs>{$EXPR[\'trimZ($value)\']}</dfn>'
-	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs>{$EXPR[\'ru_date(substr($value,0,16))\']}</dfn>'
-	, 'BOOL' => '<dfn tag vtype=2 mkii fctl name="$name" $attrs>$value</dfn>'
-	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs>$value</dfn>'
-	, 'CLOB' => '<pre tag fctl name="$name" $attrs content-resizable >$value</pre>'
-	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs value="$value">'
-	, 'DL' => '<a tag=A fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2>$rel_target</menu>'
-	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2>$rel_target</dl>'
-	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2>$rel_target</menu>'
+	, 'VARCHAR' => '<dfn tag fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'LONGVARCHAR' => '<dfn tag=TEXTAREA vtype=S fctl name="$name" $attrs $disabled content-resizable=F>$value</dfn>'
+	, 'DECIMAL' => '<dfn tag vtype=N fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'INTEGER' => '<dfn tag vtype=I fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'BOOL' => '<dfn tag vtype=2 mkii fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'CLOB' => '<pre tag fctl name="$name" $attrs $disabled content-resizable >$value</pre>'
+	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
+	, 'DL' => '<a tag=A fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
+	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
+	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2 $disabled>$rel_target</menu>'
 	, 'SUBTABLE' =>
 					'<button subtable-show type=button onclick="this.setDN(toggle)" display_next $attrs></button>
-					<div subtable ref=Y $attrs2>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
+					<div subtable ref=Y $attrs2 $disabled>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
 				'
 	, 'FILE' =>
-		'<span lobload=filer accept="" filetypes="*">
+		'<span lobload=filer accept="" filetypes="*" $disabled>
 			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
 				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
 			></a>
 		</span>'
 	, 'FILE_IMAGE' =>
-		'<span lobload=filer accept="image/*" filetypes="*">
+		'<span lobload=filer accept="image/*" filetypes="*" $disabled>
 			<img src="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
 				href="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
 				onrefresh="var e = this; e.setA(\'src\', 
@@ -1034,12 +1034,12 @@ static $a = [
 			>
 		</span>'
 	, 'FILE_PDF' =>
-		'<span lobload=filer accept="application/pdf" filetypes="pdf">
+		'<span lobload=filer accept="application/pdf" filetypes="pdf" $disabled>
 			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
 				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
 			></a>
 		</span>'
-	, 'FILES' => '<div filelist dynamic="\'/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value&list=1\'.setURLParam(\'args[]\',findRid(this))"></div>'
+	, 'FILES' => '<div filelist $disabled dynamic="\'/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value&list=1\'.setURLParam(\'args[]\',findRid(this))"></div>'
 ];
 	return $a[$t];
 }
@@ -1126,7 +1126,7 @@ function get_filter_control($f)
 	}
 	return $descr;
 }
-function output_editor2($value, $template, $attrs, $attrs2 = '', $readonly = false)
+function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
 {
 	global $Tables;
 	
@@ -1143,23 +1143,16 @@ function output_editor2($value, $template, $attrs, $attrs2 = '', $readonly = fal
 		$f = $table->fields[$name];
 
 		//we can specify control type explicitly
-		if(!$template) {
+		if(!$vtype) {
 			//if not, we take control from model
 			if(!is_object($f)) {
 				var_dump($f, $name, $value, $table);
 				die('!!!!');
 			}
-			$template = default_templated_editor(
-				$f->getControlType()
-			);
+			$vtype = $f->getControlType();			
 		}
-		$readonly = $f->readonly || $readonly;
-		if($readonly) {
-			if($f->type==='SUBTABLE')
-				$attrs2 .= ' disabled ';
-			else
-				$attrs .= ' disabled ';
-		}
+
+		$readonly = $f->readonly || $readonly;		
 			
 		if(@$value->rel_target || $f->target) {
 			$rel_target = file_URI('//az/server/php/chooser2.php', 
@@ -1201,11 +1194,27 @@ function output_editor2($value, $template, $attrs, $attrs2 = '', $readonly = fal
 		$precision = $f->precision;
 	}
 
+	$template = default_templated_editor($vtype);
+
 	$value = htmlspecialchars( $value );
 	
+	$disabled = $readonly ? 'disabled' : '';
+
+	switch($vtype) {
+		case 'DECIMAL':
+		case 'INTEGER':
+			$value = trimZ($value);
+			break;
+		case 'DATE':
+			$value = ru_date(substr($value,0,16));
+			break;
+	}
+	
+	/*
 	$EXPR = new templated_editors_helper(
 		compact('value', 'name', 'rel_target', 'attrs', 'attrs2', 'size', 'precision', 'table_name')
-	);
+	);*/
+	
 
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
 }

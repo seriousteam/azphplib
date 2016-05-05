@@ -980,8 +980,9 @@ body[bullfinch]
 [bullfinch] tr>td>div[ctrl-inline]>input[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]~label,
-[mctl][bullfinch] tr>td>div[ctrl-inline]>label/*,
-[bullfinch] table[main][grouped]>tbody>tr>td>div[ctrl-inline]>label*/
+[mctl][bullfinch] tr>td>div[ctrl-inline]>label,
+[mc-ctrl="DL"][bullfinch] tr>td>div[ctrl-inline]>label
+/*,[bullfinch] table[main][grouped]>tbody>tr>td>div[ctrl-inline]>label*/
 {
   display:none;
 }
