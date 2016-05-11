@@ -195,16 +195,17 @@ class uiSearchField {
 	}
 }
 class uiField {
-	var $name = null;
-	var $alias = null;
+	var $alias = null; //a__rel__field
+	var $expression = null; //a.rel.field etc.
 	var $caption = null;
-	var $target = false;
-	var $readonly = false;
-	var $position = 0;
-	var $col = 1;
+
+	var $name = null; // a.rel.field, is not null only for model fields
+
+	var $colspan = 1;
+	static $a_num = 0;
 	static function gencaption($table, $name) {
 		global $Tables;
-		$table = $table ? $Tables->{$table} : null;
+		$table = $table ? $Tables->{$table->___name} : null;
 		if($table) {
 			$caption = [];
 			$path = explode('.',$name);
@@ -233,18 +234,28 @@ class uiField {
 		}
 	}
 	static function genalias($name) {
-		return str_replace('.','__',$name);
+		if($name)
+			return str_replace('.','__',$name);
+		else
+			return 'a___gen'.(uiField::$a_num++);		
 	}
 	function __ToString() {
-		return "{$this->name} AS {$this->alias}";
+		if($this->name)
+			return "{$this->name} AS {$this->alias}";
+		else
+			return "({$this->expression}) AS {$this->alias}";
 	}
 	function min_width() {
 		return max(0.7 * mb_strlen($this->caption), 13);
 	}
-	function __construct($table, $path, $caption = null) {
-		$this->name = explode('.',$path)[0]==='a' ? $path : "a.$path";		
+	function __construct($table, $expression, $caption = null) {
+		global $RE_ID;
+		$this->expression = $expression;
+		if(preg_match("/^\\s*$RE_ID(?:\\.$RE_ID)*\\s*$/",$expression)) {
+			$this->name = explode('.',$expression)[0]==='a' ? $expression : "a.$expression";
+		}	
 		$this->alias = uiField::genalias($this->name);
-		$this->caption = $caption ?: uiField::gencaption($table ? $table->___name : null, $this->name);
+		$this->caption = $caption ?: ($this->name ? uiField::gencaption($table, $this->name) : $this->expression);
 		return $this;
 	}
 }
@@ -262,12 +273,13 @@ function get_ce(&$ce, $params) {
 	global $RE_ID,$RE_PATH;
 	if($params->xf) {
 		foreach($params->xf as $x) {
-			if(preg_match("/^($RE_ID):($RE_ID):([^:]+)(:(.*))?$/i",$x,$m)) {
+			if(preg_match("/^($RE_ID):($RE_ID):([^:]+)(?::(.*))?$/i",$x,$m)) {
 				//data:section_name:a.rel.f1
 				$x = explode(':',$m[0]);
 				$select_alias = $x[0];
 				$section = $x[1];
 				$path = $x[2];
+				$caption = @$x[3];
 				//$closest_agg
 				/*
 				preg_replace_callback($RE_PATH,
@@ -1197,7 +1209,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
 	$template = default_templated_editor($vtype);
 
 	$value = htmlspecialchars( $value );
-	
+
 	$disabled = $readonly ? 'disabled' : '';
 
 	switch($vtype) {

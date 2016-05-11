@@ -97,7 +97,7 @@ foreach($ui_form as &$page) {
 		}
 		foreach($group->lines as &$line2) {
 			if(count($line2)>0) {
-				$line2[count($line2)-1]->col += $maxcol - count($line2);
+				$line2[count($line2)-1]->colspan += $maxcol - count($line2);
 			}					
 		}
 	}
@@ -250,7 +250,7 @@ ST;
 		foreach($grp->lines as $cline) {
 			echo "\n<tr ctrl-group>";
 			foreach($cline as $f) {
-				$colspan = $f->col>1 ? " colspan={$f->col}" : '';
+				$colspan = $f->colspan>1 ? " colspan={$f->colspan}" : '';
 				echo <<<ST
 				<td$colspan>
 					<div ctrl-container>
@@ -267,6 +267,7 @@ ST;
 	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del></button></div>';
 }	
 }
+//EXTRA COLUMNS AT BEGIN
 if($ui->tabler || $ui->grouped) {
 	if($ui->tabler) $edit = "~e: style='min-width:{\$left->min_width()}em'";
 	if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$left->min_width()}em'";
@@ -279,6 +280,7 @@ if($ui->tabler || $ui->grouped) {
 	</td>
 ST;
 }
+//DEFAULT FIELDSET
 foreach($ui_view as $f) {
 	if($ui->chooser) $edit = '';
 	if($ui->tabler) $edit = "~e: style='min-width:{$f->min_width()}em'";
@@ -292,6 +294,7 @@ foreach($ui_view as $f) {
 	</td>
 ST;
 }
+//EXTRA COLUMNS AT END
 if($ui->tabler || $ui->grouped) {
 	if($ui->tabler) $edit = "~e: style='min-width:{\$right->min_width()}em'";
 	if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$right->min_width()}em'";
