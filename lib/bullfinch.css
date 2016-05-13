@@ -755,11 +755,13 @@ body[bullfinch]
 [bullfinch] div[ctrl-container]>a[tag="A"],
 [bullfinch] div[ctrl-container]>[bool-state],
 [bullfinch] div[ctrl-container]>[bool2],
+[bullfinch] div[ctrl-container]>[value-only],
 [bullfinch] div[ctrl-inline]>input[tag],
 [bullfinch] div[ctrl-inline]>textarea[tag],
 [bullfinch] div[ctrl-inline]>a[tag="A"],
 [bullfinch] div[ctrl-inline]>[bool-state],
-[bullfinch] div[ctrl-inline]>[bool2]
+[bullfinch] div[ctrl-inline]>[bool2],
+[bullfinch] div[ctrl-inline]>[value-only]
 {
   box-shadow:none;
   font-size:14pt;
@@ -799,11 +801,13 @@ body[bullfinch]
 [bullfinch] div[ctrl-container]>a[tag="A"][disabled],
 [bullfinch] div[ctrl-container]>[bool-state][disabled],
 [bullfinch] div[ctrl-container]>[bool2][disabled],
+[bullfinch] div[ctrl-container]>[value-only],
 [bullfinch] div[ctrl-inline]>input[tag][disabled],
 [bullfinch] div[ctrl-inline]>textarea[tag][disabled],
 [bullfinch] div[ctrl-inline]>a[tag="A"][disabled],
 [bullfinch] div[ctrl-inline]>[bool-state][disabled],
-[bullfinch] div[ctrl-inline]>[bool2][disabled]
+[bullfinch] div[ctrl-inline]>[bool2][disabled],
+[bullfinch] div[ctrl-inline]>[value-only]
 {
   background:transparent;
   cursor:default;
@@ -816,7 +820,8 @@ body[bullfinch]
   box-shadow: none;
   border:1px solid rgba(0,0,0,0.1);
 }
-[bullfinch] a[tag="A"]:empty:before
+[bullfinch] a[tag="A"]:empty:before,
+[bullfinch] [value-only]:empty:before
 {
   content:"\00a0";
 }
@@ -838,7 +843,8 @@ body[bullfinch]
 [bullfinch] div[ctrl-inline]>textarea[tag],
 [bullfinch] div[ctrl-inline]>a[tag="A"],
 [bullfinch] div[ctrl-inline]>[bool2],
-[bullfinch] div[ctrl-inline]>[bool-state]
+[bullfinch] div[ctrl-inline]>[bool-state],
+[bullfinch] div[ctrl-inline]>[value-only]
 {
   border:1px solid transparent;
   box-shadow:none;
@@ -870,11 +876,16 @@ body[bullfinch]
 
 [bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>input[tag],
 [bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>textarea[tag],
-[bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>a[tag="A"]
+[bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>a[tag="A"],
+[bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>[value-only]
 {
   border:1px solid rgba(0,0,0,0.1);
 }
 
+/*[bullfinch] [value-only]
+{
+  display:inline-block;
+}*/
 [bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>label
 {
   /*display:block;*/
@@ -908,7 +919,8 @@ body[bullfinch]
 [bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"]:empty~label,
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty~label,
-[bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label
+[bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label,
+[bullfinch] tr>td>div[ctrl-inline]>[value-only]:empty~label
 {
   font-size:14pt;
   top:0;
@@ -980,6 +992,7 @@ body[bullfinch]
 [bullfinch] tr>td>div[ctrl-inline]>input[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]~label,
+[bullfinch] tr>td>div[ctrl-inline]>[value-only]~label,
 [mctl][bullfinch] tr>td>div[ctrl-inline]>label,
 [mc-ctrl="DL"][bullfinch] tr>td>div[ctrl-inline]>label
 /*,[bullfinch] table[main][grouped]>tbody>tr>td>div[ctrl-inline]>label*/
@@ -992,6 +1005,7 @@ body[bullfinch]
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label,
+[bullfinch] tr>td>div[ctrl-inline]>[value-only]:empty~label,
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]:focus~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty:focus~label
 {
@@ -999,7 +1013,8 @@ body[bullfinch]
 }
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty~label,
-[bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label
+[bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label,
+[bullfinch] tr>td>div[ctrl-inline]>[value-only]:empty~label
 {
   color:rgba(0,0,0,0.2);
 }

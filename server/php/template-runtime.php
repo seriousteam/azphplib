@@ -239,7 +239,7 @@ class uiField {
 		if($name)
 			return str_replace('.','__',$name);
 		else
-			return 'a___gen'.(uiField::$a_num++);		
+			return 'gen'.(uiField::$a_num++).'__'; //specially for name_of_field_in_nv to return empty string 	
 	}
 	function __ToString() {
 		if($this->name)
@@ -296,7 +296,7 @@ function get_ce(&$ce, $params) {
 				*/
 				$cenode = @$ce[ $select_alias ];
 				if($cenode) {
-					$cenode->sections[ $section ][] = new uiField( $cenode->table, $path );	
+					$cenode->sections[ $section ][] = new uiField( $cenode->table, $path, $caption );	
 				}						
 			}				
 		}		
@@ -1140,7 +1140,7 @@ function get_filter_control($f)
 	}
 	return $descr;
 }
-function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
+function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
 	global $Tables;
 	
@@ -1150,7 +1150,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
 	$rel_target = '';
 	$table_name = '';
 
-	if($value instanceof namedString) {
+	if($name && $value instanceof namedString) {
 		
 		$table = $Tables->{$value->container->getName()};
 		$table_name = $table->___name;
@@ -1166,7 +1166,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
 			$vtype = $f->getControlType();			
 		}
 
-		$readonly = $f->readonly || $readonly;		
+		$read_only = $f->readonly || $read_only;		
 			
 		if(@$value->rel_target || $f->target) {
 			$rel_target = file_URI('//az/server/php/chooser2.php', 
@@ -1207,12 +1207,13 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
 		$size = $f->size;
 		$precision = $f->precision;
 	}
-
-	$template = default_templated_editor($vtype);
-
+	if(!$name) {//field doesn't exist
+		$value_only = true;
+	}
+	
 	$value = htmlspecialchars( $value );
 
-	$disabled = $readonly ? 'disabled' : '';
+	$disabled = $read_only ? 'disabled' : '';
 
 	switch($vtype) {
 		case 'DECIMAL':
@@ -1222,13 +1223,15 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $readonly = false)
 		case 'DATE':
 			$value = ru_date(substr($value,0,16));
 			break;
+		default:
 	}
+
+	$template = $value_only ? '<span value-only $attrs>$value</span>' : default_templated_editor($vtype);
 	
 	/*
 	$EXPR = new templated_editors_helper(
 		compact('value', 'name', 'rel_target', 'attrs', 'attrs2', 'size', 'precision', 'table_name')
-	);*/
-	
+	);*/	
 
 	eval("echo \"".str_replace(['\\', '"'],['\\\\', '\\"'], $template)."\";");
 }

@@ -415,6 +415,8 @@ if(@$lu[1]) $LOCALIZED_URI = $lu[0] . '?' . str_replace('/', '%4F', $lu[1]);
 
 function our_URI($uri) {
 	global $G_ENV_URI_PREFIX;
+	if($G_ENV_URI_PREFIX==='/') 
+		return $uri;
 	return $G_ENV_URI_PREFIX . $uri; //$uri is 'absolute'
 }
 $a_lib_map = array();

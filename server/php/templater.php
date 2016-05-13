@@ -697,11 +697,11 @@ EEE;
 						);
 					}
 					if($cmd_part && 
-						preg_match('/^e:(ro:|RO:)?([a-zA-Z0-9+-]*)(?:\s+(.*))?$/s'
+						preg_match('/^(e|v):(ro:|RO:)?([a-zA-Z0-9+-]*)(?:\s+(.*))?$/s'
 							, end($cmd_part), $mend )) {						
 						array_pop ($cmd_part);
-						$cmd_part[] = "output_editor2('$mend[2]', '".count($strings)."','".(count($strings)+1)."',".(@$mend[1]?'true':'false').")";
-						$mend = explode('>:<', @$mend[3]);
+						$cmd_part[] = "output_editor2('$mend[3]', '".count($strings)."','".(count($strings)+1)."',".(@$mend[2]?'true':'false').",".($mend[1]=='e'?'false':'true').")";
+						$mend = explode('>:<', @$mend[4]);
 						$mend[0] = preg_replace_callback("/'(\d+)'/", 
 							function($m) use(&$strings) { return $strings[(int)$m[1]];}
 							,@$mend[0]);

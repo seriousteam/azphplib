@@ -282,7 +282,7 @@ ST;
 }
 //DEFAULT FIELDSET
 foreach($ui_view as $f) {
-	if($ui->chooser) $edit = '';
+	if($ui->chooser) $edit = "~v: ";
 	if($ui->tabler) $edit = "~e: style='min-width:{$f->min_width()}em'";
 	if($ui->grouped) $edit = "~e:RO: style='min-width:{$f->min_width()}em'";
 	echo <<<ST
