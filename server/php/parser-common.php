@@ -76,7 +76,7 @@ class _PreCmd {
     $cmd = trim($cmd);
     if(!$safe_source && strcspn($cmd,_SQL_FORBIDDEN) != strlen($cmd))
       throw new Exception('forbidden symbol in command:'.$cmd);
-      
+	
       // (=ID:text:ID=) ===> escape(text)
     $cmd = preg_replace_callback('/\(=([A-Za-z0-9_]++):(.*?):\1=\)/s',
 	function($m) { return _PreCmd::escape($m[2]); 	}
