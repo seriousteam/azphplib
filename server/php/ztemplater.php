@@ -132,7 +132,7 @@ $functions['_main_']['data'] = function($addr, $cmd, $args = null, $params = nul
 	////////////////////////////////////////////
 	//////////////Template variable/////////////
 	////////////////////////////////////////////
-	$main_query = 'Q1';
+	$main_query = 'Q1';		
 	$query_tree = [
 	'Q1' => [
 		'table' => 'country',
