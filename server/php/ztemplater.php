@@ -132,35 +132,36 @@ $functions['_main_']['data'] = function($addr, $cmd, $args = null, $params = nul
 	////////////////////////////////////////////
 	//////////////Template variable/////////////
 	////////////////////////////////////////////
-	$main_query = 'Q1';
+	$main_query = 'Q1';		
 	$query_tree = [
 	'Q1' => [
-		'table' => 'enrf_stages',
+		'table' => 'country',
 		'select' => [
-			'syrecordidw' => ['alias' => 'a__syrecordidw'],
-			'enf_moneyw' => ['alias' => 'a__enf_moneyw'],
+			'country_id' => ['alias' => 'a__country_id'],
+			'country' => ['alias' => 'a__country'],
 			'Q2' => [
-				'table' => 'enrf_expertises',
+				'table' => 'city',
 				'select' => [
-					'syrecordidw' => ['alias' => 'a__syrecordidw'],
-					'enf_ratew' => ['alias' => 'a__enf_rate'],
-					'enrel_taskw' => ['alias' => 'a__enrel_taskw'],
+					'city_id' => ['alias' => 'a__city_id'],
+					'city' => ['alias' => 'a__city'],
+					'country_id' => ['alias' => 'a__country_id'],
 					'Q3' => [
-						'table' => 'enrf_expertise_items',
+						'table' => 'address',
 						'select' => [
-							'syrecordidw' => ['alias' => 'a__syrecordidw'],
-							'enf_paramw' => ['alias' => 'a__enf_paramw'],
-							'enrel_contw' => ['alias' => 'a__enrel_contw']
+							'address_id' => ['alias' => 'a__address_id'],
+							'address' => ['alias' => 'a__address'],
+							'address2' => ['alias' => 'a__address2'],
+							'city_id' => ['alias' => 'a__city_id']
 						],
-						'from' => 'enrf_expertise_items WHERE enrel_contw=ext.syrecordidw',
-						'ext' => ['Q2.syrecordidw']
+						'from' => 'address WHERE city_id=ext.city_id',
+						'ext' => ['Q2.city_id']
 					]
 				],
-				'from' => 'enrf_expertises WHERE enrel_taskw = ext.syrecordidw',
-				'ext' => ['Q1.syrecordidw']
+				'from' => 'city WHERE country_id=ext.country_id',
+				'ext' => ['Q1.country_id']
 			]
 		],
-		'from' => 'enrf_stages WHERE enf_moneyw IS NOT NULL AND enf_datew IS NOT NULL ORDER BY enf_datew LIMIT 10'		
+		'from' => 'country LIMIT 10'		
 	]	
 	];
 	///////////////////////////////////////////
@@ -194,6 +195,7 @@ $functions['_main_']['data'] = function($addr, $cmd, $args = null, $params = nul
 	//construct query
 	function buildSQL($query, $fields) {
 		$fields = array_map(function($field, $name) {
+			$name = strtolower($name);
 			if(@$field['select']) {
 				$select = buildSQL( $field, $field["select"] );
 				return "( $select ) AS ARRAY $name";
@@ -202,7 +204,7 @@ $functions['_main_']['data'] = function($addr, $cmd, $args = null, $params = nul
 		}, $fields, array_keys($fields) );
 		return 'SELECT '.implode(', ',$fields)." FROM {$query['from']}";
 	};
-
+    
 	$qcmd = merge_queries( buildSQL($query, $fields), 
 		$cmd, $args, $requested_offset, $requested_limit, $page_limit);
 
@@ -221,19 +223,20 @@ $functions['_main_']['data'] = function($addr, $cmd, $args = null, $params = nul
 	//generate data structure	
 	$counters = new stdClass;
 	$statements = new stdClass;
-	function collectSQL($queryname, $fields, &$rowset, &$data,
+	function collectSQL($sqlqueryname, $fields, &$rowset, &$data,
 		&$counters, &$statements, $info = null) {
 		$info = $info ?: @$rowset->exInfo;
 		foreach(
 		with_loop_info($rowset, 
-			$counters->{$queryname}, 
-			$statements->{$queryname} = $info) as $d) {
+			$counters->{$sqlqueryname}, 
+			$statements->{$sqlqueryname} = $info) as $d) {
 			$row = [];
 			foreach($fields as $name=>$field) {
+				$sqlname = strtolower($name);
 				if(@$field['select']) {
-					$row[$name] = [];
-					collectSQL( $name, $field['select'], $d->{$name}, $row[$name], 
-						$counters, $statements, $d->subselect_info($name) );
+					$row[$name] = [];					
+					collectSQL( $sqlname, $field['select'], $d->{$sqlname}, $row[$name], 
+						$counters, $statements, $d->subselect_info($sqlname) );
 				} else {
 					$row[$name] = (string)$d->ns($field['alias']);
 				}
@@ -241,12 +244,13 @@ $functions['_main_']['data'] = function($addr, $cmd, $args = null, $params = nul
 			$data[] = $row;
 		}
 	};
+	$sqlqueryname = strtolower($queryname);
 	$response[ $queryname ] = [];
 	$response[ 'info' ] = [];
+	
+	$rowsets[ $sqlqueryname ] = process_query($qcmd, $args);
 
-	$rowsets[ $queryname ] = process_query($qcmd, $args);
-
-	collectSQL( $queryname, $fields, $rowsets[ $queryname ], $response[ $queryname ], 
+	collectSQL( $sqlqueryname, $fields, $rowsets[ $sqlqueryname ], $response[ $queryname ], 
 		$counters, $statements );	
 	/*
 	PHP
@@ -433,7 +437,7 @@ $functions['_main_']['template'] = function($data, $cmd = null, $args = null, $p
   		}
   		return rez;
   	}
-  	function getAddress(elem, info) {
+  	function getReload(elem, info) {
   		var src = { get : getPath( getClosestQuery(elem) ), pp : getPP(elem,info) };
   		if(!angular.isArray(elem)) {
   			src.pk = getPK(elem,info);
@@ -445,16 +449,28 @@ $functions['_main_']['template'] = function($data, $cmd = null, $args = null, $p
   		return { 
   			src : encodeAddress(src), 
   			ok : function(response) {
+  				/* Structure of response
+				*	{ 
+				*		"info" : [],
+				*		"Q1" : [
+				*			{"f1" : "value1",...},
+				*			...
+				*		]
+				*	}
+  				*/
   				var rawdata = [];
   				for(var i in response.data) {
   					if(i !== 'info') { rawdata = response.data[i] }
   				}
   				if(isQuery(elem)) {
-  					elem.splice(0,elem.length)
-  					for(var i=0;i<rawdata.length;++i) {
-  						elem.push(rawdata[i]);
-  					}
-  					linkQuery(elem.$.name, elem, elem.$.parent_row);
+  					//empty array if empty response
+  					elem.splice(0,elem.length);
+  					if(rawdata.length) {
+  						for(var i=0;i<rawdata.length;++i) {
+	  						elem.push(rawdata[i]);
+	  					}
+	  					linkQuery(elem.$.name, elem, elem.$.parent_row);
+  					}  					
   					return;
   				}
   				if(isRow(elem)) {
@@ -463,12 +479,22 @@ $functions['_main_']['template'] = function($data, $cmd = null, $args = null, $p
   						elem.$.parent_array.splice( idx, 1, rawdata[0]);
   						linkRow(elem.$.parent_array[idx], elem.$.parent_array);
   					} else {
+  					//delete row
   						elem.$.parent_array.splice( idx, 1 );
   					}
   					return;
   				}
   				if(isField(elem)) {
-
+  					if(rawdata.length) {
+  						var name = elem.$.name;
+  						var row = elem.$.parent_row;
+  						row[name] = rawdata[0][name];
+  						linkField(name, row);
+  					} else {
+  					//delete row
+  						var array = elem.$.parent_row.$.parent_array;
+  						array.splice( array.indexOf(elem.$.parent_row), 1 );
+  					}
   				}
   			}
   		};
@@ -484,7 +510,7 @@ var heart = angular.module('heart',['ngResource']);
 heart.controller('main', function($scope, $http, $resource) {
 //var Server = $resource(location.href);
 $scope.reload = function(elem) {
-	var addr = getAddress(elem, $scope.const_info );
+	var addr = getReload(elem, $scope.const_info );
 	$http.get(location.href, { params : addr.src })
 	.then( addr.ok,
 	function(data) {
@@ -503,16 +529,16 @@ $scope.reload = function(elem) {
 }
 //What You Requested Is What You Get WYRIWYG
 $scope.const_info = {
-	"Q1" : { pk : ["syrecordidw"], flat: true },
-	"Q1.Q2" : {	pk : ["syrecordidw"], flat: true },
-	"Q1.Q2.Q3" : { pk : ["syrecordidw"], flat: true },
-	"Q1.syrecordidw" : {},
-	"Q1.enrel_taskw" : {},
-	"Q1.Q2.syrecordidw" : {},
-	"Q1.max" : { src : "Q1" },
-	"Q1.Q2.sum" : { src: "Q1.Q2" },
-	"Q1.rel1.rel2" : { fk : ["pk1","pk2"] },
-	"Q1.rel1" : { fk : ["pk"] }
+	"Q1" : { pk : ["country_id"], flat: true }
+	,"Q1.Q2" : {	pk : ["city_id"], flat: true }
+	,"Q1.Q2.Q3" : { pk : ["address_id"], flat: true }
+	//"Q1.syrecordidw" : {},
+	//"Q1.enrel_taskw" : {},
+	//"Q1.Q2.syrecordidw" : {},
+	//"Q1.max" : { src : "Q1" },
+	//"Q1.Q2.sum" : { src: "Q1.Q2" },
+	//"Q1.rel1.rel2" : { fk : ["pk1","pk2"] },
+	//"Q1.rel1" : { fk : ["pk"] }
 }
 <?php
 	foreach($data as $k=>$v) {
@@ -575,25 +601,21 @@ linkScope(['Q1'], $scope);
 <body ng-app=heart ng-controller=main>
 	<div>Z template instance</div>
 	<div ng-repeat="row in Q1" style="border:1px solid black;padding:0.5em;margin:1em;border-radius:1em">
-		<button ng-click="reload(row.syrecordidw)">reload Q1.row.syrecordidw</button>
-		<button ng-click="reload(row.enf_moneyw)">reload Q1.row.enf_moneyw</button>
-		<button ng-click="reload(row.max)">reload Q1.max</button>
-		{{row.syrecordidw.value}} : {{row.enrel_taskw.value}} : {{row.enf_moneyw.value}}
-		<input ng-model="row.f1.value">
-		<div ng-repeat="row2 in row.Q2" style="border-radius:1em;background:rgba(255,255,0,0.2);padding:0.5em;margin:0.5em;box-shadow:0 0 5px rgba(0,0,0,0.1)">{{row.syrecordidw.value}}-{{row2.syrecordidw.value}}
-			<button ng-click="reload(row2)">subreload</button>
-			<button ng-click="reload(row2.syrecordidw)">subreload syrecordidw</button>
-			<button ng-click="reload(row2.enf_ratew)">subreload enf_ratew</button>
-			<button ng-click="reload(row2.sum)">subreload sum</button>
+		<button ng-click="reload(row.country_id)">row.country_id</button>
+		{{row.country.value}}
+		<input ng-model="row.country.value">
+		<div ng-repeat="row2 in row.Q2" style="border-radius:1em;background:rgba(255,255,0,0.2);padding:0.5em;margin:0.5em;box-shadow:0 0 5px rgba(0,0,0,0.1)">{{row2.city.value}}({{row.country.value}}){{row2.city_id.value}}
+			<button ng-click="reload(row2)">Q2 row reload</button>
+			<button ng-click="reload(row2.city_id)">row2.city_id</button>
 			<div ng-repeat="row3 in row2.Q3" style="padding:0.5em;margin:0.5em;border-radius:1em;background:rgba(0,0,255,0.1)">
-				{{row3.enf_paramw.value}}
-				<button ng-click="reload(row3)">reload Q3.row</button>
-				<button ng-click="reload(row3.enf_paramw)">reload Q3.row.enf_paramw</button>
+				{{row3.address.value}}
+				<button ng-click="reload(row3)">Q3 row reload  </button>
+				<button ng-click="reload(row3.address)">Q3.address</button>
 			</div>
-			<button ng-click="reload(row2.Q3)">subreload Q3</button>
+			<button ng-click="reload(row2.Q3)">Q3 reload </button>
 		</div>
-		<button ng-click="reload(row)">reload Q1.row</button>
-		<button ng-click="reload(row.Q2)">reload Q2</button>
+		<button ng-click="reload(row)">Q1 row reload</button>
+		<button ng-click="reload(row.Q2)">Q2 reload</button>
 	</div>
 	Sum : {{id}}
 	<button type=button ng-click="reload(Q1)">fullreload</button>
