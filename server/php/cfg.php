@@ -415,9 +415,7 @@ if(@$lu[1]) $LOCALIZED_URI = $lu[0] . '?' . str_replace('/', '%4F', $lu[1]);
 
 function our_URI($uri) {
 	global $G_ENV_URI_PREFIX;
-	if($G_ENV_URI_PREFIX==='/') 
-		return $uri;
-	return $G_ENV_URI_PREFIX . $uri; //$uri is 'absolute'
+	return preg_replace('#/+#','/',$G_ENV_URI_PREFIX . $uri);//$uri is 'absolute'
 }
 $a_lib_map = array();
 if($G_ENV_LIB_MAPPING) {
@@ -452,7 +450,7 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 			throw new Exception("File $path in not under docroot $G_P_DOC_ROOT");
 	if($stamp)
 		$path .= '('.filemtime ($path).')';
-		
+	
 	$path = substr($path, strlen($G_P_DOC_ROOT)+1);
 	$path = str_replace('\\','/', $path);
 	return our_URI($path) . $args;	

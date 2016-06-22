@@ -1,0 +1,107 @@
+<?xml version="1.0" ?><!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'><svg id="Layer_1" width="64" height="64" version="1.0" viewBox="-148 -150 300 300" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<style type="text/css">
+.x.axis line {
+	stroke: #aaa;
+	shape-rendering: crispEdges;
+	stroke-width: 2px;
+}
+[bar-border],
+.y.axis line
+{
+	fill: none;
+	stroke: #aaa;
+	shape-rendering: crispEdges;
+	stroke-width: 2px;
+	stroke-dasharray: 2,6;
+}
+.y.axis [y-zero] line
+{
+	stroke-width: 4px;
+	stroke-dasharray: none;
+	stroke: #777;
+}
+.line {
+	fill: none;
+	stroke-width: 7px;
+}
+.axis path {
+	fill: none;
+	stroke: #aaa;
+	stroke-width: 2px;
+}
+
+[chart-type="radar"] .graph .line {
+	stroke-width:1px;
+	fill-opacity:0.4;
+}
+[chart-type="radar"] .circle {
+	fill:none;
+	stroke: #777;
+	stroke-width: 1px;
+	stroke-dasharray: 1,3;
+}
+[chart-type="radar"] .axis line
+{
+	fill: none;
+	stroke: #aaa;
+	shape-rendering: crispEdges;
+	stroke-width: 1px;
+}
+[chart-type="radar"] .axis path
+{
+	fill: none;
+	stroke: #aaa;
+	stroke-width: 1px;
+}
+
+/*"#F70000","#F7A100","#3BD100","#00E5FF","#0080FF","#7A00CC"*/
+[t-color="1"] { color:rgb(206,6,34) }
+[s-color="1"] {	stroke:rgb(206,6,34) }
+[b-color="1"] { background-color:rgb(206,6,34) }
+[f-color="1"] { fill:rgb(206,6,34) }
+[chart-type="radar"] [b-color="1"] 
+{ background-color:rgba(206,6,34, 0.2);border:1px solid rgb(206,6,34); }
+
+[t-color="2"] { color:rgb(246,193,57) }
+[s-color="2"] {	stroke:rgb(246,193,57) }
+[b-color="2"] { background-color:rgb(246,193,57) }
+[f-color="2"] { fill:rgb(246,193,57) }
+[chart-type="radar"] [b-color="2"] 
+{ background-color:rgba(246,193,57, 0.2);border:1px solid rgb(246,193,57); }
+
+[t-color="3"] { color:rgb(221,114,38) }
+[s-color="3"] {	stroke:rgb(221,114,38) }
+[b-color="3"] { background-color:rgb(221,114,38) }
+[f-color="3"] { fill:rgb(221,114,38) }
+[chart-type="radar"] [b-color="3"] 
+{ background-color:rgba(221,114,38, 0.2);border:1px solid rgb(221,114,38); }
+
+[t-color="4"] { color:rgb(119,131,20) }
+[s-color="4"] {	stroke:rgb(119,131,20) }
+[b-color="4"] { background-color:rgb(119,131,20)}
+[f-color="4"] { fill:rgb(119,131,20) }
+[chart-type="radar"] [b-color="4"] 
+{ background-color:rgba(119,131,20, 0.2);border:1px solid rgb(119,131,20); }
+
+[t-color="5"] {	color:rgb(116,197,166) }
+[s-color="5"] {	stroke:rgb(116,197,166) }
+[b-color="5"] { background-color:rgb(116,197,166)}
+[f-color="5"] {	fill:rgb(116,197,166) }
+[chart-type="radar"] [b-color="5"] 
+{ background-color:rgba(116,197,166, 0.2);border:1px solid rgb(116,197,166); }
+
+[t-color="6"] { color:rgb(64,105,162) }
+[s-color="6"] {	stroke:rgb(64,105,162) }
+[b-color="6"] { background-color:rgb(64,105,162)}
+[f-color="6"] { fill:rgb(64,105,162) }
+[chart-type="radar"] [b-color="6"] 
+{ background-color:rgba(64,105,162, 0.2);border:1px solid rgb(64,105,162); }
+
+[t-color="7"] { color:rgb(153,111,174) }
+[s-color="7"] {	stroke:rgb(153,111,174) }
+[b-color="7"] { background-color:rgb(153,111,174)}
+[f-color="7"] { fill:rgb(153,111,174) }
+[chart-type="radar"] [b-color="7"] 
+{ background-color:rgba(153,111,174, 0.2);border:1px solid rgb(153,111,174); }
+</style>
+<g class="chart" chart-type="radar"><g class="axis" transform="rotate(30)"><path class="domain" d="M0,0H0V150H0"></path></g><g class="axis" transform="rotate(90)"><path class="domain" d="M0,0H0V150H0"></path></g><g class="axis" transform="rotate(150)"><path class="domain" d="M0,0H0V150H0"></path></g><g class="axis" transform="rotate(210)"><path class="domain" d="M0,0H0V150H0"></path></g><g class="axis" transform="rotate(270)"><path class="domain" d="M0,0H0V150H0"></path></g><g class="graph"><path class="line" d="M-0.04122985523739716,0.07141220405988168C-0.05468380799907414,0.06502269106505015,-0.06314677828464514,0.02480634456816943,-0.06509977142746921,3.9862113351937244e-18S-0.06781226190361377,-0.08738598654696046,-0.054249809522891004,-0.09396342639458115S0.006546143682428854,-0.057944112943325035,0.025316577777349147,-0.043849598984137865S0.07099491739562337,-0.012966952842452212,0.07088641777657759,-1.3021623694966166e-17S0.04141068793580683,0.03188492268989451,0.024593246983710612,0.04259675329887677S-0.027775902475720184,0.0778017170547132,-0.04122985523739716,0.07141220405988168" s-color="1" f-color="1"></path></g><g class="graph"><path class="line" d="M-68.71642539566193,119.02034009980278C-83.33740005979534,110.60948587637104,-68.35475999884267,30.068296446265975,-65.09977142746921,3.986211335193724e-15S-59.493957776770465,-76.73679822224128,-47.016501586505534,-81.43496954197033S2.64377405074889,-43.5363875628226,18.083269840963673,-31.321142131527047S53.76995187439119,-13.109025543160813,55.913470348259665,-1.0271137873682496e-14S51.06787736167507,38.21931047457454,32.37339300008683,56.07236148954496S-54.09545073152852,127.43119432323452,-68.71642539566193,119.02034009980278" s-color="2" f-color="2"></path></g><g class="graph"><path class="line" d="M-39.78319365012007,68.90651268935952C-69.45729696104624,53.215560115728415,-137.4328507913239,20.671953806807863,-137.4328507913239,8.41533504096453e-15S-64.19560793542102,-62.329072841738835,-39.78319365012007,-68.90651268935952S6.500790841667719,-54.18557588754179,25.316577777349146,-43.84959898413786S80.39369689546423,-22.268392421251797,85.65538592108943,-1.5734639129699014e-14S79.21029155053195,94.27037358747008,60.394504614850526,104.60635049087401S-10.109090339193905,84.59746526299062,-39.78319365012007,68.90651268935952" s-color="3" f-color="3"></path></g><g class="graph"><path class="line" d="M-14.466615872770934,25.05691370522164C-22.412368474350693,16.932272078587786,-14.10495047595166,20.671953806807853,-21.699923809156402,1.3287371117312413e-15S-70.85025123689564,-108.43379405934664,-65.0997714274692,-112.75611167349737S-15.628357460433804,-45.728867512029495,16.636608253686582,-28.815450761004886S147.8047272078467,-12.446959240784615,150,-2.7554552980815446e-14S55.94175258229097,50.40574045510909,31.271760201375322,54.16427751089234S-6.520863271191174,33.18155533185549,-14.466615872770934,25.05691370522164" s-color="4" f-color="4"></path></g><g class="graph"><path class="line" d="M-18.083269840963666,31.32114213152705C-35.081796657247295,24.43005236660126,-83.54470666525215,15.034148223132993,-86.79969523662561,5.314948446924965e-15S-63.32761098305477,-50.677607968810776,-39.78319365012007,-68.90651268935952S46.624311630194725,-131.86200837372886,70.16308698293905,-121.52603147032492S123.68786588482644,-25.119994485474553,117.14197536817537,-2.1518631777065106e-14S46.807603653302756,41.242427113109535,26.5238168719319,45.9405984328386S-1.0847430246800371,38.21223189645284,-18.083269840963666,31.32114213152705" s-color="5" f-color="5"></path></g><g class="axis" transform="rotate(330)"><path class="domain" d="M0,0H0V150H0"></path></g></g></svg>

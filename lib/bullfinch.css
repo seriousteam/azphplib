@@ -46,31 +46,75 @@ body[bullfinch]
 {
   display:none;
 }
-[bullfinch] [qe-start]
+[bullfinch] [qe-start],
+[bullfinch] [d3c-start]
 {
   border:none;
   font-size:12pt;
-  padding:0.1em;
+  padding:0.3em;
   background:transparent;
   vertical-align:middle;
-  margin-top:0.5em;
-  margin-bottom:0.5em;
-  margin-right:0.7em;
+  margin:0.25em;
+  margin-left:0;
+  border-radius:100%;
+  box-shadow:0 0 0.3em rgba(0,0,0,0.2);
 }
-[bullfinch] [qe-start]:after
+[bullfinch] [d3c-start]
+{
+  margin-right:0.5em;
+}
+[bullfinch] [qe-start]:after,
+[bullfinch] [d3c-start]:after
 {
   content:"";
   display:inline-block;
-  width:3em;
-  height:3em;
-  background-size:100% 100%;
-  background-image: url("res/bf-menu-qe.svg");
+  width:2.5em;
+  height:2.5em;
   position:relative;
 }
+[bullfinch] [qe-start]:after
+{
+  background-size:100% 100%;
+  background-image: url("res/bf-menu-qe.svg");
+}
+[bullfinch] [d3c-start]:after
+{
+  background-size:100% 100%;
+  background-image: url("res/bf-d3c-line.svg");
+}
+
 [mctl][bullfinch] [qe-start],
-[subtable][bullfinch] [qe-start]
+[subtable][bullfinch] [qe-start],
+[mctl][bullfinch] [d3c-start],
+[subtable][bullfinch] [d3c-start]
 {
   display:none;
+}
+[bullfinch] [d3c-start]
+{
+
+}
+[bullfinch] [message]
+{
+  display:block;
+  border-radius:0.5em;
+  padding:1em;
+  margin:0.5em;
+  /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#fefcea+0,f1da36+100&0.61+0,0.16+100;Gold+3D */
+  background: -moz-linear-gradient(top,  rgba(254,252,234,0.61) 0%, rgba(241,218,54,0.16) 100%); /* FF3.6-15 */
+  background: -webkit-linear-gradient(top,  rgba(254,252,234,0.61) 0%,rgba(241,218,54,0.16) 100%); /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to bottom,  rgba(254,252,234,0.61) 0%,rgba(241,218,54,0.16) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#9cfefcea', endColorstr='#29f1da36',GradientType=0 ); /* IE6-9 */
+  border:none;
+  box-shadow:0 0 0.25em #ccc;
+}
+[bullfinch] [message][no-data]:before
+{
+  content:'Нет подходящих данных для отображения';
+}
+[bullfinch] [message][type-not-supported]:before
+{
+  content:'Неизвестный тип графика';
 }
 
 [subtable][bullfinch]>[filtred]>table>tfoot>[if_no_rows]
@@ -108,8 +152,10 @@ body[bullfinch]
   line-height:1em;
   padding:0.8em;
   padding-left:1.8em;
-  border:1px solid rgba(0,0,0,0.2);
-  border-radius:0.5em;
+  padding-bottom:0.5em;
+  border:1px solid transparent;
+  box-shadow:0 0 0.25em rgba(0,0,0,0.2);
+  border-radius:2em;
   display:block;
   min-width:20em;
   width:100%;
@@ -117,28 +163,29 @@ body[bullfinch]
   background:url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjxzdmcgaGVpZ2h0PSIzMnB4IiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMycHgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6c2tldGNoPSJodHRwOi8vd3d3LmJvaGVtaWFuY29kaW5nLmNvbS9za2V0Y2gvbnMiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48dGl0bGUvPjxkZXNjLz48ZGVmcy8+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSI+PGcgZmlsbD0iIzkyOTI5MiIgaWQ9Imljb24tMTExLXNlYXJjaCI+PHBhdGggZD0iTTE5LjQyNzExNjQsMjAuNDI3MTE2NCBDMTguMDM3MjQ5NSwyMS40MTc0ODAzIDE2LjMzNjY1MjIsMjIgMTQuNSwyMiBDOS44MDU1NzkzOSwyMiA2LDE4LjE5NDQyMDYgNiwxMy41IEM2LDguODA1NTc5MzkgOS44MDU1NzkzOSw1IDE0LjUsNSBDMTkuMTk0NDIwNiw1IDIzLDguODA1NTc5MzkgMjMsMTMuNSBDMjMsMTUuODQ3MjEwMyAyMi4wNDg2MDUyLDE3Ljk3MjIxMDMgMjAuNTEwNDA3NywxOS41MTA0MDc3IEwyNi41MDc3NzM2LDI1LjUwNzc3MzYgQzI2Ljc4MjgyOCwyNS43ODI4MjggMjYuNzc2MTQyNCwyNi4yMjM4NTc2IDI2LjUsMjYuNSBDMjYuMjIxOTMyNCwyNi43NzgwNjc2IDI1Ljc3OTYyMjcsMjYuNzc5NjIyNyAyNS41MDc3NzM2LDI2LjUwNzc3MzYgTDE5LjQyNzExNjQsMjAuNDI3MTE2NCBMMTkuNDI3MTE2NCwyMC40MjcxMTY0IFogTTE0LjUsMjEgQzE4LjY0MjEzNTgsMjEgMjIsMTcuNjQyMTM1OCAyMiwxMy41IEMyMiw5LjM1Nzg2NDE3IDE4LjY0MjEzNTgsNiAxNC41LDYgQzEwLjM1Nzg2NDIsNiA3LDkuMzU3ODY0MTcgNywxMy41IEM3LDE3LjY0MjEzNTggMTAuMzU3ODY0MiwyMSAxNC41LDIxIEwxNC41LDIxIFoiIGlkPSJzZWFyY2giLz48L2c+PC9nPjwvc3ZnPg==") no-repeat;
   background-position:left center;
 }
-[mctl][bullfinch]>[edit-panel]>[filter_def]>input
+[mctl][bullfinch]>[edit-panel]>[filter_def]>input,
+[subtable][bullfinch]>[edit-panel]>[filter_def]>input,
+[mc-ctrl="DL"][bullfinch]>[edit-panel]>[filter_def]>input
 {
   border:1px solid transparent;
+  box-shadow:none;
+  padding-bottom:0.8em;
 }
-[subtable][bullfinch]>[edit-panel]>[filter_def]>input
-{
-  border:1px solid transparent;
-}
+
 [bullfinch]>[edit-panel]>[filter_def]>input:focus
 {
   outline:none;
   box-shadow: 0 0 16px rgba(0,170,255,0.7);
   border:1px solid transparent;
 }
-[mctl][bullfinch]>[edit-panel]>[filter_def]>input:focus
-{
-  box-shadow: none;
-}
+[mctl][bullfinch]>[edit-panel]>[filter_def]>input:focus,
+[mc-ctrl="DL"][bullfinch]>[edit-panel]>[filter_def]>input:focus,
 [subtable][bullfinch]>[edit-panel]>[filter_def]>input:focus
 {
-  box-shadow: none;
+  outline:none;
+  box-shadow:none;
 }
+
 [bullfinch]>[edit-panel]>[filter_def]>[filter-hints]
 {
   margin-bottom:-1em;
@@ -648,6 +695,10 @@ body[bullfinch]
 {
   margin-bottom:2em;
 }
+[bullfinch] [chart-source-hidden]+[table-control]
+{
+  display:none;
+}
 [subtable][bullfinch] [table-control] 
 {
   margin-bottom:0;
@@ -820,10 +871,15 @@ body[bullfinch]
   box-shadow: none;
   border:1px solid rgba(0,0,0,0.1);
 }
-[bullfinch] a[tag="A"]:empty:before,
-[bullfinch] [value-only]:empty:before
+[bullfinch] a[tag="A"]:empty:before
 {
   content:"\00a0";
+}
+[bullfinch] [value-only]:empty:before
+{
+  
+  content:"—";
+  color:rgba(0,0,0,0.1);
 }
 [bullfinch] div[ctrl-container]>input[tag],
 [bullfinch] div[ctrl-container]>textarea[tag],
@@ -1008,12 +1064,13 @@ body[bullfinch]
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label,
-[bullfinch] tr>td>div[ctrl-inline]>[value-only]:empty~label,
+/*[bullfinch] tr>td>div[ctrl-inline]>[value-only]:empty~label,*/
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]:focus~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty:focus~label
 {
   display:block;
 }
+
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]~label,
 [bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty~label,
 [bullfinch] tr>td>div[ctrl-inline]>a[tag="A"]:empty~label,
@@ -1041,6 +1098,7 @@ body[bullfinch]
 {
   opacity:1;
 }
+[bullfinch] textarea {resize: none}
 
 /* INPUT BUTTON BUTTON PLACEMENT */
 

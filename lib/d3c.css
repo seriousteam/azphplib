@@ -2,14 +2,15 @@ svg
 {
 	display:block;
 	margin:1em;
+	margin-bottom:0.25em;
 }
 .chart {
-	font: 12px sans-serif;
+	font: 12pt sans-serif;
 }
 
 .x.axis line {
 	stroke: #aaa;
-	shape-rendering: crispEdges;
+	/*shape-rendering: crispEdges;*/
 	stroke-width: 2px;
 }
 [bar-border],
@@ -17,9 +18,9 @@ svg
 {
 	fill: none;
 	stroke: #aaa;
-	shape-rendering: crispEdges;
+	/*shape-rendering: crispEdges;*/
 	stroke-width: 2px;
-	stroke-dasharray: 2,6;
+	stroke-dasharray: 2,4;
 }
 .y.axis [y-zero] line
 {
@@ -35,6 +36,18 @@ svg
 	fill: none;
 	stroke: #aaa;
 	stroke-width: 2px;
+}
+.chart .axis.x .tick text,
+.chart[chart-type="radar"] [axis-name] text 
+{
+	text-shadow: 0 0 5px black;
+    fill: white;
+    font-weight: bold;
+}
+.chart .axis.y .tick text
+{
+	/*text-shadow: 0 0 5px black;
+    fill: white;*/
 }
 
 [chart-type="radar"] .graph .line {
@@ -114,6 +127,8 @@ svg
 [legend]
 {
 	display:inline-block;
+	text-align:center;
+	margin-top:0.25em;
 }
 [legend][chart-type="radar"],
 [legend][chart-type="bar"]
@@ -124,8 +139,10 @@ svg
 {
 	font-family:sans-serif;
 	display:inline-block;
-	margin:0.5em;
+	margin:0.25em;
 	margin-right:1em;
+	margin-top:0.25em;
+	padding:0;
 	vertical-align:middle;
 }
 [description] [color-spot]
@@ -136,19 +153,129 @@ svg
 	height:1.5em;
 	vertical-align:middle;
 	margin-right:0.2em;
-	cursor:pointer;
+	padding:0;
 }
 
-[description][xaxis-name] [color-spot] { 
-	border:0.2em solid black;
+[description][string-column] [color-spot] { 
+	border:0.1em solid black;
 }
 [description] [color-text]
 {
 	display:inline-block;
 	vertical-align:middle;
+	padding:0;
 }
-[description][xaxis-name] 
+[description][string-column] 
 {
-	float:right;
 	color:black;
 }
+[axis-switcher]
+{
+	display:block;
+	font-family:sans-serif;
+	border:1px solid transparent;
+}
+[axis-switcher][opened]
+{
+	padding:0.5em;
+	border:1px solid rgba(0,0,0,0.1);
+	border-left:none;
+	border-right:none;
+}
+[axis-switcher][opened] [axis-name],
+[axis-switcher][opened] [chart-switcher]
+{
+	margin:0.25em;
+}
+[axis-switcher][opened] [axis-name],
+[axis-switcher] [axis-name][current-axis]
+{
+	display:inline-block;
+}
+[axis-switcher] [axis-name][current-axis]
+{
+	float:right;
+}
+[axis-switcher] [axis-name] {
+	display:none;
+	border:none;
+	border-radius:1em;
+	padding:0.25em;
+	padding-left:0.5em;
+	padding-right:0.5em;
+	line-height:1em;
+	vertical-align:middle;
+	cursor:pointer;
+	margin-right:0.25em;
+}
+[axis-switcher] [axis-name],
+[chart-switcher],
+[source-hider]
+{
+	box-shadow:0 0 0.25em rgba(0,0,0,0.2);
+}
+
+[chart-holder]
+{
+	position:relative;
+	display:inline-block;
+}
+
+[chart-switcher],
+[source-hider]
+{
+	display:inline-block;
+	width:1.4em;
+	height:1.4em;
+	padding:0.1em;
+	border:none;
+	border-radius:2em;
+	background:white;
+	float:right;
+	margin-left:0.25em;
+	cursor:pointer;
+	vertical-align:middle;
+}
+
+[chart-switcher]:before,
+[source-hider]:before
+{
+	content:'';
+	width:100%;
+	height:100%;
+	display:inline-block;
+}
+[chart-type="line"][chart-switcher]:before
+{
+	background:url('res/bf-d3c-line.svg');
+	background-size:100% 100%;
+}
+[chart-type="bar"][chart-switcher]:before
+{
+	background:url('res/bf-d3c-bar.svg');
+	background-size:100% 100%;
+}
+[chart-type="radar"][chart-switcher]:before
+{
+	background:url('res/bf-d3c-radar.svg');
+	background-size:100% 100%;
+}
+[source-hider='opened']:before
+{
+	background:url('res/bf-d3c-line.svg');
+	background-size:100% 100%;
+}
+[source-hider='closed']:before
+{
+	background:url('res/bf-d3c-line.svg');
+	background-size:100% 100%;
+}
+[d3c-hide]
+{
+	display:none;
+}
+[chart-place-hidden]
+{
+	display:none;
+}
+

@@ -132,6 +132,7 @@ echo <<<ST
 <title>[[\$UI-:title]]</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 [[LIB]]
+[[CHART]]
 ST;
 if($ui->tabler || $ui->grouped) 
 	echo "\n[[QE]]\n";
@@ -159,8 +160,10 @@ ST;
 //////////////////////TABLE CONTROL PANEL/////////////////////
 $empty_search = !count($ui_search) ? 'empty-filter' : '';
 echo "\n<div edit-panel $empty_search>";
-if($ui->tabler || $ui->grouped)
+if($ui->tabler || $ui->grouped) {
 	echo "\n<button type=button qe-start qe-root={$ui->table} qe-output=\"B().QS('[edit-view]')\" qe-hide=\"this.parentNode\"></button>";
+	echo "\n<button type=button d3c-start onclick=\"D3C.turn( this.QSattrNext('d3c-row') ) \"></button>";
+}
 
 //we need filter even for paging
 if($ui->grouped)
@@ -175,7 +178,7 @@ $filter_ctrl = count($ui_search) ? "<input filter_ctrl onkeyup='applyFuncFilterT
 }, $ui_search)).'>' : '';
 echo <<<ST
 <div
-	filter_for="this.parentNode.nextElementSibling" 
+	filter_for="this.parentNode.nextElementSibling.nextElementSibling"
 	filter_def="[ EQ(1,1) $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
 	$filter_hint
 	$filter_ctrl
@@ -187,9 +190,17 @@ echo "\n</div>";
 ///////////////////////TABLE////////////////////////
 $mode = $ui->grouped ? 'grouped' : '';
 echo <<<ST
+<div chart-place></div>
 <div style="clear:both" filtred><!--FILTRED:-->
 [[ob_start();]]
-<table main $mode onrefresh="refreshNoRowStatus(this)">
+<table main $mode onrefresh="refreshNoRowStatus(this);this.__chart__ = this.__chart__ || X.throttle(function() { D3C.setupController(this) },1000);this.__chart__();"
+		d3c-place="this.QSattrPrevious('chart-place')"
+		d3c-row="TBODY>TR[data-row]"
+		d3c-cell="TD>[ctrl-inline]>TEXTAREA, TD>[ctrl-inline]>INPUT, TD>[ctrl-inline]>SPAN[value-only], TD>[ctrl-inline]>A[tag]"
+		d3c-head="TBODY>TR[data-row]:first-child>TD>[ctrl-inline]>LABEL"
+		d3c-disabled
+		-d3c-hide
+>
 ST;
 
 //////////////////////TABLE HEAD//////////////////
@@ -212,7 +223,7 @@ if(count($ui_view)>1) {
 ////////////////////TABLE BODY/////////////////////
 echo <<<ST
 <tbody>
-	<tr>
+	<tr data-row>
 	[[@tr \$data : SAMPLE AND SELECT *, $used_fields FROM {$ui->table}]]
 	[[cmd@tr \$data.{CMD {$ui->cmd_key}}]]
 ST;
@@ -270,7 +281,8 @@ ST;
 //EXTRA COLUMNS AT BEGIN
 if($ui->tabler || $ui->grouped) {
 	if($ui->tabler) $edit = "~e: style='min-width:{\$left->min_width()}em'";
-	if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$left->min_width()}em'";
+	//if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$left->min_width()}em'";
+	if($ui->grouped) $edit = "~v: ";
 	echo <<<ST
 	<td>[[@td \$data.{CE left}]]
 		<div ctrl-inline>
@@ -282,9 +294,9 @@ ST;
 }
 //DEFAULT FIELDSET
 foreach($ui_view as $f) {
-	if($ui->chooser) $edit = "~v: ";
+	if($ui->chooser || $ui->grouped) $edit = "~v: ";
 	if($ui->tabler) $edit = "~e: style='min-width:{$f->min_width()}em'";
-	if($ui->grouped) $edit = "~e:RO: style='min-width:{$f->min_width()}em'";
+	//if($ui->grouped) $edit = "~e:RO: style='min-width:{$f->min_width()}em'";
 	echo <<<ST
 	<td>
 		<div ctrl-inline>
@@ -297,7 +309,8 @@ ST;
 //EXTRA COLUMNS AT END
 if($ui->tabler || $ui->grouped) {
 	if($ui->tabler) $edit = "~e: style='min-width:{\$right->min_width()}em'";
-	if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$right->min_width()}em'";
+	if($ui->grouped) $edit = "~v: ";
+	//if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$right->min_width()}em'";
 	echo <<<ST
 	<td>[[@td \$data.{CE right}]]
 		<div ctrl-inline>
