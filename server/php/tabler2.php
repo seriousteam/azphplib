@@ -199,7 +199,7 @@ echo <<<ST
 		d3c-cell="TD>[ctrl-inline]>TEXTAREA, TD>[ctrl-inline]>INPUT, TD>[ctrl-inline]>SPAN[value-only], TD>[ctrl-inline]>A[tag]"
 		d3c-head="TBODY>TR[data-row]:first-child>TD>[ctrl-inline]>LABEL"
 		d3c-disabled
-		-d3c-hide
+		d3c-hide
 >
 ST;
 

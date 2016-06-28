@@ -695,6 +695,10 @@ body[bullfinch]
 {
   margin-bottom:2em;
 }
+[bullfinch] [d3c-hide][d3c-handled]+[table-control]
+{
+  display:none;
+}
 [bullfinch] [chart-source-hidden]+[table-control]
 {
   display:none;

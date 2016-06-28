@@ -262,18 +262,19 @@ svg
 }
 [source-hider='opened']:before
 {
-	background:url('res/bf-d3c-line.svg');
+	background:url('res/bf-d3c-show.svg');
 	background-size:100% 100%;
 }
 [source-hider='closed']:before
 {
-	background:url('res/bf-d3c-line.svg');
+	background:url('res/bf-d3c-hide.svg');
 	background-size:100% 100%;
 }
-[d3c-hide]
+[d3c-hide][d3c-handled]
 {
 	display:none;
 }
+
 [chart-place-hidden]
 {
 	display:none;
