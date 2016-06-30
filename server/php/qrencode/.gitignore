@@ -1,0 +1,3 @@
+phpqrcode/cache/*
+phpqrcode/temp/*
+phpqrcode/*.txt

@@ -1,3 +1,4 @@
 *.orig
 server/php/forwarder/frez/*
 !server/php/forwarder/frez/empty.file
+*.DS_Store
