@@ -235,11 +235,14 @@ if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
 
 FUNC;
+	$selects = []; //varname => select definition
+	//$select->fields = []; //expression => alias
 	$main_select_alias = null;
 	$text = preg_replace_callback('/\[\[MAIN\s+(.*?)\]\]/si', 
-		function($m) use(&$main_select_alias) {
+		function($m) use(&$selects, &$main_select_alias) {
 			$main_select_alias = $m[1];
-			return '';
+			if($main_select_alias === '-') $selects[$main_select_alias] = '-';
+			return "";
 		}
 	, $text);
 	$text = preg_replace_callback('/\[\[PROLOG\s+(.*?)\]\]/si', 
@@ -414,9 +417,6 @@ ST;
 	$text = preg_replace("/\[\[\s*+(CALL|REF)\s*+:(:.*?)?\]\]\s*+\[\[ZONE:($RE_ID)\]\]/si",
 			'[[$1 $3::$2]]',
 			$text);
-
-	$selects = []; //varname => select definition
-	//$select->fields = []; //expression => alias
 
 	preg_match_all("/\[\[\s*+\\\$($RE_ID)(?:\s++of\s++\\$($RE_ID))?\s*+:(.*?)(?:~:(.*?))?\]\]/si", $text, $m);
 	foreach($m[1] as $i=>$s) {
@@ -869,13 +869,15 @@ EEE;
 		$fields = array_merge($fields, 
 			array_map(function($a,$b) { return "( $b->select ) AS ARRAY $a"; }
 			,array_keys($s->arrays), array_values($s->arrays)
-		));			
-		$parsed = new parsedCommandSmart($SELECT_STRUCT, $s->select);
-		if(preg_match("/^\s*($RE_ID)(\s|$)/",$parsed->FROM, $m)) {
-			$alias = key($selects);
-			echo "\n\t\$ce['$alias'] = new ceNode('{$m[1]}','$alias');";
-			$fields[] = "%%CE$alias%%";
-		}		
+		));
+		if(key($selects) === array_keys($selects)[0]) {//take first select as 'MAIN'	
+			$parsed = new parsedCommandSmart($SELECT_STRUCT, $s->select);
+			if(preg_match("/^\s*($RE_ID)(\s|$)/",$parsed->FROM, $m)) {
+				$alias = key($selects);
+				echo "\n\t\$ce['$alias'] = new ceNode('{$m[1]}','$alias');";
+				$fields[] = "%%CE$alias%%";
+			}
+		}
 		$fields = implode(', ', $fields);
 		$s->select = preg_replace('/(^SELECT\s(?:DISTINCT\s)?|\sSELECT\s(?:DISTINCT\s)?|,|^)\s*\*\s*(?=,|FROM\s|$)/', "$1 $fields ", $s->select);
 		prev($selects);

@@ -551,15 +551,25 @@ body[bullfinch]
   margin-right:0;
   float:right;
 }
-[bullfinch] button[del]:before
+
+[bullfinch] button[del]:after
 {
-  content:'Удалить запись';
   white-space:nowrap;
 }
-[subtable][bullfinch] button[del]:before
-{
-  content:'Убрать';
+[bullfinch] button[del]:empty:after {
+  content: "×";
 }
+[bullfinch] button[del]>[sublevel]
+{
+  display: none;
+}
+[subtable][bullfinch] button[del]>[toplevel] {
+  display: none;
+}
+[subtable][bullfinch] button[del]>[sublevel] {
+  display: inline-block;
+}
+
 [subtable][bullfinch] tr>td>button[del]
 {
   color: black;
@@ -849,6 +859,23 @@ body[bullfinch]
 {
   outline:none;
   box-shadow: 0 0 16px rgba(0,170,255,0.7);
+  border:1px solid rgba(0,0,0,0);
+}
+[bullfinch] div[ctrl-container]>input[tag][error="Y"],
+[bullfinch] div[ctrl-container]>textarea[tag][error="Y"]
+[bullfinch] div[ctrl-container]>a[tag="A"][error="Y"],
+[bullfinch] div[ctrl-inline]>input[tag][error="Y"],
+[bullfinch] div[ctrl-inline]>textarea[tag][error="Y"],
+[bullfinch] div[ctrl-inline]>a[tag="A"][error="Y"],
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][error="Y"],
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag][error="Y"],
+[bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>a[tag="A"][error="Y"],
+[bullfinch] [joined_with_next_row] div[ctrl-inline]>input[tag][error="Y"],
+[bullfinch] [joined_with_next_row] div[ctrl-inline]>textarea[tag][error="Y"],
+[bullfinch] [joined_with_next_row] div[ctrl-inline]>a[tag="A"][error="Y"]
+{
+  outline:none;
+  box-shadow: 0 0 16px rgba(255,25,25,0.7);
   border:1px solid rgba(0,0,0,0);
 }
 [bullfinch] div[ctrl-container]>input[tag][disabled],

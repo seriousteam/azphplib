@@ -81,6 +81,8 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 		'POSITION' => [ 'mssql' => 'CHARINDEX', 'pgsql' => 'POSITION$1$2 IN $4$5', 'oracle' => 'INSTRC$1$4$3$2$5', 'mysql' => 'POSITION$1$2 IN $4$5'],
 		'SUBSTRING' => [ 'pgsql' => 'SUBSTR', 'oracle' => 'SUBSTR', 'mssql' => 'SUBSTRING', 'mysql' => 'SUBSTRING' ],
 		'LENGTH' => [ 'pgsql' => 'LENGTH', 'oracle' => 'LENGTHC', 'mssql' => "LEN$1REPLACE($2,' ','_')$3", 'mysql' => 'CHAR_LENGTH' ],
+
+		'CONCAT_WS' => [ 'pgsql' => 'CONCAT_WS$1\' \', $2$3$4$5' ],
 		
 		'TO_DATE' => [ 'pgsql' => '$1$2$3::date', 
 				'oracle' => 'TRUNC$1$2$3', 
@@ -155,7 +157,7 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				],
 		'XSESSION_([A-Z_0-9]+)()' =>
 				[
-				'pgsql' => "(SELECT val FROM svar_x_$1)",
+				'pgsql' => "current_setting('svar_x.$1')",
 				'oracle' => "XSESSION!",
 				'mssql' => "(SELECT val FROM #svar_x_$1)",
 				'mysql' => "XSESSION!",
@@ -540,14 +542,8 @@ function setDbSessionVar($name, $value, $args = [], $for_table = '') {
 				//	echo "!!!$r!!!";
 			break;
 			case  'pgsql': 
-				$dbh->exec("DROP TABLE IF EXISTS $tname");
-				$dbh->exec("CREATE TEMPORARY TABLE $tname AS $value");
-				//$s->execute($args);
-				//echo $s->rowCount(), '-', $s->queryString;
-				//$s = $dbh->prepare("SELECT val FROM $tname");
-				//$s->execute([]);
-				//while($r = $s->fetchColumn())
-					//echo "!!!$r!!!";
+				$s = $dbh->prepare("select set_config('svar_x.$name', ($value)::text, false)");				
+				$s->execute($args);				
 			break;
 		}
 	}

@@ -469,7 +469,7 @@ function seqCookie() {
 }
 
 function tabler_ref($table, $link = "") {
-	return file_URI('//az/server/php/tabler.php', [ 'table' => $table, 'link' => $link ]);
+	return file_URI('//az/server/php/tabler2.php', [ 'table' => $table, 'link' => $link ]);
 }
 
 function sas_PROC($v, $pname, $proc, $file, $root = '/') {
@@ -1012,6 +1012,7 @@ static $a = [
 	'' => NULL
 	, 'V' => '$value'
 	, 'SPAN' => '<span $attrs $disabled>$value</span>'
+	, 'A' => '<a tag fctl name="$name" $attrs $disabled>$value</a>'
 	, 'NAMED_SPAN' => '<span name="$name" $attrs $disabled>$value</span>'
 	, 'TAG' => '<$name $attrs $disabled>$value</$name>'
 	, 'TAGV' => '<$name $attrs $disabled value="$value" />'
@@ -1103,6 +1104,12 @@ function choose_from($v, $target) {
 	$v->rel_target = $target;
 	return $v;
 }
+
+function with_rid($v, $rid) {
+	$v->rid = $rid;
+	return $v;
+}
+
 
 function name_of_field_in_nv($value)
 {

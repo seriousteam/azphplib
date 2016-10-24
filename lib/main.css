@@ -304,6 +304,9 @@ input[vtype="I"], input[vtype="N"] { text-align: right; }
 [add], [del], [operate] { display: none; }
 [unlocked="Y"][add], [unlocked="Y"][del], [unlocked="Y"][operate] { display: inline; }
 
+[add]:empty:after { content: "+"; }
+[del]:empty:after { content: "×"; }
+
 input[readonly] { border: none; }
 
 [xdata] { display: none; }

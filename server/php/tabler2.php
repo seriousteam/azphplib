@@ -56,6 +56,8 @@ $used_fields[] = $table->ID('a')." AS a__table__id";
 if(!isset($table_fields[$ui->choose_key]))
 	$used_fields[] = "a.{$ui->choose_key} AS a__{$ui->choose_key}";
 
+$ui->required_in_form = '';
+
 foreach($table_fields as $n=>$f) {
 	if($f->type && !$f->hidden && !$f->page && $n != $link) {
 	//view
@@ -65,6 +67,8 @@ foreach($table_fields as $n=>$f) {
 	if(!CHOOSER_MODE && $f->type && !$f->hidden && $f->page && $n != $link) {
 	//form
 		$p = $f->page;
+		if($f->required)
+			$ui->required_in_form = 'required_in_form';
 		$g = (string)$f->ui_group['name'];
 		if( !isset($ui_form[$p]) )
 			$ui_form[$p] = [];
@@ -250,7 +254,7 @@ echo <<<ST
 ST;
 if(count($ui_form)) {
 echo <<<ST
-		<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
+		<button type=button onclick="this.setDN_TR(toggle)" display_next_row expand_form_button></button>
 		<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
 ST;
 	foreach($ui_form as $page) { foreach($page as $grp) {
@@ -275,8 +279,8 @@ ST;
 		}
 		echo "\n</table>\n";
 	}}
-	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del></button></div>';
-}	
+	echo '<button tag type="button" onclick="doDelete(this, \'удалить?\')" del><span toplevel>Удалить запись</span><span sublevel>Убрать</span></button></div>';
+}
 }
 //EXTRA COLUMNS AT BEGIN
 if($ui->tabler || $ui->grouped) {
@@ -322,7 +326,7 @@ ST;
 }
 
 if($ui->tabler && !count($ui_form)) {
-	echo "\n<td><button tag type=\"button\" onclick=\"doDelete(this, 'удалить?')\" del></button>";
+	echo "\n<td><button tag type=\"button\" onclick=\"doDelete(this, 'удалить?')\" del><span sublevel>Убрать</span></button>";
 }
 echo "\n</tr></tbody>";
 
@@ -342,7 +346,12 @@ if($ui->tabler || $ui->grouped) {
 ST;
 	if($ui->tabler) {
 	echo <<<ST
-	<button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
+	<script>
+	function openExpander(o, row) {
+		o.hasA('required_in_form') && row && row.QS('[expand_form_button]') && row.QS('[expand_form_button]').setDN_TR(toggle);
+	}
+	</script>
+	<button {$ui->required_in_form} type=button onclick="openExpander(this,startAddRow(this))" static add=suspend unlocked=Y
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span></button>
 ST;

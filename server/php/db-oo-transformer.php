@@ -118,10 +118,11 @@ class _XPath {
 			"NULL":
 			(
 			(@$field->type == "FILE" ||
-       @$field->type == "FILES") ?
+				@$field->type == "FILES") 
+			?
 				$this->___node->alias .'.'. $this->___node->table->PK()
 			:
-			$this->___node->alias .'.'. $this->fieldName()
+				$this->___node->alias .'.'. $this->fieldName()
 			)
 	  );
   }
@@ -169,7 +170,7 @@ const _SQL_FUNC_KWD =
   AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|ESCAPE|
   CASE|WHEN|THEN|ELSE|END|NULLIF|
   LOWER|UPPER|POSITION|SUBSTRING|CHAR_LENGTH|CHARACTER_LENGTH|OCTET_LENGTH|LENGTH|
-  TRIM|RTRIM|LTRIM|LEFT|RIGHT|
+  TRIM|RTRIM|LTRIM|LEFT|RIGHT|CONCAT_WS|
   ASC|DESC|COALESCE|
   ABS|SIGN|ROUND|TRUNC|SQRT|EXP|POWER|LN|
   NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|

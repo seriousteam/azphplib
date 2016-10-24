@@ -258,9 +258,10 @@ function Delete($cmd, $key = null) {
 function DoTransaction($f, $table='') {
 	static $level = 0;
 	$c = get_connection($table);
+	$ret = null;
 	if($level++ || $c->beginTransaction()) {
 		try {
-			$f();
+			$ret = $f();
 		} catch(Exception $e) {
 			if(!--$level)
 				$c->rollBack();
@@ -269,6 +270,7 @@ function DoTransaction($f, $table='') {
 		if(!--$level)
 			$c->commit();
 	} else $level = 0;
+	return $ret;
 }
 
 

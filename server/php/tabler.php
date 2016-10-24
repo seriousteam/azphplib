@@ -53,7 +53,7 @@ echo <<<ST
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 [[LIB]]
-<!--link rel="stylesheet" href="/az/lib/bullfinch.css"-->
+<link rel="stylesheet" href="/az/lib/bullfinch.css">
 </head>
 <body>
 
