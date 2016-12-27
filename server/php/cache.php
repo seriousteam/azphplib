@@ -79,7 +79,7 @@ function cached($zone, $key, $fval = null, $fkey = null) {
     $args = $nargs > 4 ? array_slice(func_get_args(), 4) : array();
     array_unshift($args, $key);
     if($fkey) $key = call_user_func_array($fkey, $args);
-    $val = $isfunc? call_user_func_array($fval, $args) : fval;
+    $val = $isfunc? call_user_func_array($fval, $args) : $fval;
   }
   if($cli) 
 	  return $val;

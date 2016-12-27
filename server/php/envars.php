@@ -43,6 +43,11 @@ $G_ENV_LOCAL_ROLES = get_path('roles.ini', $CFG_PATHS);
 $G_ENV_LIB_MAPPING = get_path('lib.map.ini', $CFG_PATHS);
 $G_ENV_MFM_USERS = get_path('mfm.users.ini', $CFG_PATHS);
 
+$G_LIBS_LIST = ['//az/lib/editing3.css', '//az/lib/editing3-ru.css', '//az/lib/choco.js', '//az/lib/editing3.js'];
+
+define('G_ENV_TEMPLATE_INIT', get_path('template.init.php', $CFG_PATHS));
+
+
 //Register Log In
 $RL_CREATE_USER_IN_LINK = 'yes';// 'yes' or 'no'
 $RL_CRYPT_KEY = 'D2fq9No8pzsTb12nTx';

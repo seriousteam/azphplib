@@ -165,21 +165,27 @@ class _XPath {
 //TODO: GREATEST, LEAST
 
 const _SQL_FUNC_KWD =
-  '/^(AS|NULL|CAST|IS|
+  '/^(
+  AS|NULL|CAST|IS|
   SUM|MIN|MAX|AVG|COUNT|SAME|
   AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|ESCAPE|
   CASE|WHEN|THEN|ELSE|END|NULLIF|
   LOWER|UPPER|POSITION|SUBSTRING|CHAR_LENGTH|CHARACTER_LENGTH|OCTET_LENGTH|LENGTH|
-  TRIM|RTRIM|LTRIM|LEFT|RIGHT|CONCAT_WS|
+  TRIM|RTRIM|LTRIM|LEFT|RIGHT|CONCAT|CONCAT_WS|TITLE|
   ASC|DESC|COALESCE|
   ABS|SIGN|ROUND|TRUNC|SQRT|EXP|POWER|LN|
   NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|
   MONTHS_BETWEEN|DAYS_BETWEEN|ADD_DAYS|ADD_MONTHS|PARTS|
   DISTINCT|
+  TO_TSVECTOR|
+  PLAINTO_TSQUERY|
   TRUE|FALSE|
   VARCHAR|CHAR|DECIMAL|INTEGER|DATE|TIMESTAMPTZ|TIMESTAMP|TIME|CLOB|BLOB|
   STRING_TO_INTEGER|
-  XSESSION_[A-Z_0-9]+)$/ix';
+  XSESSION_[A-Z_0-9]+|
+  DBSESSION_[A-Z_0-9]+|
+  DBSESSIONINT_[A-Z_0-9]+
+)$/ix';
 const _SQL_GROUP_KWD = '/^(SUM|MIN|MAX|AVG|COUNT|SAME)$/ix';
 //parts
 $SELECT_STRUCT = [ 'SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'LIMIT' ];
@@ -541,9 +547,13 @@ class _Cmd extends _PreCmd {
 		
 		if(preg_match("/^ext([0-9]*)(?:_($RE_ID))?/", $user_alias, $mi)) {
 			$level = (int)(@$mi[1]?:0);
-			$user_alias = @$mi[2] ?: 'a';
 			if($level + 1 >= count($tree->stack)) $roots = null;
 			else $roots = $tree->stack[$level];
+			if($roots) {
+				reset($roots);//we are using first table of join chain. last element of roots is '-' service member
+				$user_alias = @$mi[2] ?: key($roots);
+			} else
+				$user_alias = @$mi[2] ?: 'a';
 		}
 		//echo "\n^^^^$p in $user_alias ";
 		if(!$roots)

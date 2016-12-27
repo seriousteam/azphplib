@@ -56,7 +56,7 @@ $type_translations_db_to_internal = array(
 
 
 
-function replace_dbspecific_funcs($cmd, $dialect) {
+function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 	static $repl = [
 		'pgsql'=> [[],[]],
 		'oracle'=> [[],[]],
@@ -82,7 +82,9 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 		'SUBSTRING' => [ 'pgsql' => 'SUBSTR', 'oracle' => 'SUBSTR', 'mssql' => 'SUBSTRING', 'mysql' => 'SUBSTRING' ],
 		'LENGTH' => [ 'pgsql' => 'LENGTH', 'oracle' => 'LENGTHC', 'mssql' => "LEN$1REPLACE($2,' ','_')$3", 'mysql' => 'CHAR_LENGTH' ],
 
+		'CONCAT' => [ 'pgsql' => 'CONCAT$1\' \', $2$3$4$5' ],
 		'CONCAT_WS' => [ 'pgsql' => 'CONCAT_WS$1\' \', $2$3$4$5' ],
+		'TITLE' => [ 'pgsql' => '$1SUBSTR($2,1,1)||\'.\'$3' ],
 		
 		'TO_DATE' => [ 'pgsql' => '$1$2$3::date', 
 				'oracle' => 'TRUNC$1$2$3', 
@@ -162,16 +164,30 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				'mssql' => "(SELECT val FROM #svar_x_$1)",
 				'mysql' => "XSESSION!",
 				],
+		'DBSESSION_([A-Z_0-9]+).' =>
+				[
+				'pgsql' => "current_setting('svar_x.$1')",
+				'oracle' => "XSESSION!",
+				'mssql' => "(SELECT val FROM #svar_x_$1)",
+				'mysql' => "XSESSION!",
+				],
+		'DBSESSIONINT_([A-Z_0-9]+).' =>
+				[
+				'pgsql' => "CAST(current_setting('svar_x.$1') AS INTEGER)",
+				'oracle' => "XSESSION!",
+				'mssql' => "(SELECT val FROM #svar_x_$1)",
+				'mysql' => "XSESSION!",
+				],
 		'PARTS' =>
 				[
 				'pgsql' => '$1SELECT REGEXP_SPLIT_TO_TABLE($2, E\'#\')$3'
 				],
 		'SAME' =>
 				[
-				'pgsql' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3",
-				'oracle' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3",
-				'mssql' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3",
-				'mysql' => "$1CASE WHEN MAX($2)=MIN($2) THEN MAX($2) END$3"
+				'pgsql' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) INTERSECT SELECT MAX($2)) END$3",
+				'oracle' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) FROM DUAL INTERSECT SELECT MAX($2) FROM DUAL) END$3",
+				'mssql' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) INTERSECT SELECT MAX($2)) END$3",
+				'mysql' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) INTERSECT SELECT MAX($2)) END$3"
 				]
 	];
 	static $frepl_from = null;
@@ -207,8 +223,9 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 				}
 			}
 	}
+	if($dump) {var_dump($frepl_from['pgsql'][25], $frepl_to['pgsql'][25], (string)$cmd); }
 	$cmd = levelized_process($cmd,
-		function($s, $lvl) use($frepl_from, $frepl_to, $dialect) {
+		function($s, $lvl) use($frepl_from, $frepl_to, $dialect, $dump) {
 			foreach($frepl_from[$dialect] as $k=>$v)
 				$s = preg_replace(
 					is_array($v) ? $v[$lvl] : $v,
@@ -217,6 +234,9 @@ function replace_dbspecific_funcs($cmd, $dialect) {
 			return $s;
 		}
 	);
+	if($dump) {
+		var_dump($cmd); 
+	}
 	return str_replace($repl[$dialect][0], $repl[$dialect][1], (string)$cmd);
 }
 
@@ -527,19 +547,13 @@ function prepareDB(&$db)
 
 function setDbSessionVar($name, $value, $args = [], $for_table = '') {
 	static $created = [];
-	$tname = "svar_x_$name";
 	if(!@$created[$name]) {
 		$dbh = get_connection($for_table);
 		switch($dbh->dialect) {
 			case 'mssql':
+				$tname = "svar_x_$name";
 				$dbh->exec("IF object_id('tempdb..#$tname') IS NOT NULL DROP TABLE #$tname");
 				$s = $dbh->exec("SELECT * INTO #$tname FROM ($value) a");
-				//$s->execute($args);
-				//echo $s->rowCount(), '-', $s->queryString;
-				//$s = $dbh->prepare("SELECT val FROM #$tname");
-				//$s->execute([]);
-				//while($r = $s->fetchColumn())
-				//	echo "!!!$r!!!";
 			break;
 			case  'pgsql': 
 				$s = $dbh->prepare("select set_config('svar_x.$name', ($value)::text, false)");				

@@ -42,6 +42,7 @@ function levelized_process($s, $f) {
   for($lvl = $mlvl; $lvl; --$lvl ) {
     $s = $f($s, $lvl);
   }
+  $s = $f($s, 0);
 
   //echo "\n?????",$s;
 

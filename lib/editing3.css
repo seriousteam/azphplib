@@ -90,7 +90,7 @@ body, html {
 }
 
 [display] { 	display: ""; }
-[display="N"] { display: none; }
+[display="N"] { display: none !important; }
 
 [display_content] > * { display: "";  }
 [display_content="N"] {
@@ -98,9 +98,9 @@ body, html {
 	height: 0;
 	overflow: hidden;
 }
-[display_content="N"] > * { display: none; }
+[display_content="N"] > * { display: none !important; }
 
-[display_next]:after {
+[display_next]:empty:after {
 	content: "...";
 	border: 1px solid;
 	display: inline-block;
@@ -108,7 +108,7 @@ body, html {
 	padding: 0 1ex;
 	box-sizing: content-box;
 }
-[display_next="Y"]:after {
+[display_next="Y"]:empty:after {
 	content: "";
 	border: 0.5em solid;
 	display: inline-block;
@@ -118,10 +118,9 @@ body, html {
 	border-color: transparent transparent black transparent;
 	padding: 0;
 }
-[display_next=""] + * { display: none; }
-[display_next="N"] + * { display: none; }
+[display_next=""] + *, [display_next="N"] + * { display: none !important; }
 
-[display_next_row]:after {
+[display_next_row]:empty:after {
 	content: "...";
 	border: 1px solid;
 	display: inline-block;
@@ -129,7 +128,7 @@ body, html {
 	padding: 0 1ex;
 	box-sizing: content-box;
 }
-[display_next_row="Y"]:after {
+[display_next_row="Y"]:empty:after {
 	content: "";
 	border: 0.5em solid;
 	display: inline-block;
@@ -139,7 +138,7 @@ body, html {
 	border-color: transparent transparent black transparent;
 	padding: 0;
 }
-[display_next_row] + * { display: none; }
+[display_next_row] + * { display: none !important; }
 
 [ctrl_container] { margin-top: 1ex; }
 [ctrl_container] > label { margin-right: 1em; 
@@ -213,7 +212,7 @@ DL[mctl] > DT > INPUT {
 	margin-left: -2em; 
 	margin-top: 4px; 
 }
-button[callmenu]:before { content: "..." }
+button[callmenu]:empty:before { content: "..." }
 button[callmenu][placeholder]:before { content: attr(placeholder) }
 [withmenu] { padding-right: 2em; }
 
@@ -255,9 +254,9 @@ IMG[src=""], [fileref][href=""] {
 	display: inline-block;
 }
 
-[lobload] button:after {
-	content: "Загрузить";
-}
+[lobload] button[open][placeholder]:after { content: attr(placeholder);}
+[lobload] button[open][placeholder=""]:after { content: "Загрузить";}
+[lobload] button[drop]:after { content: attr(drop);}
 
 [xdate], [sample], .sample {
 	display: none
@@ -302,10 +301,12 @@ IMG[src=""], [fileref][href=""] {
 
 input[vtype="I"], input[vtype="N"] { text-align: right; }
 
-[add], [del], [operate] { display: none; }
-[unlocked="Y"][add], [unlocked="Y"][del], [unlocked="Y"][operate] { display: inline; }
+[add], [del], [operate], [lobload] [open], [lobload] [drop] { display: none; }
+[unlocked="Y"][add], [unlocked="Y"][del], [unlocked="Y"][operate], 
+[unlocked="Y"][lobload] [open], [unlocked="Y"][lobload] [drop] { display: inline; }
 
 [add]:empty:after { content: "+"; }
+[add="resume"]:empty:after { content: "✓"; }
 [del]:empty:after { content: "×"; }
 [add][placeholder]:empty:after { content: attr(placeholder); }
 [del][placeholder]:empty:after { content: attr(placeholder); }
@@ -316,7 +317,9 @@ input[readonly] { border: none; }
 
 textarea[content-resizable] { width: 100%; }
 
-pre[tag] { white-space: pre-wrap; }
+pre[tag], pre[cmd] { white-space: pre-wrap; margin:0 }
+
+a[href='javascript:undefined'] { text-decoration: none; }
 
 dfn[tag] { font-style:normal }
 
@@ -398,9 +401,9 @@ dfn[tag][type="radio"][checked]:before {
 
 [next_page][offset=""] { display: none; }
 [prev_page][offset=""], [first_page][offset=""] { display: none; }
-[next_page]:after { content: "⇨"; }
-[prev_page]:after { content: "⇦"; }
-[first_page]:after { content: "⇤"; }
+[next_page]:after { content: "►"; }
+[prev_page]:after { content: "◄"; }
+[first_page]:after { content: "▐◄"; }
 
 ul.echoose > LI { list-style: circle; }
 ul.echoose > LI[checked] { list-style: disc; }
@@ -864,6 +867,9 @@ input[tag][vtype="D"][add_button="table"] +[calendcont]:hover
 
 [no_rows] > * > [if_no_rows] { display: table-row }
 [no_rows] > thead { display: none }
+[no_rows] + *[if_no_rows="block"] { display: block }
+[no_rows] + *[if_no_rows="inline"] { display: inline }
+[no_rows] + *[if_no_rows="inline-block"] { display: inline-block }
 
 [empty_row] { cursor: pointer; }
 [empty_row] > *:before { 
@@ -880,7 +886,7 @@ input[tag][vtype="D"][add_button="table"] +[calendcont]:hover
 
 [tabler] > thead { background: #ccc; }
 
-[del] { border-radius: 1em; }
+[del] { border-radius: 1em; border: 2px solid #ccc; background: white;}
 
 [filelist]
 {

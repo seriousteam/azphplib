@@ -168,7 +168,7 @@ class everything_you_want {
 	    }
 	}
 	function subselect_info($name) { return $this->subselects[$name]; }
-	function ns($name) { return new namedString($name, null, $this); }
+	function ns($name, $key=null) { return new namedString($name, null, $this, null); }
 
 }
 class uiGroup {
@@ -417,10 +417,11 @@ function NVL($v, $def) {
 	return $v === null || $v === ''? $def: $v; 
 }
 function tr($v, $arr = null) {
-	$nv = (string)$v;
 	{
-		$nv = $nv !== null && $nv !== ''?
-			(@$arr[$nv] ?: "?$nv?") : null;
+		$nv = $v === NULL ? 
+				NULL :
+				$arr[(string)$v?:0]
+		;
 		if($v instanceof namedString) {
 			$v->key = (string)$v;
 			$v->value = $nv;
@@ -465,6 +466,11 @@ function URIPart($val, $name) {
 function seqCookie() {
 	$s = @$_COOKIE['seq'] + 1;
 	setcookie('seq', $s);
+	return $s;
+}
+function pageSeqCookie() {
+	static $s = null;
+	if($s === null) $s = seqCookie();
 	return $s;
 }
 
@@ -559,6 +565,10 @@ function CURRENT_URI() {
 //function round
 //function rel_round($v, $decs) {}
 function ru_date($v) { return preg_replace('/^(\s*)(\d\d\d\d)-(\d\d)-(\d\d)/', '$1$4.$3.$2', $v); }
+function to_client_tz($v) { return $v ? 
+		gmdate("Y-m-d H:i:s",strtotime(substr($v,0,19)."GMT") - (@$_COOKIE['client_tzo']?:0)*60)
+		: $v
+	; }
 
 require_once __DIR__."/ru_number.php";
 
@@ -1012,7 +1022,7 @@ static $a = [
 	'' => NULL
 	, 'V' => '$value'
 	, 'SPAN' => '<span $attrs $disabled>$value</span>'
-	, 'A' => '<a tag fctl name="$name" $attrs $disabled>$value</a>'
+	, 'A' => '<a tag fctl name="$name" rid="$rid" $attrs $disabled>$value</a>'
 	, 'NAMED_SPAN' => '<span name="$name" $attrs $disabled>$value</span>'
 	, 'TAG' => '<$name $attrs $disabled>$value</$name>'
 	, 'TAGV' => '<$name $attrs $disabled value="$value" />'
@@ -1026,13 +1036,13 @@ static $a = [
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs $disabled>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs $disabled content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
-	, 'DL' => '<a tag=A fctl name="$name" $attrs>$value</a><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
-	, 'MENU' => '<dfn tag=A fctl name="$name" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$rel_target</menu>'
-	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
-	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs>+</button><menu mctl ref=Y $attrs2 $disabled>$rel_target</menu>'
+	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
+	, 'MENU' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
+	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><menu mctl ref=Y $attrs2 $disabled>$rel_target</menu>'
 	, 'SUBTABLE' =>
 					'<button subtable-show type=button onclick="this.setDN(toggle)" display_next $attrs></button>
-					<div subtable ref=Y $attrs2 $disabled>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %	3F".setURLParam("args[]",findRid(this))</div>
+					<div subtable ref=Y $attrs2 $disabled>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %3F".setURLParam("args[]",findRid(this))</div>
 				'
 	, 'FILE' =>
 		'<span lobload=filer accept="" filetypes="*" $disabled>
@@ -1106,7 +1116,7 @@ function choose_from($v, $target) {
 }
 
 function with_rid($v, $rid) {
-	$v->rid = $rid;
+	$v->key = $rid;
 	return $v;
 }
 
@@ -1147,6 +1157,7 @@ function get_filter_control($f)
 	}
 	return $descr;
 }
+
 function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
 	global $Tables;
@@ -1156,6 +1167,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	$precision = '';
 	$rel_target = '';
 	$table_name = '';
+	$rid = '';
 
 	if($name && $value instanceof namedString) {
 		
@@ -1183,15 +1195,19 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 		}
+
+		$rid = $value->key;
 		
 		if(@$f->values) {
 			global $ModelDB;
 			
-			$value->value = isset($ModelDB[$f->values][(string)$value]) ?
-				$ModelDB[$f->values][(string)$value] : 
-				(@$ModelDB[$f->values]['.'] ?: '')
+			$rid = $value->value; //use untraslated value as rid
+
+			$value->value = $value->value === NULL ? 
+					(@$ModelDB[$f->values]['.'] ?: '') :
+					(@$ModelDB[$f->values][(string)$value?:0] ?: '')
 			;
-			
+	
 			$rel_target = file_URI('//az/server/php/modeldata.php', 
 				[ 'table' => $f->values 
 				  , 'add_empty' => $f->required ? '' : 'Y'
@@ -1219,6 +1235,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	}
 	
 	$value = htmlspecialchars( $value );
+	$rid = htmlspecialchars( $rid );
 
 	$disabled = $read_only ? 'disabled' : '';
 
@@ -1448,3 +1465,7 @@ function make_request($url, $srv = 'http://localhost') {
 		- attribute rowset has adm, period, dt, param, fs, ft, fb fields
 		- adm, period, dt, param is a key
 */
+
+if(__FILE__ != TOPLEVEL_FILE) return;
+
+echo 'loaded';

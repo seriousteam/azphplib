@@ -28,6 +28,7 @@ body[bullfinch]
 {
 	padding:0;
 	font-size:14pt;
+  text-align:left;
 }
 [mctl][bullfinch]>[edit-panel],
 [subtable][bullfinch]>[edit-panel]
@@ -414,7 +415,7 @@ body[bullfinch]
   text-align:center;
   padding:1em;
 }
-[bullfinch] [if_no_rows]>td:after
+[bullfinch] [if_no_rows]>td:empty:after
 {
   content:'Нет записей';
   padding:0;
@@ -477,6 +478,14 @@ body[bullfinch]
 {
 	content:none;
 }
+[bullfinch] [display_next_row] 
+{
+  opacity:0.5;
+}
+[bullfinch] [display_next_row="Y"] 
+{
+  opacity:1;
+}
 [bullfinch] [display_next_row]:before,
 [bullfinch] button[subtable-show]:before,
 [bullfinch] tr[ctrl-group-head]>td>span:before
@@ -502,7 +511,6 @@ body[bullfinch]
   -moz-filter:grayscale(100%);
   -o-filter:grayscale(100%);
   -ms-filter:grayscale(100%);
-	opacity:0.5;
 }
 [bullfinch] button[subtable-show]:before,
 [bullfinch] tr[ctrl-group-head]>td>span:before
@@ -529,7 +537,6 @@ body[bullfinch]
   -moz-filter:grayscale(0%);
   -o-filter:grayscale(0%);
   -ms-filter:grayscale(0%);
-	opacity:1;
 }
 [bullfinch] button[subtable-show][display_next="Y"]:before,
 [bullfinch] [grp-display="Y"]>tbody>tr[ctrl-group-head]>td>span:before
@@ -964,7 +971,8 @@ body[bullfinch]
 [bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>input[tag],
 [bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>textarea[tag],
 [bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>a[tag="A"],
-[bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>[value-only]
+[bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>[value-only],
+[bullfinch] tr[joined_with_next_row]>td>div[ctrl-inline]>[bool-state]
 {
   border:1px solid rgba(0,0,0,0.1);
 }
@@ -1014,6 +1022,7 @@ body[bullfinch]
 {
   font-size:14pt;
   top:0;
+  left:0;
   padding:0.5em;
   border:1px solid transparent;
   color:rgba(0,0,0,0.7);
@@ -1047,10 +1056,12 @@ body[bullfinch]
 [bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>input[tag][value=""]:focus~label,
 [bullfinch] tr[cmd^="-"]>td>div[ctrl-inline]>textarea[tag]:empty:focus~label,
 [bullfinch] tr>td>div[ctrl-inline]>input[tag][value=""]:focus~label,
-[bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty:focus~label
+[bullfinch] tr>td>div[ctrl-inline]>textarea[tag]:empty:focus~label,
+[bullfinch] div[ctrl-container]>[bool-state]~input[tag]~label
 {
   font-size:9pt;
   top:0;
+  left:0;
   border:1px solid transparent;
   z-index:1;
   font-family:sans-serif;
@@ -1086,6 +1097,8 @@ body[bullfinch]
 [mctl][bullfinch] tr>td>div[ctrl-inline]>label,
 [mc-ctrl="DL"][bullfinch] tr>td>div[ctrl-inline]>label
 /*,[bullfinch] table[main][grouped]>tbody>tr>td>div[ctrl-inline]>label*/
+,[bullfinch] tr>td>div[ctrl-inline]>[bool-state]~input[tag]~label
+,[bullfinch] tr>td>div[ctrl-inline]>[bool-state]~input[tag][value=""]~label
 {
   display:none;
 }
@@ -1451,4 +1464,39 @@ body[bullfinch]
 {
   position:absolute;
   left:0;
+}
+[bullfinch] [check-array]>div
+{
+  white-space:nowrap;
+}
+[bullfinch] [check-array] span,
+[bullfinch] [check-array] label
+{
+  vertical-align:middle;
+  display:inline-block;
+}
+[bullfinch] [check-array] label
+{
+  padding:0.5em;
+}
+
+[bullfinch] DL[advice]
+{
+  left:0;
+}
+[bullfinch] DL[advice] [edit-panel]
+{
+  display:none;
+}
+[bullfinch] DL[mctl][advice]
+{
+  box-shadow: 0 1em 2em rgba(0,0,0,0.5);
+  border-top-left-radius:0.1em;
+  border-top-right-radius:0.1em;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+[bullfinch] DL[advice]+input[tag]
+{
+  position:relative;
+  z-index:99999;
 }

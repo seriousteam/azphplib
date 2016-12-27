@@ -52,7 +52,7 @@ if($ui->chooser) {
 $ui_view = [];
 $ui_search = [];
 $ui_form = [];
-$used_fields[] = $table->ID('a')." AS a__table__id";
+$used_fields[] = "a._id_ AS a__table__id";
 if(!isset($table_fields[$ui->choose_key]))
 	$used_fields[] = "a.{$ui->choose_key} AS a__{$ui->choose_key}";
 
@@ -115,6 +115,8 @@ echo <<<ST
 	global \$Tables; \$table = \$Tables->{\$params->table};
 	if(\$params->empty_start && !\$cmd)
 		\$cmd = "*WHERE 1=0 ";
+	if(!\$cmd && \$params->default_filter)
+		\$cmd = "*WHERE ".\$params->default_filter;
 	if(!\$cmd && \$table->default_filter())
 		\$cmd = "*WHERE ".\$table->default_filter();
 	\$sc = seqCookie();
@@ -172,18 +174,24 @@ if($ui->tabler || $ui->grouped) {
 //we need filter even for paging
 if($ui->grouped)
 	$ui_search = [];
-$filter_def = implode(', ', array_merge([''],$ui_search));
+$filter_def = implode(', ', $ui_search);
 $restore = $ui->tabler ? " onrefresh='restoreFuncFilter(this, def, [[\$sc]])'" : '';
 $filter_hint = count($ui_search) ? "<div filter-hints>".implode('', array_map(function($f) {
 	return "\n<span filter_hint={$f->alias}>{$f->caption}</span>";
 }, $ui_search))."</div>" : '';
 $filter_ctrl = count($ui_search) ? "<input filter_ctrl onkeyup='applyFuncFilterT(this)' ".implode(' ', array_map(function($f) {
 	return "\nfilter_ctrl-{$f->priority}-{$f->alias}='{$f->re}'";
-}, $ui_search)).'>' : '';
+}, $ui_search))
+	.( CHOOSER_MODE? <<<KD
+			onkeydown="chooseRowIfOnly(this, event, [[\$params-:add_empty?2:1]])"
+KD
+: '')
+	
+	.'>' : '';
 echo <<<ST
 <div
 	filter_for="this.parentNode.nextElementSibling.nextElementSibling"
-	filter_def="[ EQ(1,1) $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
+	filter_def="[ $filter_def ]" selfref="[[CURRENT_URI()]]" $restore>
 	$filter_hint
 	$filter_ctrl
 </div>

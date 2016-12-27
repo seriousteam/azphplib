@@ -2,6 +2,7 @@
 
 require_once(__DIR__.'/db-oo-transformer.php');
 require_once(__DIR__.'/modeldata.php');
+require_once(__DIR__.'/log_utils.php');
 
 class namedString {
 var $name = '';
@@ -10,11 +11,12 @@ var $container = null;
 var $key = null; // not translated (if !=null => value before translation)
 var $tr = null; // translation array
 function __toString() { return (string)$this->value; }
-function __construct($n, $v, $c) {
+function __construct($n, $v, $c, $key = null) {
 	$this->name = $n;
 	$this->value = $v;
 	$this->container = $c;
-}
+	$this->key = $key;
+  }
 }
 
 class axCommandInfo {
@@ -52,7 +54,7 @@ class axROW {
     }
   }
   function subselect_info($name) { return $this->subselects[$name]; }
-  function ns($name) { return new namedString($name, $this->$name, $this); }
+  function ns($name, $key=null) { return new namedString($name, $this->$name, $this, $key); }
 }
 
 function has_subitems($e) {
@@ -159,6 +161,7 @@ function get_cached_cmd_object($cmd) {
 function prepare_db_args($args) { return array_map(function($a) { return $a === ''? NULL : $a; }, $args); }
 
 function prepare_or_exec_command($cmd, $args) {
+//  LOG_DEBUG("prepare_or_exec_command", ['cmd'=>$cmd, 'args'=>$args]);
   $cmd = get_cached_cmd_object($cmd);
   $dbh = get_connection($cmd->root());
   $stmt = $dbh->prepare($cmd);
@@ -224,6 +227,12 @@ function execute_and_get_generated_id($stmt, $a) {
 	return $stmt->columnCount() ? $stmt->fetchColumn() : NULL;
 }
 
+function parseArgName( $f )
+{ 
+	$x = explode( ':', $f, 2 );
+	return count( $x ) == 2? $x: [$f, '?'];
+}
+/*
 function Insert($cmd, $args = null, &$gen = null) {
   if(!preg_match('/^\s*INSERT\s+INTO\s/i',$cmd)) $cmd = 'INSERT INTO '.$cmd;
   if($args !== null) {
@@ -235,8 +244,28 @@ function Insert($cmd, $args = null, &$gen = null) {
   if(func_num_args() >= 3) 
 	  $gen = execute_and_get_generated_id($stmt, $args);
   return $stmt;
+}*/
+
+function Insert($cmd, $args = null, &$gen = null) {
+  if(!preg_match('/^\s*INSERT\s+INTO\s/i',$cmd)) $cmd = 'INSERT INTO '.$cmd;
+  if($args !== null) {
+	$keys = array_keys($args);
+    $cmd .= '( '.strlist(
+		function( $f ) { return parseArgName( $f )[0]; },
+		$keys).
+	' ) VALUES ('.strlist(
+		function( $f ) { return parseArgName( $f )[1]; },
+		$keys
+	).')';
+    $args = array_values($args);
+  }
+  $stmt = prepare_or_exec_command($cmd, func_num_args() < 3 ? $args : NULL);
+  if(func_num_args() >= 3) 
+	  $gen = execute_and_get_generated_id($stmt, $args);
+  return $stmt;
 }
 
+/*
 function Update($cmd, $key = null, $args = null) {
   if(!preg_match('/^\s*UPDATE\s/i',$cmd)) $cmd = 'UPDATE '.$cmd;
   if($key !== null) { //we have arguments: we add SET and push keys at the end of paramaters
@@ -249,7 +278,29 @@ function Update($cmd, $key = null, $args = null) {
     $args = array_merge(array_values((array)$args), (array)$key);
   }
   return prepare_or_exec_command($cmd, $args);
+}*/
+
+function Update($cmd, $key = null, $args = null)
+{
+  if(!preg_match('/^\s*UPDATE\s/i',$cmd)) $cmd = 'UPDATE '.$cmd;
+  if($key !== null) { //we have arguments: we add SET and push keys at the end of paramaters
+    if($args) { // if we have args, we make SET cause
+      $c = explode(' WHERE ', $cmd, 2);
+      $cmd = $c[0].' SET '.
+        strlist(
+			function($k)
+			{
+				$x = parseArgName( $k );
+				return "$x[0] = $x[1]";
+			},
+			array_keys($args))
+        .(@$c[1]? " WHERE $c[1]":'');
+    }
+    $args = array_merge(array_values((array)$args), (array)$key);
+  }
+  return prepare_or_exec_command($cmd, $args);
 }
+
 function Delete($cmd, $key = null) {
   if(!preg_match('/^\s*DELETE\s+FROM\s/i',$cmd)) $cmd = 'DELETE FROM '.$cmd;
   return prepare_or_exec_command($cmd, $key);

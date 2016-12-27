@@ -167,6 +167,7 @@ function templater_take_zones($text, $file) {
 	global $library_prefix;
 	echo '<',"?php\n";
 	echo "require_once(__DIR__.'$library_prefix/template-runtime.php');";
+	echo "\nrequire_once(G_ENV_TEMPLATE_INIT);";
 	$text = templater_replace_zones( $text, $zones, $entries);
 	$zones['_main_'] = $text;
 	
@@ -174,7 +175,7 @@ function templater_take_zones($text, $file) {
 	echo <<<FUNC
 
 \$functions['$k'] = function(\$cmd, \$args = null, \$params = null) {
-	global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+	global \$G_TEMPLATER_GLOBALS; foreach(\$G_TEMPLATER_GLOBALS as \$TEMPLATER_GLOBAL) global \${\$TEMPLATER_GLOBAL};
 	\$TEMPLATE_FILE = $fileq;
 
 	if(\$params === null) \$params = new smap;
@@ -228,7 +229,7 @@ function templater_take_one_zone($name, $text, $file) {
 	echo <<<FUNC
 
 \$functions['$name'] = function(\$cmd, \$args = null, \$params = null) {
-global \$CURRENT_USER,\$CURRENT_ROLES,\$CURRENT_ROLES_CSV,\$CURRENT_ROLES_ARRAY;
+global \$G_TEMPLATER_GLOBALS; foreach(\$G_TEMPLATER_GLOBALS as \$TEMPLATER_GLOBAL) global \${\$TEMPLATER_GLOBAL};
 \$TEMPLATE_FILE = $fileq;
 
 if(\$params === null) \$params = new smap;
@@ -238,6 +239,9 @@ FUNC;
 	$selects = []; //varname => select definition
 	//$select->fields = []; //expression => alias
 	$main_select_alias = null;
+	$text = str_replace(['/*[[','//[['],'[[', $text);
+	$text = preg_replace('#\[\[(.*?)\]\]\*/#s','[[$1]]', $text);
+	$text = preg_replace('#\[\[(.*?)//\]\][ \t]*+\n#s','[[$1]]', $text);
 	$text = preg_replace_callback('/\[\[MAIN\s+(.*?)\]\]/si', 
 		function($m) use(&$selects, &$main_select_alias) {
 			$main_select_alias = $m[1];
@@ -305,6 +309,10 @@ ST;
 			$command = "[[$m[3]]]";
 			if($to_process === null) { //nowhere to repos
 				$part = $command;
+				if(!$tag) $part .= "</>";
+				else if(substr($tag,0,1)==='.') { $tag = substr($tag,1);
+					$part .= "<<.$tag>>";
+				}
 				continue;
 			}
 			//find position in 'to_process'
@@ -313,10 +321,13 @@ ST;
 				$before = strrchr($to_process, '\n') ?: strlen($to_process);
 				$before = substr($to_process, -$before);
 				$to_process = 
-					$before . $command . '</>' . substr($to_process, strlen($before));
+					"$before$command</>" . substr($to_process, strlen($before));
+			} else if(substr($tag,0,1)==='.') { $tag = substr($tag,1);
+				$to_process .= "$command<<.$tag>>";
 			} else {
 				$inside = false; if(substr($tag,-1)==='.') { $inside = true; $tag = substr($tag,0, -1); }
 				switch($tag) {
+				/*not used! saved as comment! but checked in reg exp
 				case '{}': case '()': case '[]':
 					$to_find = $tag[0];
 					//var_dump("/(?<pre>.*)(?<tag>\\$to_find)(?<tail>.*)/si", $to_process);
@@ -329,6 +340,7 @@ ST;
 						echo "<<<<<<ERROR: tag '$tag' not found>>>>>>";
 					}
 					break;
+				*/
 				case '*': { //nearest tag
 						if(preg_match('/<([^\s>]+)[^>]*>\s*$/s', $to_process, $tg_split))
 							$tag = $tg_split[1];
@@ -371,7 +383,7 @@ ST;
 	$text = implode($repos);
 	//echo $text;
 	//add closing tags
-	$text = preg_replace('#</>(.*)#', '[[{]]$1[[}]]', $text); //up to end of line/file
+	$text = preg_replace('#</>(.*)#', "[[{]]$1\n[[}]]", $text); //up to end of line/file
 	do {
 		$text = preg_replace('#<<:>>
 				(<(\S+?)(?:\s|>) [^<]*+
@@ -391,9 +403,19 @@ ST;
 			#sx', '<$3$4>$1[[{]]$5[[}]]</$3>', $textp = $text);
 		//echo '====',$text;
 	} while($textp !== $text);
+	do {
+		$text = preg_replace('#(\[\[(?:.(?!\]\]))*?.\]\])<<\.([-a-zA-Z_:]+)>>
+				(.*?)
+				\[\[\.\2\]\]
+			#sx', '$1[[{]]$3[[}]]', $textp = $text);
+		//echo '====',$text;
+	} while($textp !== $text);
+
 	//var_dump($text);
 	//var_dump($escape_mode);
 	
+	// not used, but saved in comment!
+	/*
 	do {
 		
 		$text = preg_replace('#<<\{\}>> (\{ [^{}]*+(?:(?-1)[^{}]*+)*? \}) #sx', 
@@ -408,6 +430,7 @@ ST;
 		$text = preg_replace('#<<\(\)>> (\( [^()]*+(?:(?-1)[^()]*+)*? \)) #sx', 
 						'[[{]]$1[[}]]', $textp = $text);
 	} while($textp !== $text);
+	*/
 	
 	//join joined tags
 	//var_dump($text);
@@ -418,8 +441,11 @@ ST;
 			'[[$1 $3::$2]]',
 			$text);
 
-	preg_match_all("/\[\[\s*+\\\$($RE_ID)(?:\s++of\s++\\$($RE_ID))?\s*+:(.*?)(?:~:(.*?))?\]\]/si", $text, $m);
+	preg_match_all("/\[\[\s*+\\\$($RE_ID(?:\[\\\$$RE_ID\])?)(?:\s++of\s++\\$($RE_ID))?\s*+:(.*?)(?:~:(.*?))?\]\]/si", $text, $m);
 	foreach($m[1] as $i=>$s) {
+		if(preg_match("/$RE_ID/", $s, $mm)) {
+			$s = $mm[0];
+		}
 		if(array_key_exists($s, $selects))
 			throw new Exception("select name '$s' redefinition");
 		if(preg_match('/^\s*+SAMPLE\s++AND\s++(.*)/si', $m[3][$i], $g))
@@ -439,63 +465,21 @@ ST;
 	}
 	//var_dump($selects);
 
-	$attributes = []; // attributes (from attrtable) used in template
-	
-	$text = preg_replace_callback('/(?<=\[\[)ATTRIBUTES
-		(?:\s+(?<adm>A\+(?<admlen>\d*)))?
-		(?:\s+(?<period>Y?H?Q?M?D?))?
-		(?:\s+table:(?<table>[a-z_0-9]+))?
-		(?=\]\])/sxi', function($m) {
-			$attrdef = new stdClass;
-				$attrdef->atable = 'atable';
-				$attrdef->filter = '1=1'; //filter to get records from atable (may depends from :adm, :period, :dt, :prefix)
-				$attrdef->fixed = ''; //fixed val for inserted values
-				$attrdef->adm = 'adm'; 		//name of special fields
-				$attrdef->period = 'period'; 	// --/--
-				$attrdef->dt = 'dt';			// --/--
-				$attrdef->par = 'par';		// --/--
-				$attrdef->fn = 'fn';			// --/--
-				$attrdef->fs = 'fs';			// --/--
-				$attrdef->ft = 'ft';			// --/--
-				$attrdef->fb = 'fb';			// --/--
-			$attr_select = addslashes(<<<SEL
-SELECT 
-				$attrdef->adm, $attrdef->period, $attrdef->dt, $attrdef->par
-				, $attrdef->fn, $attrdef->fs, $attrdef->ft
-				FROM $attrdef->atable
-				WHERE $attrdef->filter
-				AND $attrdef->adm = ?
-				AND $attrdef->period = ?
-				AND $attrdef->dt = ?
-				LIMIT ALL
-SEL
-);
-			return <<<CTX
-{
-				ctx::\$current = new ctx(null, '0');
-				ctx::\$current->Period = \$data->period;
-				ctx::\$current->Date = \$data->dt;
-				ctx::\$current->Adm = \$data->adm;
-				ctx::\$current->Param = '';
-				ctx::\$attribute_database = [];
-				foreach(process_query('$attr_select',
-				  [ctx::\$current->Adm, ctx::\$current->Period, ctx::\$current->Date] ) 
-				  as \$attr_row) {
-					ctx::\$attribute_database[\$attr_row->$attrdef->adm]
-						[\$attr_row->$attrdef->period][\$attr_row->$attrdef->dt]
-						[\$attr_row->$attrdef->par]
-					= NVL(trimZ(\$attr_row->$attrdef->fn), NVL(\$attr_row->$attrdef->fs, \$attr_row->$attrdef->ft));
-				}
-			}~
-CTX;
-}, $text);
 	//generate commands
 	$text = preg_replace_callback('/(?<=\[\[).*?(?=\]\])/s', 
 		function($m) use(&$selects, &$attributes, &$escape_mode){
 			global $RE_ID;
 			$cmd = $m[0];
 			//var_dump($cmd);
-			if(preg_match("/^\s*+\\$($RE_ID)(?:\s++of\s++\\$($RE_ID))?\s*+:(.*)/si", $cmd, $m)) {
+			if(preg_match("/^\s*+\\$($RE_ID(?:\[\\\$$RE_ID\])?)(?:\s++of\s++\\$($RE_ID))?\s*+:(.*)/si", $cmd, $m)) {
+				$keypart = '';
+				if(preg_match("/\[\\\$($RE_ID)\]/", $m[1], $mm)) {
+					$keypart = "\$$mm[1] => ";
+				}
+				if(preg_match("/($RE_ID)\[\\\$($RE_ID)\]/", $m[1], $mm)) {
+					$m[1] = $mm[1];
+					$keypart = "\$$mm[2] => ";
+				}
 				$sample = '';
 				$a_add = '';
 				$a_add_top = '';
@@ -503,9 +487,9 @@ CTX;
 					$sample = '_and_sample';
 				}
 				if(@$m[2])
-					$res = "foreach(with_loop_info$sample(\${$m[2]}->$m[1], \$counters->{$m[1]}, \$statements->{$m[1]} = \${$m[2]}->subselect_info('$m[1]')) as \$$m[1])";
+					$res = "foreach(with_loop_info$sample(\${$m[2]}->$m[1], \$counters->{$m[1]}, \$statements->{$m[1]} = \${$m[2]}->subselect_info('$m[1]')) as $keypart\$$m[1])";
 				else
-					$res = "foreach(with_loop_info$sample(\$rowsets['$m[1]'], \$counters->{$m[1]}, \$statements->{$m[1]} = @\$rowsets['$m[1]']->exInfo) as \$$m[1])";
+					$res = "foreach(with_loop_info$sample(\$rowsets['$m[1]'], \$counters->{$m[1]}, \$statements->{$m[1]} = @\$rowsets['$m[1]']->exInfo) as $keypart\$$m[1])";
 			}
 			else if(preg_match("/^ESC\s+(.*)/i", $cmd, $m)) {
 				$escape_mode = $m[1];
@@ -517,10 +501,13 @@ CTX;
 			} else if(preg_match("/^LIB$/i", $cmd, $m)) {
 				$res = <<<EEE
 					echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',"\\n";
-					echo '<link rel="stylesheet" href="',file_URI('//az/lib/main.css', null, TRUE),'">',"\\n";
-					echo '<link rel="stylesheet" href="',file_URI('//az/lib/local.css', null, TRUE),'">',"\\n";
-					echo '<script type="text/javascript" src="',file_URI('//az/lib/scripts.js', null, TRUE),'"></script>',"\\n";
-					echo '<script type="text/javascript" src="',file_URI('//az/lib/editing20.js', null, TRUE),'"></script>',"\\n";
+					foreach(\$G_LIBS_LIST as \$lib) {
+						\$lib = file_URI(\$lib, null, TRUE);
+						echo preg_match('/\.css\$/',\$lib) ? 
+							"<link rel=stylesheet href='\$lib' >"
+							: "<script type=text/javascript src='\$lib' ></script>"
+						,"\\n";
+					}
 EEE;
 			} else if(preg_match("/^CHART$/i", $cmd, $m)) {
 				$res =  sharing::load('d3');
@@ -655,35 +642,6 @@ EEE;
 						}
 						,$db_part
 					);
-					/*
-					$db_part = preg_replace_callback(
-						"/\\.[a-z][a-zA-Z0-9_]*+(?: : [0-9]++ )? 
-							(?!=\s*[(])
-							(?:\s*+
-								\\.[a-z][a-zA-Z0-9_]*+(?: : [0-9]++ )?
-								(?!=\s*[(])
-							)*
-						/sx",
-						function($m) use(&$selects, &$attributes, $strings) {
-							return "ctx::\$current".
-								str_replace('.', '->',
-									preg_replace('/:([0-9]+)/', '($1)', $m[0])
-								).'->V()';
-						}
-						,$db_part
-					);
-					*/
-					//remove explicit to value conversion if only path give
-					if(preg_match('/^\s*
-						(ctx::\$current
-							(
-							->[a-z][a-zA-Z0-9_]*(\([0-9]+\))?
-							)*
-						)
-						->V\(\)\s*
-						$/sx', $db_part, $m))
-						$db_part = $m[1];
-					if($db_part == '' || $db_part == '$') $db_part = 'ctx::$current';
 					$res = $db_part;
 					
 					if($cmd_part && 
@@ -726,9 +684,6 @@ EEE;
 							}
 							else if($c == '.') {
 								$res =	"output_$escape_mode($res)";
-							}
-							else if($c == '$') {
-								$res = "ctx::\$current = $res";
 							}
 							else if(preg_match("/^\\?:($RE_ID)/s", $c, $m)) {
 								$res = "if(\$$m[1] = !($res)) goto $m[1]";
@@ -773,16 +728,6 @@ EEE;
 					echo '##########';*/
 					switch( end($cmd_part) )
 					{
-						case 'Days':
-						case 'Months':
-						case 'Quarters':
-						case 'HalfYears':
-						case 'Adm':
-						case 'Items':
-						case 'ItemsWithAdd':
-							preg_match("/^($RE_ID)\((.*)\)$/s", $res, $m);
-							$res = "foreach({$m[2]}->$m[1]() as \$L)";
-							break;
 						case 'ERROR':
 							$res = "if( !$res ) throw new Exception($t);";
 							break;
@@ -824,35 +769,26 @@ EEE;
 		}
 	, $text );
 	
-	//decorate $context
-	do {
-		$text = preg_replace('#\[\[\ctx::\$current\s*+=(.*?)\]\] (.*?)
-				(\[\[\{\]\] 
-					[^[]*+
-					(?:(?:\[(?!\[\{\]\])|(?-1))[^[]*+)*?
-				\[\[\}\]\]}) #sx', 
-	'$2 [[{ctx::push($1); try]] $3 [[catch(Exception $___e){ctx::pop(); throw $___e; } ctx::pop(); }]]'
-	, $textp = $text);
-	} while($textp !== $text);
-	
-
 	//clear special tags
 	$text = preg_replace('/\[\[ZONE:.*?\]\]/i', '', $text);
 
 	//join sequential tags
 	$text = str_replace(']][[','', $text);
 
+	//remove empty tags
+	$text = str_replace('[[]]','', $text);
+
 	//phpise
 	$text = preg_replace_callback('/\[\[(.*?)\]\]/s', 
 		function($m) { return 
 			'<'.'?php '.
-			preg_replace('/\]-(-*+)\]/', ']$1]', $m[1])
+			preg_replace('/(?<=\])-(-*+)\]/', '$1]', $m[1])
 			.'?'.'>';
 			}
 		, $text);
 
 	//unescape tags
-	$text = preg_replace('/\[-(-*+)\[/', '[$1[', $text);
+	$text = preg_replace('/(?<=\[)-(-*+)\[/', '$1[', $text);
 	
 	//repalce '*' with collected fields in all selects 
 	// master declared before details
@@ -870,7 +806,8 @@ EEE;
 			array_map(function($a,$b) { return "( $b->select ) AS ARRAY $a"; }
 			,array_keys($s->arrays), array_values($s->arrays)
 		));
-		if(key($selects) === array_keys($selects)[0]) {//take first select as 'MAIN'	
+		if(!$main_select_alias && key($selects) === array_keys($selects)[0] || 
+			$main_select_alias && key($selects) === $main_select_alias) {//take first select as 'MAIN'	
 			$parsed = new parsedCommandSmart($SELECT_STRUCT, $s->select);
 			if(preg_match("/^\s*($RE_ID)(\s|$)/",$parsed->FROM, $m)) {
 				$alias = key($selects);

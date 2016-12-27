@@ -159,6 +159,9 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 		if(preg_match('/^PDO/',$k) && !$v) goto FAILED;
 	}
 }
+
+define('AUTH_ERROR', '-auth error-');
+
 if($G_ENV_LOCAL_USERS) {
   /*
     [user]
@@ -194,21 +197,28 @@ if($G_ENV_LOCAL_USERS) {
 						$ret[$e->ROLE] = $e->STATUS;
 					}
 					if(!$ret)
-						return 'local user not found';
+						return AUTH_ERROR;
 					return [ $user => $ret ];
 				} else {
-					return 'local user not found';
+					return AUTH_ERROR;
 				}
 			}, null, $CURRENT_DBCHECKED_USER, $CURRENT_PW, @$CURRENT_USER_IP
 		);
+	} else if(preg_match('/^(?:PHP):(.*)/',$G_ENV_LOCAL_USERS, $m)) {
+		$f = $m[1];
+		$ret = $f($CURRENT_DBCHECKED_USER, $CURRENT_PW, @$CURRENT_USER_IP);
+		if($ret) $local_users = [ $user => $ret ];
+		else $local_users = AUTH_ERROR;
 	} else
 		$local_users = cached_ini($G_ENV_LOCAL_USERS, true);
 } else
-  $local_users = array( $CURRENT_USER => [ 'LOCAL' =>'D' ] );
+  $local_users = [ $CURRENT_USER => [ 'LOCAL' =>'D' ] ];
 
-if($local_users === 'local user not found') {
+function local_user($user) { global $local_users; return $local_users === AUTH_ERROR ? null : @$local_users[$user]; }
+
+if(!local_user($CURRENT_USER)) {
 	if(true) {
-		$local_users = array( $CURRENT_USER => ['anonymous' => 'D'] );
+		$local_users = [ $CURRENT_USER => ['anonymous' => 'D'] ];
 	} else {
 		http_response_code(403);
 		setcookie('AUTH_INFO', ($_SERVER['REQUEST_METHOD'].":$CURRENT_USER:$G_ENV_URI_PREFIX"), 0, $G_ENV_URI_PREFIX);
@@ -219,7 +229,6 @@ if($local_users === 'local user not found') {
 }
 
 
-function local_user($user) { global $local_users; return @$local_users[$user]; }
 
 /*
 #comment
@@ -514,8 +523,11 @@ function get_connection($table) {
   $db = table_db($table);
   $key = serialize($db);
   $dsn = $db['server'];
-  $params = array(PDO::ATTR_PERSISTENT => true);
-  if(db_dialect($db)==='mssql') {
+  $params = array();
+  if(@$db['pooling'] != 'no') {
+	$params[PDO::ATTR_PERSISTENT] = true;
+  }
+  if(@$db['pooling'] != 'no' && db_dialect($db)==='mssql') {
 	  //PDO persistent connections dont work in MS SQL
 	  $dsn .= ';ConnectionPooling=1';
 	  $params[PDO::ATTR_PERSISTENT] = false;
@@ -612,6 +624,15 @@ function startsWith($val, $w, $adv_char = '') {
 set_exception_handler(function ($exception) {
   echo "Exception: " , $exception->getMessage(), "\n";
 });
+
+$G_TEMPLATER_GLOBALS = [
+	'G_LIBS_LIST'
+	, 'CURRENT_USER'
+	, 'CURRENT_ROLES'
+	, 'CURRENT_ROLES_CSV'
+	, 'CURRENT_ROLES_ARRAY'
+	, 'CURRENT_ROLES_ARRAY'
+];
 
 
 if(__FILE__ != TOPLEVEL_FILE) return;
