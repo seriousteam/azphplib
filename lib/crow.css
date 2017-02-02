@@ -334,4 +334,6 @@ button[crow][crow-blue] {
   transition: all 0.25s ease-out;
 }
 
+[crow] tr[cmd^="-"]+tr.transit_row [hide-in-a-new-record] { display:none }
+
 /**/

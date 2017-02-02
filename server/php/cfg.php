@@ -207,7 +207,7 @@ if($G_ENV_LOCAL_USERS) {
 	} else if(preg_match('/^(?:PHP):(.*)/',$G_ENV_LOCAL_USERS, $m)) {
 		$f = $m[1];
 		$ret = $f($CURRENT_DBCHECKED_USER, $CURRENT_PW, @$CURRENT_USER_IP);
-		if($ret) $local_users = [ $user => $ret ];
+		if($ret) $local_users = [ $CURRENT_DBCHECKED_USER => $ret ];
 		else $local_users = AUTH_ERROR;
 	} else
 		$local_users = cached_ini($G_ENV_LOCAL_USERS, true);
