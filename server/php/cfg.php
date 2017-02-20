@@ -11,14 +11,14 @@ require_once (__DIR__.'/dialects.php');
 /*
 	configuration
 	1) files for client in root/az/lib/
-	2) server files in root/ais/
-	3) common server files in root/az/server/php
-	we link sys/.../template/free/common ==> root/az/lib
-	and move settings there
-	so, our docroot is ../../.. from this file
+	2) common server files in root/az/server/php
+	3) server files in root/
+	4) cached templates in root/cache
+	5) default config files in root/cfg
+	   php-powered config root/cfg/env.php 
+	6) custom config files in root/cfg/magic_name
+	   php-powered custom config root/cfg/magic_name
 	
-	we have
-		URI_PREFIX -> for building uri, if our scripts not at root
 	ALL references to scrits can be realtive!
 		BUT templater write files to stdout and their corrent desination unknown
 	SO, templater can make relative include path for generated file to templater_runtime 
@@ -48,43 +48,8 @@ $CURRENT_ROLES =
   		'' 
 );
 
-/*
-	path to configuration elements
-*/
-
-/*
-
-$G_ENV_MAIN_CFG
-$G_ENV_TABLE_DB_MAPPING
-$G_ENV_LIB_MAPPING
-$G_ENV_LOCAL_USERS
-$G_ENV_LOCAL_ROLES
-$G_ENV_MODEL
-$G_ENV_LOAD_MODEL
-$G_ENV_MODEL_DATA;
-
-$G_ENV_CACHE
-$G_ENV_CACHE_TTL
-
-*/
-if(!isset($G_ENV_URI_PREFIX)) {
-	$G_ENV_URI_PREFIX = getenv('URI_PREFIX') ?: '/';
-}
-if(!isset($G_P_DOC_ROOT)) {
-	$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__))); //=== __DIR__.'/../../..'
-}
-// p_doc_root/az/server/php/cfg.php
-	 
-define('__ROOTDIR__', $G_P_DOC_ROOT);
-
-// $G_ENV_URI_PREFIX <--> $G_P_DOC_ROOT
-// so, $G_ENV_URI_PREFIX/path equals to $G_P_DOC_ROOT/path
-
-$GLOBAS_STATE_VARS = [];
-
-//echo $G_P_DOC_ROOT, ' ', $_SERVER['SCRIPT_FILENAME'];
-require_once(__DIR__.'/envars.php');//override setting on php side, if server doesn't allow to use SetEnv
-
+//override setting on php side, if server doesn't allow to use SetEnv
+require_once(__DIR__.'/envars.php');
 
 /*
 	we need setup cache configuration first
@@ -221,8 +186,8 @@ if(!local_user($CURRENT_USER)) {
 		$local_users = [ $CURRENT_USER => ['anonymous' => 'D'] ];
 	} else {
 		http_response_code(403);
-		setcookie('AUTH_INFO', ($_SERVER['REQUEST_METHOD'].":$CURRENT_USER:$G_ENV_URI_PREFIX"), 0, $G_ENV_URI_PREFIX);
-		readfile($G_P_DOC_ROOT.'/ais/auth-local.html');
+		setcookie('AUTH_INFO', ($_SERVER['REQUEST_METHOD'].":$CURRENT_USER:".__CLIENT_URI_PREFIX__), 0, __CLIENT_URI_PREFIX__);
+		readfile(__ROOTDIR__.'/ais/auth-local.html');
 		//TODO: add _POST paramaters here to resend them! directly into form
 		die('');
 	}
@@ -395,12 +360,13 @@ function add_role_to_context($role) {
 
 //error_log('URI:'.$_SERVER['REQUEST_URI']);
 // uri after striping our prefix (normalized in some sence)
+
 $LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)? 
 	$_SERVER['argv'][0]
 	:
 	( 
-		substr_compare($_SERVER['REQUEST_URI'], $G_ENV_URI_PREFIX, 0, strlen($G_ENV_URI_PREFIX)) == 0?
-		substr_replace($_SERVER['REQUEST_URI'], '/', 0, strlen($G_ENV_URI_PREFIX))
+		substr_compare($_SERVER['REQUEST_URI'], __SERVER_URI_PREFIX__, 0, strlen(__SERVER_URI_PREFIX__)) == 0?
+		substr_replace($_SERVER['REQUEST_URI'], '/', 0, strlen(__SERVER_URI_PREFIX__))
 	  : $_SERVER['REQUEST_URI']
 	)
 	;
@@ -423,8 +389,7 @@ if(@$lu[1]) $LOCALIZED_URI = $lu[0] . '?' . str_replace('/', '%4F', $lu[1]);
 */
 
 function our_URI($uri) {
-	global $G_ENV_URI_PREFIX;
-	return preg_replace('#/+#','/',$G_ENV_URI_PREFIX . $uri);//$uri is 'absolute'
+	return preg_replace('#/+#','/',__CLIENT_URI_PREFIX__ . $uri);//$uri is 'absolute'
 }
 $a_lib_map = array();
 if($G_ENV_LIB_MAPPING) {
@@ -442,7 +407,6 @@ function extern_path($path){
   return @$a_lib_map[$path];
 }
 function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'filename'
-	global $G_P_DOC_ROOT;
 	
 	$args = ($args? '?'.http_build_query($args, 'x', '&', PHP_QUERY_RFC3986) : '');
 	
@@ -452,15 +416,15 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 	}
 
 	if($path[0] == '/' && $path[1] == '/') { 
-		$path = $G_P_DOC_ROOT.substr($path,1); // `//` means from docroot
+		$path = __ROOTDIR__.substr($path,1); // `//` means from docroot
 	}
 	else
-		if(substr_compare($path, $G_P_DOC_ROOT, 0, strlen($G_P_DOC_ROOT))!==0)
-			throw new Exception("File $path in not under docroot $G_P_DOC_ROOT");
+		if(substr_compare($path, __ROOTDIR__, 0, strlen(__ROOTDIR__))!==0)
+			throw new Exception("File $path in not under docroot ".__ROOTDIR__);
 	if($stamp)
 		$path .= '('.filemtime ($path).')';
 	
-	$path = substr($path, strlen($G_P_DOC_ROOT)+1);
+	$path = substr($path, strlen(__ROOTDIR__)+1);
 	$path = str_replace('\\','/', $path);
 	return our_URI($path) . $args;	
 }
@@ -661,13 +625,17 @@ foreach($checks as $k=>$v) {
 	echo "<tr req $style><td>$k<td>$style</tr>";
 }
 $G = function($v) { return is_string($v) ? $v : 'corrupted'; };
+$CURIP = __CLIENT_URI_PREFIX__;
+$SURIP = __SERVER_URI_PREFIX__;
+$DOCROOT = __ROOTDIR__;
 echo <<<XCFG
 	<tr><td colspan=2><b>Info:</b></tr>
 	<tr><td>User<td>$CURRENT_USER</tr>
 	<tr><td>IP from<td>$CURRENT_USER_IP</tr>
 	<tr><td>Roles<td>{$G(@$CURRENT_ROLES_CSV)}</tr>
-	<tr><td>Root<td>$G_P_DOC_ROOT</tr>
-	<tr><td>URI prefix<td>$G_ENV_URI_PREFIX</tr>
+	<tr><td>Our root<td>$DOCROOT</tr>
+	<tr><td>Client URI prefix<td>$CURIP</tr>
+	<tr><td>Server URI prefix<td>$SURIP</tr>
 	<tr><td>PHP Cli<td>$G_PHP_PATH</tr>
 	<tr><td>Main config<td>$G_ENV_MAIN_CFG</tr>	
 	<tr><td>Table mapping<td>$G_ENV_TABLE_DB_MAPPING</tr>
