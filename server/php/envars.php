@@ -5,13 +5,17 @@
 *	At the end of file it includes 'env.php' which redefines some of server variables
 *
 */
-
-if(!isset($G_P_DOC_ROOT)) {
-	$G_P_DOC_ROOT = dirname(dirname(dirname(__DIR__)));
-}
-$G_PHP_PATH = realpath("$G_P_DOC_ROOT/../../php/php.exe") ?: 'php';//find this file, if it doesnt exists, uses 'php' command
+// URI: /uriprefix/test.php
+// File path: /var/www/serverprefix/test.php
+// /var/www/serverprefix
+define( '__ROOTDIR__', dirname(dirname(dirname(__DIR__))) );
+// /serverprefix
+define( '__SERVER_URI_PREFIX__', substr_replace(__ROOTDIR__, '', 0, strlen($_SERVER['DOCUMENT_ROOT']) ) );
+// /uriprefix
+define( '__CLIENT_URI_PREFIX__', '/' );
+$G_PHP_PATH = realpath(__ROOTDIR__."/../../php/php.exe") ?: 'php';//find this file, if it doesnt exists, uses 'php' command
 $CFG_SUBROOT = '/cfg';
-$G_ENV_CACHE_DIR = "$G_P_DOC_ROOT/cache";
+$G_ENV_CACHE_DIR = __ROOTDIR__."/cache";
 $CURRENT_USER_IP = @$_SERVER['REMOTE_ADDR'];
 $G_ENV_LOAD_MODEL = FALSE;
 $G_ENV_LOCAL_USERS  = [
@@ -23,7 +27,7 @@ $G_ENV_CACHE = 'local';
 $G_ENV_CACHE_TTL = '1';
 	
 $MAGIC_PATH = @$_COOKIE["magic_name"]?"/{$_COOKIE['magic_name']}":'';
-$CFG_PATHS = ["$G_P_DOC_ROOT$CFG_SUBROOT$MAGIC_PATH/", "$G_P_DOC_ROOT$CFG_SUBROOT/"];
+$CFG_PATHS = [__ROOTDIR__."$CFG_SUBROOT$MAGIC_PATH/", __ROOTDIR__."$CFG_SUBROOT/"];
 
 function get_path($filename, $folder_variants) {
 	foreach($folder_variants as $folder) {
