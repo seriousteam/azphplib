@@ -127,17 +127,25 @@ function table_db($table){
   return $main_cfg[$tn ?: 'default_db'];
 }
 if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
+	$OS = php_uname('s');
 	$checks = [
 		"PDO" => false,
 		"SimpleXML" => false
 	];	
 	$checks["PDO"] = extension_loaded("pdo");
 	if($checks["PDO"]) {
-		$pdo_dialects = [ "mssql"=>"pdo_sqlsrv", 
+		$pdo_dialects = [ "mssql" => [ 'Windows' => "pdo_sqlsrv", 'Linux' => "pdo_odbc" ],
 				"mysql"=>"pdo_mysql", "pgsql"=>"pdo_pgsql", "oracle"=>"pdo_oci"];
 		foreach($main_cfg as $k=>$v) {
 			$dialect = $v["dialect"];
-			$checks["PDO for $dialect"] = extension_loaded($pdo_dialects[$dialect]);		
+
+			if(is_array($pdo_dialects[$dialect])) {
+				$os = substr( php_uname('s'), 0, 7 )=='Windows' ?: 'Linux';
+				$driver = $pdo_dialects[$dialect][$os];
+				$checks["$dialect PDO for $os client"] = extension_loaded($driver);
+			} else {
+				$checks["$dialect PDO"] = extension_loaded($pdo_dialects[$dialect]);
+			}		
 		}
 	}
 	$checks["SimpleXML"] = extension_loaded("SimpleXML");
@@ -156,7 +164,7 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 		}
 	}	
 	foreach($checks as $k=>$v) {
-		if(preg_match('/^PDO/',$k) && !$v) goto FAILED;
+		if(preg_match('/\s*PDO\s*/',$k) && !$v) goto FAILED;
 	}
 }
 
@@ -661,8 +669,10 @@ foreach($checks as $k=>$v) {
 	echo "<tr req $style><td>$k<td>$style</tr>";
 }
 $G = function($v) { return is_string($v) ? $v : 'corrupted'; };
+
 echo <<<XCFG
 	<tr><td colspan=2><b>Info:</b></tr>
+	<tr><td>OS<td>$OS</tr>
 	<tr><td>User<td>$CURRENT_USER</tr>
 	<tr><td>IP from<td>$CURRENT_USER_IP</tr>
 	<tr><td>Roles<td>{$G(@$CURRENT_ROLES_CSV)}</tr>
