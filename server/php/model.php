@@ -558,13 +558,12 @@ QQ
 $TablesGenerated = false;
 $cached_tables = cached('ini', 'all', 
 	function($a) {
-		global $G_ENV_MODEL;
 		global $TablesGenerated;
 		$TablesGenerated = true;
 new modelParser(
-$G_ENV_MODEL ? 
+_ENV_MODEL ? 
 		"TABLE dual ( f VARCHAR(1) PK) \n".
-		file_get_contents($G_ENV_MODEL) 
+		file_get_contents(_ENV_MODEL) 
 : <<<MP
 	TABLE dual ( f VARCHAR(1) PK)
 

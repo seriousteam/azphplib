@@ -23,8 +23,8 @@ else if($ui->grouped)
 $table = $_REQUEST['table'];
 $link = @$_REQUEST['link'];
 $cache = new TemplaterCache("$table.".($link?"$link.":"")."$mode.php.t");
-$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
-if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
+$cdir = _ENV_CACHE_DIR;
+if(!$cache->need_to_gen_from(_ENV_MODEL)) goto end;
 ob_start();
 
 
