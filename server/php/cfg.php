@@ -30,18 +30,22 @@ $CURRENT_USER =
   @$_SERVER['HTTP_X_AUTH_USER'] ?:(
 	  @$_COOKIE['Uname'] ?:(
 	  @$_COOKIE['AUTH_USER'] ?:(
+	  	@$_COOKIE['username'] ? :(
+	  	@$_REQUEST['username'] ? :(	
 		  @$_SERVER['PHP_AUTH_USER'] ?:(
 		   function_exists('posix_geteuid') ?
 			posix_getpwuid(posix_geteuid())['name'] :
    			getenv('USERNAME').'@'.getenv('USERDOMAIN')
-))));
+))))));
 $CURRENT_PW = 
   @$_SERVER['HTTP_X_AUTH_PW'] ?:(
 	  @$_COOKIE['Upass'] ?:(
 	  @$_COOKIE['AUTH_PW'] ?:(
+	  	@$_COOKIE['password'] ?:(
+	  	@$_REQUEST['password'] ?:(
 		  @$_SERVER['PHP_AUTH_PW'] ?:(
 			''
-))));
+))))));
 
 $CURRENT_ROLES =
   @$_SERVER['HTTP_AUTH_ROLES'] ?: (
@@ -116,7 +120,7 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 	}
 	$checks["SimpleXML"] = extension_loaded("SimpleXML");
 	
-	system("$G_PHP_PATH >&0",$retval);
+	system(PHP_PATH." >&0",$retval);
 	$checks['PHP Cli'] = !$retval;
 	
 	if(@$G_ENV_CACHE_DIR && $checks['PHP Cli']) {
@@ -179,6 +183,11 @@ if($G_ENV_LOCAL_USERS) {
 			}, null, $CURRENT_DBCHECKED_USER, $CURRENT_PW, @$CURRENT_USER_IP
 		);
 	} else if(preg_match('/^(?:PHP):(.*)/',$G_ENV_LOCAL_USERS, $m)) {
+		/*
+		  PHP auth method auth_method($user, $pass, $ip = null)
+			It must return array like [ 'is_admin' => 'D', 'is_user' => 'C' ] 
+			where 'D' - default turned on role, 'C'(or any other string) - possible but turned off role
+		*/
 		$f = $m[1];
 		$ret = $f($CURRENT_DBCHECKED_USER, $CURRENT_PW, @$CURRENT_USER_IP);
 		if($ret) $local_users = [ $CURRENT_DBCHECKED_USER => $ret ];
