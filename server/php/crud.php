@@ -54,7 +54,6 @@ case 'C':
 			$vals[substr($f,1)] = $v;
 		}
 	}
-	
 	$st = Insert($table->___name, $vals, $ss);
 	//echo $st->queryString;
 	if( $table->AUTO_KEY() && $ss !== NULL )

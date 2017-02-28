@@ -502,8 +502,9 @@ ST;
 				$res = <<<EEE
 					echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',"\\n";
 					foreach(\$G_LIBS_LIST as \$lib) {
+						\$is_css = preg_match('/\.css\$/',\$lib);
 						\$lib = file_URI(\$lib, null, TRUE);
-						echo preg_match('/\.css\$/',\$lib) ? 
+						echo \$is_css ? 
 							"<link rel=stylesheet href='\$lib' >"
 							: "<script type=text/javascript src='\$lib' ></script>"
 						,"\\n";

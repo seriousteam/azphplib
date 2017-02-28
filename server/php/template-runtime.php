@@ -629,6 +629,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 
 	$args = [];
 }
+
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
 	
