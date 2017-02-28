@@ -37,13 +37,11 @@ ini:
 $cache_local_get = function($key) { return null; };
 $cache_local_set = function($key, $val, $ttl) {};
 $cache_local_unset = function($key) {};
-if(@$G_ENV_CACHE == 'local'){
+if(_ENV_CACHE === 'local'){
   if(function_exists('xcache_get')) $cache_local_get = 'xcache_get';
   if(function_exists('xcache_set')) $cache_local_set = 'xcache_set';
   if(function_exists('xcache_unset')) $cache_local_unset = 'xcache_unset';
 }
-
-define('CACHE_TTL', @$G_ENV_CACHE_TTL ?: 10);
 
 $DELETE_CACHE_ENTRY = new stdClass;
 

@@ -639,6 +639,10 @@ $CURIP = __CLIENT_URI_PREFIX__;
 $SURIP = __SERVER_URI_PREFIX__;
 $DOCROOT = __ROOTDIR__;
 
+$G_ENV_LOAD_MODEL = _ENV_LOAD_MODEL;
+$G_ENV_CACHE = _ENV_CACHE;
+$G_ENV_CACHE_TTL = CACHE_TTL;
+
 echo <<<XCFG
 	<tr><td colspan=2><b>Info:</b></tr>
 	<tr><td>OS<td>$OS</tr>

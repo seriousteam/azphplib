@@ -27,9 +27,8 @@ class TemplaterCache {
 		@unlink($tmpfile);
 	}
 	function generate($fromfile, $tofile, $sourcefile = "") {
-		global $G_PHP_PATH;
 		$sourcefile = $sourcefile? "-s$sourcefile" : "";
-		system("$G_PHP_PATH -f ".
+		system(PHP_PATH." -f ".
 			__DIR__."/templater.php -- -c $fromfile -p{$this->cdir} $sourcefile > $tofile");
 	}
 	function __construct($in_cache_name) {

@@ -13,23 +13,31 @@ define( '__ROOTDIR__', dirname(dirname(dirname(__DIR__))) );
 define( '__SERVER_URI_PREFIX__', substr_replace(__ROOTDIR__, '', 0, strlen($_SERVER['DOCUMENT_ROOT']) ) );
 // /uriprefix
 define( '__CLIENT_URI_PREFIX__', '/' );
-$G_PHP_PATH = realpath(__ROOTDIR__."/../../php/php.exe") ?: 'php';//find this file, if it doesnt exists, uses 'php' command
-$CFG_SUBROOT = '/cfg';
+
+define('PHP_PATH', realpath(__ROOTDIR__."/../../php/php.exe") ?: 'php');//find this file, if it doesnt exists, uses 'php' command
+
+define('CFG_DIR', __ROOTDIR__.'/cfg');
+
 $G_ENV_CACHE_DIR = __ROOTDIR__."/cache";
+
 $CURRENT_USER_IP = @$_SERVER['REMOTE_ADDR'];
-$G_ENV_LOAD_MODEL = FALSE;
+
+define('_ENV_LOAD_MODEL', FALSE);
+
 $G_ENV_LOCAL_USERS  = [
    '/.*/' => "SQL:SELECT rd.enf_rolenamew AS ROLE, CASE r.enf_defaultw WHEN 1 THEN 'D' ELSE 'C' END AS STATUS "
 	." FROM enperson_roles r JOIN enpn2persons u ON r.enrel_pnpersonw = u.syrecordidw JOIN eninternal_roles rd ON r.enrel_rolew = rd.syrecordidw"
 	." WHERE enf_rolenamew IS NOT NULL AND u.enpnw = ? AND u.enpassw = ?"
 	];
-$G_ENV_CACHE = 'local';
-$G_ENV_CACHE_TTL = '1';
-	
-$MAGIC_PATH = @$_COOKIE["magic_name"]?"/{$_COOKIE['magic_name']}":'';
-$CFG_PATHS = [__ROOTDIR__."$CFG_SUBROOT$MAGIC_PATH/", __ROOTDIR__."$CFG_SUBROOT/"];
 
-function get_path($filename, $folder_variants) {
+define('_ENV_CACHE', 'local');
+define('CACHE_TTL', 10);
+	
+function get_cfg_path($filename) {
+	$folder_variants = @$_COOKIE["magic_name"] ? 
+			  [CFG_DIR."/$_COOKIE[magic_name]/", CFG_DIR."/"]
+			: [ CFG_DIR."/" ];
+			
 	foreach($folder_variants as $folder) {
 		if($folder && file_exists("$folder$filename")) {
 			return "$folder$filename";
@@ -39,17 +47,17 @@ function get_path($filename, $folder_variants) {
 	throw new Exception("Configuration '$filename' not found amongst: $folder_variants");
 }
 
-$G_ENV_MAIN_CFG = get_path('db.ini', $CFG_PATHS);
-$G_ENV_MODEL = get_path('model.ini', $CFG_PATHS);
-$G_ENV_TABLE_DB_MAPPING = get_path('model.map.ini', $CFG_PATHS);
-$G_ENV_MODEL_DATA = get_path('model.data.ini', $CFG_PATHS);
-$G_ENV_LOCAL_ROLES = get_path('roles.ini', $CFG_PATHS);
-$G_ENV_LIB_MAPPING = get_path('lib.map.ini', $CFG_PATHS);
-$G_ENV_MFM_USERS = get_path('mfm.users.ini', $CFG_PATHS);
+$G_ENV_MAIN_CFG = get_cfg_path('db.ini');
+$G_ENV_MODEL = get_cfg_path('model.ini');
+$G_ENV_TABLE_DB_MAPPING = get_cfg_path('model.map.ini');
+$G_ENV_MODEL_DATA = get_cfg_path('model.data.ini');
+$G_ENV_LOCAL_ROLES = get_cfg_path('roles.ini');
+$G_ENV_LIB_MAPPING = get_cfg_path('lib.map.ini');
+$G_ENV_MFM_USERS = get_cfg_path('mfm.users.ini');
 
 $G_LIBS_LIST = ['//az/lib/editing3.css', '//az/lib/editing3-ru.css', '//az/lib/choco.js', '//az/lib/editing3.js'];
 
-define('G_ENV_TEMPLATE_INIT', get_path('template.init.php', $CFG_PATHS));
+define('G_ENV_TEMPLATE_INIT', get_cfg_path('template.init.php'));
 
 
 //Register Log In
@@ -79,4 +87,4 @@ $RL_RESET_ALR_CHANGED = 'Пароль был уже изменен!';
 $RL_RESET_CH_OK = "Пароль изменен, можете войти.";
 $RL_LOG_WRG = 'Неверный пароль или имя пользователя, или пользователь не активирован.';
 
-@include get_path('env.php', $CFG_PATHS);
+@include get_cfg_path('env.php');
