@@ -122,7 +122,7 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 				'mysql' => "DATEDIFF$1$2$3$4$5",
 				],
 		'ADD_DAYS' => [
-				'pgsql' => "$1 ($2) + INTERVAL $4 DAY$5",
+				'pgsql' => "$1 ($2) +  CAST($4 || ' DAY' AS INTERVAL) $5",
 				'oracle' => "$1 ($2) + INTERVAL $4 DAY$5",
 				'mssql' => "DATEADD$1day, $4 $3 $2 $5",// --chage order
 				'mysql' => "$1 ($2) + INTERVAL $4 DAY$5",

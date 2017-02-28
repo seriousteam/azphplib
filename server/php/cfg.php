@@ -1,10 +1,11 @@
 <?php
 
 mb_internal_encoding("UTF-8");
+
 define('REPLACED_TOPLEVEL', defined('TOPLEVEL_FILE'));
 
 if(!REPLACED_TOPLEVEL)
-	define('TOPLEVEL_FILE', @end(debug_backtrace())['file']?:__FILE__);
+	define('TOPLEVEL_FILE', @end(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))['file']?:__FILE__);
 
 require_once (__DIR__.'/dialects.php');
 
