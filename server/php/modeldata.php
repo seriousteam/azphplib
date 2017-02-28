@@ -1,7 +1,7 @@
 <?php
 require_once(__DIR__.'/model.php');
 
-$ModelDB = cached_ini($G_ENV_MODEL_DATA, true);
+$ModelDB = cached_ini(_ENV_MODEL_DATA, true);
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 

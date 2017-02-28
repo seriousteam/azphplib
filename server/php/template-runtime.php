@@ -520,10 +520,9 @@ function sas_FORM($rid, $table, $root = '/') {
 }
 
 function sas_RCT($file, $root = '/') {
-	global $G_P_DOC_ROOT;
 	return $root . 
 		'rct/'.$file
-		. '('.filemtime ($G_P_DOC_ROOT.'/../sys/app/rc/'.$file) .')';
+		. '('.filemtime (__ROOTDIR__.'/../sys/app/rc/'.$file) .')';
 }
 
 function sas_PERSON() {
@@ -558,7 +557,7 @@ function CURRENT_USER_TO_QUERIES($table = '') {
 //http://localhost/sys/rct/templates/free/common/common-choosers.js(1396521129)
 
 function CURRENT_URI() {
-	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
+	global $CURRENT_TEMPLATE_URI;
 	return $CURRENT_TEMPLATE_URI;
 }
 
@@ -585,13 +584,13 @@ function load_template($file) {
 $CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
-	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT, $G_ENV_CACHE_DIR, $LOCALIZED_URI;	
+	global $CURRENT_TEMPLATE_URI, $LOCALIZED_URI;	
 	
 	if(!$file) $file = $caller;
 	
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
-			$file = "$G_P_DOC_ROOT$file";
+			$file = __ROOTDIR__.$file;
 			$CURRENT_TEMPLATE_URI = $file;
 		} else {
 			$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //trim file part
@@ -606,10 +605,10 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 			$file = dirname($caller). '/' . $file;
 		}
 	
-	if($G_ENV_CACHE_DIR) {
+	if(_ENV_CACHE_DIR) {
 		//template-cache rules		
 		$cache = new TemplaterCache( urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
-		if(dirname($file) !== $G_ENV_CACHE_DIR) {
+		if(dirname($file) !== _ENV_CACHE_DIR) {
 			if( $cache->need_to_gen_from( $file ) ) {
 				$cache->gen_from_file( $file );
 			}
@@ -631,14 +630,14 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 }
 
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
-	global $CURRENT_TEMPLATE_URI, $G_P_DOC_ROOT;
+	global $CURRENT_TEMPLATE_URI;
 	
 	$uri = $CURRENT_TEMPLATE_URI;
 	if($file)
 		if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$uri = $file;
-			$file = "$G_P_DOC_ROOT$file";
+			$file = __ROOTDIR__.$file;
 		} else {
 			$uri = dirname($uri); //trim file part
 			$f = $file;

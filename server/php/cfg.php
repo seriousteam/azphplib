@@ -53,6 +53,14 @@ $CURRENT_ROLES =
   		'' 
 );
 
+$G_TEMPLATER_GLOBALS = [
+	'G_LIBS_LIST'
+	, 'CURRENT_USER'
+	, 'CURRENT_ROLES'
+	, 'CURRENT_ROLES_CSV'
+	, 'CURRENT_ROLES_ARRAY'
+];
+
 //override setting on php side, if server doesn't allow to use SetEnv
 require_once(__DIR__.'/envars.php');
 
@@ -74,19 +82,19 @@ function db_dialect($a) {
   return @$a['dialect'] ?: explode(':', $a['server'], 2 )[0];
 }
 
-if($G_ENV_MAIN_CFG)
+if(_ENV_MAIN_CFG)
   $main_cfg = array_replace_recursive( $main_cfg,
-				     cached_ini($G_ENV_MAIN_CFG, true)
+				     cached_ini(_ENV_MAIN_CFG, true)
 				     );
 
 $default_db = $main_cfg['default_db'];
 
 $a_table_db = array();
-if($G_ENV_TABLE_DB_MAPPING) {
+if(_ENV_TABLE_DB_MAPPING) {
   /*
     table_name = db_name
    */
-  $a_table_db = cached_ini($G_ENV_TABLE_DB_MAPPING, true);
+  $a_table_db = cached_ini(_ENV_TABLE_DB_MAPPING, true);
 }
 
 function table_db($table){
@@ -96,6 +104,8 @@ function table_db($table){
   $tn = trim(explode(':', @$a_table_db[$table], 2)[0]);
   return $main_cfg[$tn ?: 'default_db'];
 }
+
+
 if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 	$OS = php_uname('s');
 	$checks = [
@@ -107,6 +117,7 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 		$pdo_dialects = [ "mssql" => [ 'Windows' => "pdo_sqlsrv", 'Linux' => "pdo_odbc" ],
 				"mysql"=>"pdo_mysql", "pgsql"=>"pdo_pgsql", "oracle"=>"pdo_oci"];
 		foreach($main_cfg as $k=>$v) {
+			if(!@$v["dialect"]) continue;
 			$dialect = $v["dialect"];
 
 			if(is_array($pdo_dialects[$dialect])) {
@@ -123,12 +134,12 @@ if(__FILE__ === TOPLEVEL_FILE) {/* DIAGNOSTIC */
 	system(PHP_PATH." >&0",$retval);
 	$checks['PHP Cli'] = !$retval;
 	
-	if(@$G_ENV_CACHE_DIR && $checks['PHP Cli']) {
-		$checks["PHP Cli Rights for $G_ENV_CACHE_DIR for $CURRENT_USER"] = false;
-		$tmpfile = "$G_ENV_CACHE_DIR/az.cfg.check.php";
+	if(@_ENV_CACHE_DIR && $checks['PHP Cli']) {
+		$checks["PHP Cli Rights for "._ENV_CACHE_DIR." for $CURRENT_USER"] = false;
+		$tmpfile = _ENV_CACHE_DIR."/az.cfg.check.php";
 		system("echo 11111 > $tmpfile",$retval);		
 		if(!$retval && file_exists($tmpfile) ) {
-			$checks["PHP Cli Rights for $G_ENV_CACHE_DIR for $CURRENT_USER"] = 
+			$checks["PHP Cli Rights for "._ENV_CACHE_DIR." for $CURRENT_USER"] = 
 				preg_replace('/[^1]+/','',file_get_contents($tmpfile))==="11111";
 			unlink($tmpfile);
 		}
@@ -299,7 +310,7 @@ function cfg_parse_roles($a) {
 	return $r;
 }
 
-if($G_ENV_LOCAL_ROLES)
+if(_ENV_LOCAL_ROLES)
   /*
     [role] or [role !number!]
 	.r : filter
@@ -331,7 +342,7 @@ if($G_ENV_LOCAL_ROLES)
 		or should allow insert any value
    */
   $local_objects_rights = 
-    cached('ini', $G_ENV_LOCAL_ROLES,
+    cached('ini', _ENV_LOCAL_ROLES,
        function($file) { return cfg_parse_roles(file($file)); });
 else
   $local_objects_rights = array( );
@@ -410,15 +421,15 @@ function our_URI($uri) {
 	return preg_replace('#/+#','/',__CLIENT_URI_PREFIX__ . $uri);//$uri is 'absolute'
 }
 $a_lib_map = array();
-if($G_ENV_LIB_MAPPING) {
+if(_ENV_LIB_MAPPING) {
   /*
     //path/to/resource.js = "https://resour.ce/absolute/path.js"
    */
-  $a_lib_map = cached_ini($G_ENV_LIB_MAPPING);
+  $a_lib_map = cached_ini(_ENV_LIB_MAPPING);
 }
 $a_mfm_users = array();
-if($G_ENV_MFM_USERS) {
-    $a_mfm_users = cached_ini($G_ENV_MFM_USERS);
+if(_ENV_MFM_USERS) {
+    $a_mfm_users = cached_ini(_ENV_MFM_USERS);
 }
 function extern_path($path){
   global $a_lib_map;
@@ -607,16 +618,6 @@ set_exception_handler(function ($exception) {
   echo "Exception: " , $exception->getMessage(), "\n";
 });
 
-$G_TEMPLATER_GLOBALS = [
-	'G_LIBS_LIST'
-	, 'CURRENT_USER'
-	, 'CURRENT_ROLES'
-	, 'CURRENT_ROLES_CSV'
-	, 'CURRENT_ROLES_ARRAY'
-	, 'CURRENT_ROLES_ARRAY'
-];
-
-
 if(__FILE__ != TOPLEVEL_FILE) return;
 
 FAILED:
@@ -648,9 +649,19 @@ $CURIP = __CLIENT_URI_PREFIX__;
 $SURIP = __SERVER_URI_PREFIX__;
 $DOCROOT = __ROOTDIR__;
 
+$G_PHP_PATH = PHP_PATH;
+
+$G_ENV_MAIN_CFG = _ENV_MAIN_CFG;
+
 $G_ENV_LOAD_MODEL = _ENV_LOAD_MODEL;
 $G_ENV_CACHE = _ENV_CACHE;
 $G_ENV_CACHE_TTL = CACHE_TTL;
+$G_ENV_MAIN_CFG = _ENV_MAIN_CFG;
+$G_ENV_TABLE_DB_MAPPING = _ENV_TABLE_DB_MAPPING;
+$G_ENV_LIB_MAPPING = _ENV_LIB_MAPPING;
+$G_ENV_LOCAL_ROLES = _ENV_LOCAL_ROLES;
+$G_ENV_MODEL = _ENV_MODEL;
+$G_ENV_CACHE_DIR = _ENV_CACHE_DIR;
 
 echo <<<XCFG
 	<tr><td colspan=2><b>Info:</b></tr>

@@ -9,9 +9,9 @@ $link = @$_REQUEST['link'];
 
 $cache = new TemplaterCache("$table.".($link?".$link":"").(CHOOSER_MODE?'choose':'table').".php.t");
 
-$cdir = getenv('cache') ?: $G_ENV_CACHE_DIR;
+$cdir = _ENV_CACHE_DIR;
 
-if(!$cache->need_to_gen_from($G_ENV_MODEL)) goto end;
+if(!$cache->need_to_gen_from(_ENV_MODEL)) goto end;
 
 
 //$link_filter = '';

@@ -84,7 +84,7 @@ cached template reference
 [[CREF template]]
 CREF cached until file changed
 
-library reference (relative to $G_JSLIB_PATH) - cached permanently
+library reference
 [[LIB name]] 
 
 [[CACHED]] - take this template from cache and end processing (use all args as a key!)
