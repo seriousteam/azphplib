@@ -440,7 +440,14 @@ function nBOOL($v) { return $v === NULL || $v === '' ? NULL : ($v[0] === '0' ? F
 function subRE($v, $re, $np = 0) { return preg_match($re, $v, $m)? $m[$np] : ''; }
 function trimT($v) {  return preg_replace('/\s*\d\d:\d\d:\d\d(\.\d+)?\s*/', '', $v); }
 function ROLES() { global $CURRENT_ROLES_ARRAY; return "('".implode("','",$CURRENT_ROLES_ARRAY)."')"; }
-function HASROLE($role) { global $CURRENT_ROLES_ARRAY; if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; return ''; }
+function HASROLE() { 
+	global $CURRENT_ROLES_ARRAY;
+	$roles = func_get_args();
+	foreach($roles as $role) {
+		if(in_array($role, $CURRENT_ROLES_ARRAY, TRUE)) return $role; 
+	}
+	return ''; 
+}
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
 
 function fieldPart($v, $p) {
