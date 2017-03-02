@@ -30,22 +30,18 @@ $CURRENT_USER =
   @$_SERVER['HTTP_X_AUTH_USER'] ?:(
 	  @$_COOKIE['Uname'] ?:(
 	  @$_COOKIE['AUTH_USER'] ?:(
-	  	@$_COOKIE['username'] ? :(
-	  	@$_REQUEST['username'] ? :(	
 		  @$_SERVER['PHP_AUTH_USER'] ?:(
 		   function_exists('posix_geteuid') ?
 			posix_getpwuid(posix_geteuid())['name'] :
    			getenv('USERNAME').'@'.getenv('USERDOMAIN')
-))))));
+))));
 $CURRENT_PW = 
   @$_SERVER['HTTP_X_AUTH_PW'] ?:(
 	  @$_COOKIE['Upass'] ?:(
 	  @$_COOKIE['AUTH_PW'] ?:(
-	  	@$_COOKIE['password'] ?:(
-	  	@$_REQUEST['password'] ?:(
 		  @$_SERVER['PHP_AUTH_PW'] ?:(
 			''
-))))));
+))));
 
 $CURRENT_ROLES =
   @$_SERVER['HTTP_AUTH_ROLES'] ?: (
