@@ -205,7 +205,7 @@ echo <<<ST
 <div chart-place></div>
 <div style="clear:both" filtred><!--FILTRED:-->
 [[ob_start();]]
-<table main $mode onrefresh="refreshNoRowStatus(this);this.__chart__ = this.__chart__ || X.throttle(function() { D3C.setupController(this) },1000);this.__chart__();"
+<table main $mode onrefresh="refreshNoRowStatus(this);this.__chart__ = this.__chart__ || window.D3C && X.throttle(function() { D3C.setupController(this) },1000);this.__chart__ && this.__chart__();"
 		d3c-place="this.QSattrPrevious('chart-place')"
 		d3c-row="TBODY>TR[data-row]"
 		d3c-cell="TD>[ctrl-inline]>TEXTAREA, TD>[ctrl-inline]>INPUT, TD>[ctrl-inline]>SPAN[value-only], TD>[ctrl-inline]>A[tag]"

@@ -90,17 +90,17 @@ function Select($cmd, $args = null) {
   $stmt = __recPrepare(get_connection($cmd->root()), $cmd);
   if($args !== null) 
     try {
-	global $SQL_EMULATION;
-	if($SQL_EMULATION) {
-		echo $stmt->queryString;
-		print_r ($args);
-	} else {
-		$stmt->exInfo = new axCommandInfo($cmd, $args);
-		$stmt->execute($args);
-	}
+    	global $SQL_EMULATION;
+    	if($SQL_EMULATION) {
+    		echo $stmt->queryString;
+    		print_r ($args);
+    	} else {
+    		$stmt->exInfo = new axCommandInfo($cmd, $args);
+    		$stmt->execute($args);
+    	}
     } catch(Exception $e) {
-	debug_print_backtrace();
-	throw new Exception($e->getMessage() . "\n" . $stmt->queryString."\n-\n".implode("\n", $args ?: []));
+    	debug_print_backtrace();
+    	throw new Exception($e->getMessage() . "\n" . $stmt->queryString."\n-\n".implode("\n", $args ?: []));
     }
   return $stmt;
 }

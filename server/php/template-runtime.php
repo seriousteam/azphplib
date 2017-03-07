@@ -1256,7 +1256,9 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			break;
 		default:
 	}
-
+	if(preg_match('/(?:^|\s+)field_part=(?:\'|")([^\'"]*)(?:\'|")/',$attrs,$m)) {
+		$value = fieldPart($value, $m[1]);
+	}
 	$template = $value_only ? '<span value-only $attrs>$value</span>' : default_templated_editor($vtype);
 	
 	/*

@@ -82,9 +82,16 @@ case 'D':
 	break;
 	
 case 'U':
+	foreach($fieldvals as $field=>$value) {
+		if(preg_match('/^([^(]+)\((.+)\)$/', $field, $m)) {
+			$fields[$m[1].":FIELD_PART('".$m[2]."',".$m[1].", ? )"] = $value;
+		} else {
+			$fields[$field] = $value;
+		}
+	}
 	$stmt = Update($table->___name.' WHERE '.
 	 	implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
-	, $key_vals, $fieldvals);
+	, $key_vals, $fields);
 
 	$ret[] = 'U: _ '.$stmt->rowCount();
 	//if($stmt->rowCount() == 0)
