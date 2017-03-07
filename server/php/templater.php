@@ -570,8 +570,10 @@ EEE;
 						$pre = "$m[1]:; ";
 						if(!$m[2])
 							$db_part = ";";
-						else
+						else if($m[2] === '!')
 							$db_part = "@\$$m[1]";
+						else
+							$db_part = $m[2];
 					}
 					//process field part
 					$db_part = preg_replace("/\\\$params\s*\.\s*($RE_ID)/", 

@@ -22,8 +22,6 @@ define('CFG_DIR', __ROOTDIR__.'/cfg');
 
 define('_ENV_CACHE_DIR', __ROOTDIR__."/cache");
 
-$CURRENT_USER_IP = @$_SERVER['REMOTE_ADDR'];
-
 $G_ENV_LOCAL_USERS  = [
    '/.*/' => "SQL:SELECT rd.enf_rolenamew AS ROLE, CASE r.enf_defaultw WHEN 1 THEN 'D' ELSE 'C' END AS STATUS "
 	." FROM enperson_roles r JOIN enpn2persons u ON r.enrel_pnpersonw = u.syrecordidw JOIN eninternal_roles rd ON r.enrel_rolew = rd.syrecordidw"
@@ -51,6 +49,7 @@ define('_ENV_LOCAL_ROLES', get_cfg_path('roles.ini'));
 define('_ENV_LIB_MAPPING', get_cfg_path('lib.map.ini'));
 define('_ENV_MFM_USERS', get_cfg_path('mfm.users.ini'));
 define('G_ENV_TEMPLATE_INIT', get_cfg_path('template.init.php'));
+define('_ENV_CRUD_URI', '//az/server/php/crud.php');
 
 $G_LIBS_LIST = ['//az/lib/editing3.css', '//az/lib/editing3-ru.css', '//az/lib/choco.js', '//az/lib/editing3.js'];
 

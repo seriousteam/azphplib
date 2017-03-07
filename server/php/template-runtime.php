@@ -793,7 +793,7 @@ function make_manipulation_command($data, $counter, $stmt = NULL, $with_pk = '')
 						sas_coder_Map($where_vals)
 			];
 	}
-	return file_URI('//az/server/php/crud.php', $arr);
+	return file_URI(_ENV_CRUD_URI, $arr);
 }
 
 function make_counting_command($stmt) {
