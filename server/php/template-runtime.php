@@ -1195,7 +1195,12 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$read_only = $f->readonly || $read_only;		
 			
 		if(@$value->rel_target || $f->target) {
-			$rel_target = file_URI('//az/server/php/chooser2.php', 
+			$uri = '//az/server/php/chooser2.php';
+			if(preg_match('/(?:^|\s+)theme=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
+				$theme = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
+				$uri = "//az/server/php/{$theme}.choose.php";
+			}
+			$rel_target = file_URI($uri, 
 				[ 'table' => 
 						@$value->rel_target ?: $f->target->___name 
 				  , 'add_empty' => $f->required ? '' : 'Y'
@@ -1256,8 +1261,9 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			break;
 		default:
 	}
-	if(preg_match('/(?:^|\s+)field_part=(?:\'|")([^\'"]*)(?:\'|")/',$attrs,$m)) {
-		$value = fieldPart($value, $m[1]);
+	if(preg_match('/(?:^|\s+)field_part=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
+		$part = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
+		$value = fieldPart($value, $part);
 	}
 	$template = $value_only ? '<span value-only $attrs>$value</span>' : default_templated_editor($vtype);
 	
