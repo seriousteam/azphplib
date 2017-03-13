@@ -5,7 +5,7 @@
  **/
 
 div[theme='swift'] {
-  font-size:16px;
+  font-size:18px;
   display:inline-block; 
   padding:0;
   min-height:1em;
@@ -27,7 +27,7 @@ div[theme='swift'] {
 [theme='swift']>[value-only]
 {
   box-shadow:none;
-  font-size:16px;
+  font-size:18px;
   font-family:sans-serif;
   min-height:2.3em;
   text-align:left;
@@ -116,7 +116,7 @@ div[theme='swift'] {
   border:1px solid rgba(0,0,0,0.1);
   font-family:sans-serif;  
   vertical-align:middle;
-  width:100%;
+  min-width:100%;
   margin:0;
 }
 [theme='swift']>[bool2]
@@ -129,7 +129,7 @@ div[theme='swift'] {
 [theme='swift']>[list][count="0"]~label,
 [theme='swift']>a[tag="A"]:empty~label
 {
-  font-size:16px;
+  font-size:18px;
   top:0;
   left:0;
   padding:0.5em;
@@ -272,7 +272,7 @@ div[theme='swift'] {
   z-index:3;
   top:0;
   right:0;
-  font-size:16px;
+  font-size:18px;
   position: absolute;
   width:0;
 }
@@ -404,7 +404,7 @@ div[theme='swift'] {
 [theme='swift'][mctl],
 [theme='swift']>[mctl]
 {
-  font-size:16px;
+  font-size:18px;
   background:#e5f2fb;
   background:#f2f8fd;
   border:none;
@@ -538,7 +538,7 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 
 [theme='swift']>[edit-panel]>[filter_def]>input
 {
-  font-size:16px;
+  font-size:18px;
   line-height:1em;
   padding:0.8em;
   padding-left:1.8em;
@@ -670,3 +670,37 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   position:absolute;
   left:0;
 }
+
+/* FORM LOCKER SUPPORT BEGIN */
+[locker="Y"] div[theme='swift'] 
+{ 
+  padding:0.25em;
+  margin-right:0.75em;
+}
+[locker="Y"] [theme='swift']>label { display:none }
+[locker="Y"] [theme='swift']>span[tip] { display:none }
+[locker="Y"] [theme='swift'][label]:before
+{
+  content: attr(label);
+  padding:0;
+  line-height: inherit;
+  height: auto;
+  margin-top: 0;
+  display: block;
+  visibility: visible;
+  font-size:14px;
+  color:rgba(0,0,0,0.4);
+}
+[locker="Y"] [theme='swift']>a[tag="A"]
+{
+  padding: 0;
+  border: none;
+  vertical-align: middle;
+  margin: 0;
+}
+[locker="Y"] [theme='swift']>dfn:empty:before
+{
+  content:'—';
+  min-width:100px;
+}
+/* FROM LOCKER SUPPORT END */

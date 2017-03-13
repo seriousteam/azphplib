@@ -1168,6 +1168,7 @@ function get_filter_control($f)
 function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
 	global $Tables;
+	global $_ENV_UI_THEME;
 	
 	$name = name_of_field_in_nv($value);
 	$size = '';
@@ -1175,7 +1176,9 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	$rel_target = '';
 	$table_name = '';
 	$rid = '';
-
+	if($_ENV_UI_THEME) {
+		$attrs .= ' theme="'.$_ENV_UI_THEME.'"';
+	}
 	if($name && $value instanceof namedString) {
 		
 		$table = $Tables->{$value->container->getName()};
@@ -1196,9 +1199,8 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			
 		if(@$value->rel_target || $f->target) {
 			$uri = '//az/server/php/chooser2.php';
-			if(preg_match('/(?:^|\s+)theme=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
-				$theme = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
-				$uri = "//az/server/php/{$theme}.choose.php";
+			if($_ENV_UI_THEME) {
+				$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
 			}
 			$rel_target = file_URI($uri, 
 				[ 'table' => 

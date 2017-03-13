@@ -22,6 +22,8 @@ define('CFG_DIR', __ROOTDIR__.'/cfg');
 
 define('_ENV_CACHE_DIR', __ROOTDIR__."/cache");
 
+$_ENV_UI_THEME = '';
+
 //$G_ENV_LOCAL_USERS  
 //	definition
 //	or
@@ -65,7 +67,6 @@ define('_ENV_CRUD_URI', '//az/server/php/crud.php');
 
 $G_LIBS_LIST = ['//az/lib/editing3.css', '//az/lib/editing3-ru.css', '//az/lib/choco.js', '//az/lib/editing3.js'];
 
-
 //Register Log In
 $RL_CREATE_USER_IN_LINK = 'yes';// 'yes' or 'no'
 $RL_CRYPT_KEY = 'D2fq9No8pzsTb12nTx';
@@ -94,3 +95,5 @@ $RL_RESET_CH_OK = "Пароль изменен, можете войти.";
 $RL_LOG_WRG = 'Неверный пароль или имя пользователя, или пользователь не активирован.';
 
 @include get_cfg_path('env.php');
+
+$G_LIBS_LIST[] = '//az/lib/'.$_ENV_UI_THEME.'.css';
