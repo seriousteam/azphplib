@@ -18,7 +18,7 @@ $ui->table = $table->___name;
 $ui->cmd_key = implode(',', array_map(function($a){ return "a.$a";}, $table->PK(true))); //full pk
 $ui->choose_key = $table->PK(); //single field pk
 $pk = $table->fields[$table->PK()];
-$ui->zero_record = $pk->type == 'CHAR' ? implode('', array_fill(0,$pk->size,'0')) : '';
+$ui->zero_record = $table->ZERO_RECORD();
 
 //define initial set of fields
 $table_fields = $table->fields;

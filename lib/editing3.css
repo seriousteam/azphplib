@@ -202,6 +202,7 @@ MENU[mctl][display="Y"]
 { display: inline-block; }
 
 MENU[mctl] > LI { list-style: none; }
+MENU[mctl] > LI > A:empty:before { content: '?' }
   
 DL[mctl] > DD { margin-left: 1em; }
 DL[mctl] > DT > INPUT {

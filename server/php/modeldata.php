@@ -17,12 +17,12 @@ if(!@$_REQUEST['table']) {
 	foreach($ModelDB[$t] as $k => $v)
 		if($k === '.') {
 			$vnull = @$ModelDB[$t.'.info']['.'];
-			$vals[] = [ 'value' => "$vnull", 'text' => htmlspecialchars($v) ];
+			$vals[] = [ 'value' => "$vnull", 'text' => htmlspecialchars($v), 'rt' => htmlspecialchars($v), 'empty' => '' ];
 		} else
 			$vals[] = [ 'value' => htmlspecialchars($k), 'text' => htmlspecialchars($v)  ];
 
 	if(@$_REQUEST['add_empty'] && !isset($ModelDB[$t]['.'])) {
-		$vals[] = [ 'value' => '', 'text' => '?', 'rt' => '', 'empty' => '' ];
+		$vals[] = [ 'value' => '', 'text' => '', 'rt' => '', 'empty' => '' ];
 	}
 	if(@$_REQUEST['js']) {
 		echo '['.implode(','
