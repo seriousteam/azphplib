@@ -13,10 +13,12 @@ div[theme='swift'] {
   margin-bottom:0.75em;
   vertical-align:top;
 }
-[theme='swift'][wide]
+[theme='swift'][wide],
+[theme='swift'][inline]
 {
   width:100%;
 }
+
 /* Overall controls */
 [theme='swift']>input[tag],
 [theme='swift']>textarea[tag],
@@ -249,8 +251,29 @@ div[theme='swift'] {
   visibility: hidden;
 }
 
-/* RELATION */
 
+
+/*  Inline Form Controls BEGIN */
+div[theme='swift'][inline]
+{
+  margin:0.5em;
+}
+
+[theme='swift'][inline]>input[tag],
+[theme='swift'][inline]>textarea[tag],
+[theme='swift'][inline]>a[tag="A"],
+[theme='swift'][inline]>[list],
+[theme='swift'][inline]>[bool-state],
+[theme='swift'][inline]>[bool2],
+[theme='swift'][inline]>[value-only]
+{
+  border:none;
+}
+/*  Inline Form Controls END */
+
+
+
+/*  Relation BEGIN  */
 [theme='swift']>a[tag="A"],
 [theme='swift']>[list]
 {
@@ -320,6 +343,9 @@ div[theme='swift'] {
 {
   content:none;
 }
+/*  Relation END  */
+
+
 
 /* The swift list */
 [theme='swift']>[list]>tbody>tr>td

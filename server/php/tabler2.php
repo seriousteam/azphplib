@@ -296,7 +296,7 @@ if($ui->tabler || $ui->grouped) {
 	echo <<<ST
 	<td>[[@td \$data.{CE left}]]
 		<div ctrl-inline>
-			[[\$data.{\$left->alias}$edit label="{\$left->caption}"]]
+			[[\$data.{\$left->alias}$edit label="{\$left->caption}" inline]]
 		</div>
 	</td>
 ST;
@@ -309,7 +309,7 @@ foreach($ui_view as $f) {
 	echo <<<ST
 	<td>
 		<div ctrl-inline>
-			[[\$data.{$f->name}$edit label="{$f->caption}"]]
+			[[\$data.{$f->name}$edit label="{$f->caption}" inline]]
 		</div>
 	</td>
 ST;
@@ -322,7 +322,7 @@ if($ui->tabler || $ui->grouped) {
 	echo <<<ST
 	<td>[[@td \$data.{CE right}]]
 		<div ctrl-inline>
-			[[\$data.{\$right->alias}$edit label="{\$right->caption}"]]
+			[[\$data.{\$right->alias}$edit label="{\$right->caption}" inline]]
 		</div>
 	</td>
 ST;
