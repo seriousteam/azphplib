@@ -8,4 +8,4 @@ if($cache->need_to_gen_from($fname)) {
 	$cache->gen_from_file($fname);
 }
 define('TOPLEVEL_FILE', realpath($cache->file()));
-while(@!include $cache->file()) {}
+while(@!include TOPLEVEL_FILE) {}

@@ -22,11 +22,23 @@ define('CFG_DIR', __ROOTDIR__.'/cfg');
 
 define('_ENV_CACHE_DIR', __ROOTDIR__."/cache");
 
-$G_ENV_LOCAL_USERS  = [
-   '/.*/' => "SQL:SELECT rd.enf_rolenamew AS ROLE, CASE r.enf_defaultw WHEN 1 THEN 'D' ELSE 'C' END AS STATUS "
-	." FROM enperson_roles r JOIN enpn2persons u ON r.enrel_pnpersonw = u.syrecordidw JOIN eninternal_roles rd ON r.enrel_rolew = rd.syrecordidw"
-	." WHERE enf_rolenamew IS NOT NULL AND u.enpnw = ? AND u.enpassw = ?"
-	];
+//$G_ENV_LOCAL_USERS  
+//	definition
+//	or
+//	array regexp=>definition
+//		if username match regexp we use definition
+//		definition can be
+//			filename
+//			or
+//			SQL:select which take two params: username, password and return records of roles <ROLE, STATUS>
+//				STATUS: D - used by default, C - possible role
+//			or
+//			SQL WITH IP:select which take two params: username, password and return records of roles <ROLE, STATUS, IP>
+//				STATUS: D - used by default, C - possible role
+//				IP: ip range in form 0.0.0.0/0
+//			or
+//			PHP:name - name of php function whidh take username, password, ip
+//				and  return array role=>status or null
 
 define('_ENV_CACHE', 'local');
 define('CACHE_TTL', 10);
@@ -52,7 +64,6 @@ define('G_ENV_TEMPLATE_INIT', get_cfg_path('template.init.php'));
 define('_ENV_CRUD_URI', '//az/server/php/crud.php');
 
 $G_LIBS_LIST = ['//az/lib/editing3.css', '//az/lib/editing3-ru.css', '//az/lib/choco.js', '//az/lib/editing3.js'];
-
 
 
 //Register Log In

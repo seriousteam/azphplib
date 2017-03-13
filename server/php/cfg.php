@@ -51,17 +51,16 @@ $CURRENT_ROLES =
 
 $CURRENT_USER_IP = @$_SERVER['REMOTE_ADDR'];
 
+//override setting on php side, if server doesn't allow to use SetEnv
+require_once(__DIR__.'/envars.php');
 
-$G_TEMPLATER_GLOBALS = [
+$G_TEMPLATER_GLOBALS = array_merge( [
 	'G_LIBS_LIST'
 	, 'CURRENT_USER'
 	, 'CURRENT_ROLES'
 	, 'CURRENT_ROLES_CSV'
 	, 'CURRENT_ROLES_ARRAY'
-];
-
-//override setting on php side, if server doesn't allow to use SetEnv
-require_once(__DIR__.'/envars.php');
+], @$G_TEMPLATER_GLOBALS ?: []); 
 
 /*
 	we need setup cache configuration first
