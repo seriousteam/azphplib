@@ -277,8 +277,7 @@ ST;
 				echo <<<ST
 				<td$colspan>
 					<div ctrl-container>
-						[[\$data.{$f->name}~e: style='min-width:{$f->min_width()}em']]					
-						<label>{$f->caption}</label>
+						[[\$data.{$f->name}~e: style='min-width:{$f->min_width()}em' label="{$f->caption}"]]					
 					</div>
 				</td>
 ST;
@@ -293,13 +292,11 @@ ST;
 //EXTRA COLUMNS AT BEGIN
 if($ui->tabler || $ui->grouped) {
 	if($ui->tabler) $edit = "~e: style='min-width:{\$left->min_width()}em'";
-	//if($ui->grouped) $edit =  "~e:RO: style='min-width:{\$left->min_width()}em'";
 	if($ui->grouped) $edit = "~v: ";
 	echo <<<ST
 	<td>[[@td \$data.{CE left}]]
 		<div ctrl-inline>
-			[[\$data.{\$left->alias}$edit]]
-			<label>[[\$left->caption]]</label>
+			[[\$data.{\$left->alias}$edit label="{\$left->caption}"]]
 		</div>
 	</td>
 ST;
@@ -312,8 +309,7 @@ foreach($ui_view as $f) {
 	echo <<<ST
 	<td>
 		<div ctrl-inline>
-			[[\$data.{$f->name}$edit]]
-			<label>{$f->caption}</label>
+			[[\$data.{$f->name}$edit label="{$f->caption}"]]
 		</div>
 	</td>
 ST;
@@ -326,8 +322,7 @@ if($ui->tabler || $ui->grouped) {
 	echo <<<ST
 	<td>[[@td \$data.{CE right}]]
 		<div ctrl-inline>
-			[[\$data.{\$right->alias}$edit]]
-			<label>[[\$right->caption]]</label>
+			[[\$data.{\$right->alias}$edit label="{\$right->caption}"]]
 		</div>
 	</td>
 ST;
@@ -378,181 +373,6 @@ echo <<<ST
 <!--FILTRED.--></div>
 </body>
 ST;
-
-//echo <<<ST
-//<div style="clear:both" [[\$has_group]]><!--FILTRED:-->
-//[[ob_start();]]
-//<table main onrefresh="refreshNoRowStatus(this)">
-//ST;
-/*	ob_start(); $cnt = 0;
-echo "<thead><tr>";
-	if(!CHOOSER_MODE) {
-		echo '<th>';
-	}
-echo <<<ST
-[[if(isset(\$xtraz))foreach(\$xtraz['data'] as \$f) { if(\$f->floating==='l') {]]<th>[[\$f->caption]][[}}]]
-ST;
-	foreach($table_fields as $n=>$f) if($f->type && !$f->hidden && !$f->page && $n != $link){ 
-	++$cnt; echo '<th>'; output_html($f->caption ?: $n); } 
-echo <<<ST
-[[if(isset(\$xtraz))foreach(\$xtraz['data'] as \$f) { if(\$f->floating==='r') {]]<th>[[\$f->caption]][[}}]]
-ST;
-echo '</thead>';
-	if($cnt>1) ob_end_flush(); else ob_end_clean();
-*/
-
-/*echo <<<ST
-<tr>
-[[@tr \$data : SAMPLE AND SELECT *, $sql_fields FROM $table->___name]]
-[[cmd@tr \$data.{CMD $pk_s}]]
-[[\$@tr \$data.{EXTRA}]]
-ST;
-*/
-/*
-if(CHOOSER_MODE){ 
-echo <<<ST
-	[[rt@tr \$data-:a__table__id]]
-	[[value@tr \$data-:a__$pk0]]
-	[[onclick@tr 'blockEvent(event);this.closeModal(this)']]
-	[[style@tr 'cursor: pointer']]
-ST;
-}*/
-/*
-echo <<<ST
-[[\$@tr \$data.{SAMPLE}]]
-[[make_manipulation_command(null, false, \$statements->data) ~\$where_vals]]
-ST;
-*/
-//if(!CHOOSER_MODE){
-/*echo "<td expander>";
-echo <<<ST
-<div><button type=button onclick="startAddRow(this)" static add=resume unlocked=Y
-		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
-></button></div>
-<div><button tag type="button" onclick="doDelete(this, 'отменить добавление?')" cancel-add></button></div>
-ST;
-*/
-// EDITABLE FORM
-/*
-ob_start();
-echo <<<ST
-	<button type=button onclick="this.setDN_TR(toggle)" display_next_row></button>
-	<div extended_form cmd="@var r = this.UT('TR'); r.className == 'transit_row'? r.previousElementSibling : r">
-ST;
-
-		foreach($ui_form as $page) {
-			foreach($page as $grp) {
-				echo '<table ctrl-grid';
-				if(!$grp->closed || $grp->subtable || $grp->free)
-					echo ' grp-display="Y"';
-				else
-					echo ' grp-display="N"';			
-				echo '>';
-				if( $grp->caption ) {
-					echo "<tr ctrl-group-head><td colspan=100><span onclick='group(this,toggle)''>{$grp->caption}</span></td></tr>";
-				}
-				foreach($grp->lines as $cline) {
-					echo '<tr ctrl-group>';
-					foreach($cline as $f) {
-						if($f->col>1)
-							echo "<td colspan='{$f->col}'>";
-						else
-							echo "<td>";
-						echo "<div ctrl-container>";
-						$size = "style='min-width:".max(0.7 * mb_strlen($f->caption), 13)."em'";
-						if($f->target)
-							echo "[[\$data.{$f->name}._id_~e: $size]]"; 
-						else
-							echo "[[\$data.{$f->name}~e: $size]]"; 
-						echo "\n";
-						echo "<label>";
-						output_html($f->caption);
-						echo "</label>";		 
-						echo "</div>";
-						echo "</td>";
-					}
-					echo '</tr>';
-				}
-				echo '</table>';
-			}
-		}
-echo <<<ST
-<button tag type="button" onclick="doDelete(this, 'удалить?')" del></button>
-</div>
-ST;
-	if(count($ui_form)) ob_end_flush(); else ob_end_clean();
-}*/
-/*
-echo <<<ST
-[[if(isset(\$xtraz))foreach(\$xtraz['data'] as \$f) { if(\$f->floating==='l') {]]
-<td><div ctrl-inline>[[\$size=max(0.7 * mb_strlen(\$f->caption), 13);]]
-[[output_editor2(\$data->ns(\$f->alias), default_templated_editor(''), "style='min-width:{\$size}em'","");]]
-<label>[[\$f->caption]]</label>
-</div>
-[[}}]]
-ST;
-
-foreach($table_fields as $n=>$f) 
-	if($f->type && !$f->hidden && !$f->page && $n != $link) { echo "\n<td><div ctrl-inline>"; 
-	if(CHOOSER_MODE){
-		if($f->Target())
-			echo "[[\$data.a.$n._id_]]";
-		else
-			echo "[[\$data.a.$n]]";
-	} else {
-		$size = "style='min-width:".max(0.7 * mb_strlen($f->caption ?: $n), 13)."em'";
-		if($f->Target())
-			echo "[[\$data.a.$n._id_~e: $size]]"; 
-		else
-			echo "[[\$data.a.$n~e: $size]]"; 
-	}
-	echo "<label>";
-	output_html($f->caption ?: $n);
-	echo "</label>";
-	echo "</div>";
-}
-echo <<<ST
-[[if(isset(\$xtraz))foreach(\$xtraz['data'] as \$f) { if(\$f->floating==='r') {]]
-<td><div ctrl-inline>[[\$size=max(0.7 * mb_strlen(\$f->caption), 13);]]
-[[output_editor2(\$data->ns(\$f->alias), default_templated_editor(''), "style='min-width:{\$size}em'","");]]
-<label>[[\$f->caption]]</label>
-</div>
-[[}}]]
-ST;
-*/
-/*if($cnt<1 && !CHOOSER_MODE)
-echo <<<ST
-<td><button tag type="button" onclick="doDelete(this, 'удалить?')" del></button>
-ST;*/
-/*echo "</tr>\n<tfoot>\n";
-if(CHOOSER_MODE && @$_REQUEST['add_empty'])
-	echo "<tr empty_row onclick=this.closeModal(this) rt='' value=''><td colspan=100>";
-*/
-//echo <<<ST
-//<tr if_no_rows><td colspan=100>
-//</table>
-//[[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
-//
-//ST;
-	/*
-if(!CHOOSER_MODE){
-	echo <<<ST
-<div table-control>
-<button type=button onclick="startAddRow(this)" static add=suspend unlocked=Y
-		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
-	><span suspend>+</span><span resume>OK</span>
-</button>
-<button type=button onclick="this.setDN(toggle)" display_next inline_next show-control></button>
-<span>
-[[PAGE CONTROLS]]
-</span>
-</div>
-ST;
-}*/
-//echo <<<ST
-//<!--FILTRED.--></div>
-//</body>
-//ST;
 
 $cache->gen_from_ob( ob_get_clean() );
 
