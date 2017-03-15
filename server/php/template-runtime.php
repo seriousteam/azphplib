@@ -590,6 +590,7 @@ function load_template($file) {
 
 $CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
+
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $LOCALIZED_URI;	
 	
@@ -598,7 +599,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = __ROOTDIR__.$file;
-			$CURRENT_TEMPLATE_URI = $file;
+			$CURRENT_TEMPLATE_URI = file_URI($file);
 		} else {
 			$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //trim file part
 			$f = $file;
