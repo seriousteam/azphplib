@@ -393,12 +393,12 @@ $LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)?
 	:
 	( 
 		substr_compare($_SERVER['REQUEST_URI'], __SERVER_URI_PREFIX__, 0, strlen(__SERVER_URI_PREFIX__)) == 0?
-		substr_replace($_SERVER['REQUEST_URI'], '/', 0, strlen(__SERVER_URI_PREFIX__))
+		substr_replace($_SERVER['REQUEST_URI'], '', 0, strlen(__SERVER_URI_PREFIX__))
 	  : $_SERVER['REQUEST_URI']
 	)
 	;
 
-//echo $LOCALIZED_URI;
+//echo $_SERVER['REQUEST_URI'], '-- ',__SERVER_URI_PREFIX__, ' --',$LOCALIZED_URI;
 
 $lu = explode('?', $LOCALIZED_URI, 2);
 

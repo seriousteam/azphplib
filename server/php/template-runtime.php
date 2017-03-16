@@ -333,12 +333,6 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	//take where, order, group from source and add it to target
 	//or, if source is not a select, use data as is
 	if(!is_string($cmd)) return $cmd;
-	if(preg_match('/^\s*</', $cmd))
-		if( dom_import_simplexml($xml = simplexml_load_string($cmd))->namespaceURI === 'http://xmlquery/query') {
-			make_sql_from_xml($xml, $cmd, $args); //xml-query //FIXME: we should use args and return them!
-			// and go forward to query processing
-		} else return $cmd;
-	if(preg_match('/^s*CALL:(.*)/', $cmd)) return $cmd;
 	if(preg_match('/^\s*\[/', $cmd)) return $cmd;
 	//SQL:
 	//TODO: cache!
@@ -590,6 +584,7 @@ function load_template($file) {
 
 $CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
+
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
 	global $CURRENT_TEMPLATE_URI, $LOCALIZED_URI;	
 	
@@ -598,7 +593,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 	else if($file[0] === '/') {
 			//absolute path ==> from sys doc root
 			$file = __ROOTDIR__.$file;
-			$CURRENT_TEMPLATE_URI = $file;
+			$CURRENT_TEMPLATE_URI = file_URI($file);
 		} else {
 			$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //trim file part
 			$f = $file;

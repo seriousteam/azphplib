@@ -285,13 +285,6 @@ ST;
 		return '';
 	},  $text);
 
-	//find root tag for repeat, if none, use body
-	if(!preg_match("/\[\[
-				@([-a-zA-Z0-9_:*.]*+)\s++
-					\\\$$RE_ID\s*+:.*?
-			\]\]/sxi", $text)) 
-		$text = preg_replace('/<(BODY)(\s.*?)?>/si', '<$1$2>[[@$1 $data:]]', $text);
-
 	//process repositions
 	$to_process = null; //it's a reference to last processed noncommand part
 	$repos = preg_split('/(\[\[
@@ -327,20 +320,6 @@ ST;
 			} else {
 				$inside = false; if(substr($tag,-1)==='.') { $inside = true; $tag = substr($tag,0, -1); }
 				switch($tag) {
-				/*not used! saved as comment! but checked in reg exp
-				case '{}': case '()': case '[]':
-					$to_find = $tag[0];
-					//var_dump("/(?<pre>.*)(?<tag>\\$to_find)(?<tail>.*)/si", $to_process);
-					if(preg_match("/(?<pre>.*)(?<tag>\\$to_find)(?<tail>.*)/si", $to_process, $tg_split)) {
-						$to_process = $tg_split['pre'].$command."<<$tag>>".
-							$tg_split['tag'].$tg_split['tail'];
-					}
-					else {
-						++$error_count;
-						echo "<<<<<<ERROR: tag '$tag' not found>>>>>>";
-					}
-					break;
-				*/
 				case '*': { //nearest tag
 						if(preg_match('/<([^\s>]+)[^>]*>\s*$/s', $to_process, $tg_split))
 							$tag = $tg_split[1];
@@ -369,7 +348,7 @@ ST;
 						}
 					} else {
 						++$error_count;
-						echo "<<<<<<ERROR: tag '$tag' not found>>>>>>";
+						echo "<<<<<<ERROR: tag '$tag' not found for $part>>>>>>";
 					}
 				}
 			}
@@ -833,17 +812,25 @@ EEE;
 	if($select === '-') { //just use one dummy row 
 		$select = new stdClass;
 		$select->select = "['dummy' => null]";
+		$select->dummy = true;
 	}
 
 	echo "\n\t\$counters = new stdClass;";
 	echo "\n\t\$statements = new stdClass;";
-	echo "\n\tget_ce(\$ce,\$params);";
-	echo "\n\t\$qcmd = merge_ce(".phpDQuote($select->select).",\$ce);";
-	echo "\n\t\$qcmd = merge_queries(\$qcmd, \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, \$ce);";
-	echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);";
-	//for paging
-	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";
-	echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->offset = \$requested_offset;";
+	if(@$select->dummy) {
+		echo "\n\t\$rowsets['$main_select_alias'] = $select->select;//";
+		//for paging
+		echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";
+		echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->offset = 0;";
+	} else {
+		echo "\n\tget_ce(\$ce,\$params);";
+		echo "\n\t\$qcmd = merge_ce(".phpDQuote($select->select).",\$ce);";
+		echo "\n\t\$qcmd = merge_queries(\$qcmd, \$cmd, \$args, \$requested_offset, \$requested_limit, \$page_limit, \$ce);";
+		echo "\n\t\$rowsets['$main_select_alias'] = process_query(\$qcmd, \$args);//";
+		//for paging
+		echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$main_counter =& \$counters->{'$main_select_alias'};";
+		echo "\n\tif(is_object(\$rowsets['$main_select_alias'])) \$rowsets['$main_select_alias']->offset = \$requested_offset;";
+	}
 
 	//var_dump($selects);
 	foreach($selects as $n=>$sel) {
