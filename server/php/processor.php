@@ -103,16 +103,6 @@ function process_query($cmd, $args = []) {
 			$table = $xml->getName();
 			return $xml;
 		}
-	} else if(preg_match('/^s*CALL:(.*)/', $cmd, $m) ) {
-		$point = $m[1];
-		// make external call:
-		// take cfg settings
-		// preporocess args
-		// make call
-		// get results
-		// parse xml/json...
-		// postrocess according cfg settings
-		return []; //TODO: implement it!
 	} else if(preg_match('/^\s*\[/', $cmd)) {
 		//JSON here!
 		return  json_decode($cmd);

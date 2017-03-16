@@ -333,12 +333,6 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 	//take where, order, group from source and add it to target
 	//or, if source is not a select, use data as is
 	if(!is_string($cmd)) return $cmd;
-	if(preg_match('/^\s*</', $cmd))
-		if( dom_import_simplexml($xml = simplexml_load_string($cmd))->namespaceURI === 'http://xmlquery/query') {
-			make_sql_from_xml($xml, $cmd, $args); //xml-query //FIXME: we should use args and return them!
-			// and go forward to query processing
-		} else return $cmd;
-	if(preg_match('/^s*CALL:(.*)/', $cmd)) return $cmd;
 	if(preg_match('/^\s*\[/', $cmd)) return $cmd;
 	//SQL:
 	//TODO: cache!
