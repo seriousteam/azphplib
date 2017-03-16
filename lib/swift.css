@@ -159,7 +159,7 @@ div[theme='swift'] {
 [theme='swift']>textarea[tag]:empty:focus~label,
 [theme='swift']>[bool-state]~input[tag]~label
 {
-  font-size:10px;
+  font-size:11px;
   top:0;
   left:0;
   border:1px solid transparent;
@@ -236,6 +236,14 @@ div[theme='swift'] {
   color: white;
   text-shadow: 0 0 1px gray;
   background: rgba(0,170,255,0.5);
+}
+[theme='swift']>a[tag="A"][error="Y"]~span[tip],
+[theme='swift']>input[tag][error="Y"]~span[tip],
+[theme='swift']>textarea[tag][error="Y"]~span[tip]
+{
+  color: white;
+  text-shadow: 0 0 1px gray;
+  background: rgba(255,0,0,0.5);
 }
 
 /* Label resizes its container */
@@ -409,11 +417,32 @@ div[theme='swift'][inline]
   content: attr(group);
   display: block;
   padding-bottom: 0.75em;
-  padding-left: 0.5em;
+  padding-left: 0.75em;
   font-size: 14px;
-  color: gray;
+  color: black;
+  font-weight:bold;
 }
-
+[group] {
+  margin-bottom: 1.5em;
+  border-bottom: 1px dashed rgba(0,0,0,0.3);
+}
+[group-tip] {
+    font-size: 12px;
+    display: inline-block;
+    min-width: calc(100% - 2em);
+    max-width: 320px;
+    padding: 1em;
+    margin-bottom: 1em;
+    background: #ffd280;
+    background: #FFCC52;
+    background: #bee5f4;
+    
+    border-radius: 5px;
+    color: black;
+}
+[group-tip] a {
+  color:black;
+}
 
 /** 
  *
@@ -430,7 +459,7 @@ div[theme='swift'][inline]
 [theme='swift'][mctl],
 [theme='swift']>[mctl]
 {
-  font-size:18px;
+  font-size:17px;
   background:#e5f2fb;
   background:#f2f8fd;
   border:none;
@@ -604,7 +633,7 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 [theme='swift']>[edit-panel]>[filter_def] [filter_hint]
 {
   font-style:normal;
-  font-size:10px;
+  font-size:11px;
   padding:0.25em;
   padding-right:1em;
   background:transparent;
