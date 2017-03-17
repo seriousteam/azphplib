@@ -229,7 +229,7 @@ div[theme='swift'] {
   color:rgba(0,0,0,0.6);
   border-radius:5px;
   min-width:100%;
-  max-width:300px;
+  max-width:280px;
   background-color:rgb(254,252,234);
 }
 [theme='swift']>span[tip]:before
@@ -266,6 +266,10 @@ div[theme='swift'] {
   visibility: hidden;
 }
 
+div[theme='swift']>[content-resizable]
+{
+  min-width:280px;
+}
 
 
 /*  Inline Form Controls BEGIN */
@@ -439,7 +443,7 @@ div[theme='swift'][inline]
     font-size: 12px;
     display: inline-block;
     min-width: calc(100% - 2em);
-    max-width: 300px;
+    max-width: 280px;
     padding: 1em;
     margin-bottom: 1em;
     background: #ffd280;
@@ -734,7 +738,6 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   position:absolute;
   left:0;
 }
-
 
 /* FILE CONTROL BEGIN */
 [theme="swift"]>[lobload]>a
