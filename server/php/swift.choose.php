@@ -44,7 +44,14 @@ foreach($table_fields as $n=>$f) {
 	if($f->type && !$f->hidden && !$f->page && $n != $link) {
 		//view
 		$uif = new uiField($table, $f->Target() ? "$n._id_" : $n);
-		$ui_view[] = $uif;		
+		$ui_view[] = $uif;	
+	}
+}
+foreach($ui_search as $i=>$f) {
+	if(!@$ui_view[$i])
+		break;
+	if($ui_view[$i]->name == $f->name) {
+		$ui_view[$i]->captionAlreadyShown = true;
 	}
 }
 
@@ -118,13 +125,20 @@ echo <<<ST
 ST;
 
 //////////////////////TABLE HEAD//////////////////
-if(count($ui_view)>1) {
-	echo "<thead><tr>";
-	echo implode(array_map(function($f) {
-		return "<th>{$f->caption}</th>";
-	},$ui_view));
-	echo "</tr></thead>";
+ob_start();
+$headCount = 0;
+echo "<thead><tr>";
+foreach($ui_view as $f) {
+	if($f->captionAlreadyShown) {
+		echo "<th></th>";
+	} else {
+		$headCount++;
+		echo "<th>{$f->caption}</th>";
+	}
 }
+echo "</tr></thead>";
+if($headCount>1) ob_end_flush(); else ob_end_clean();
+
 
 ////////////////////TABLE BODY/////////////////////
 echo <<<ST

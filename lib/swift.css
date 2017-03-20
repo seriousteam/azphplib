@@ -229,7 +229,7 @@ div[theme='swift'] {
   color:rgba(0,0,0,0.6);
   border-radius:5px;
   min-width:100%;
-  max-width:280px;
+  max-width:250px;
   background-color:rgb(254,252,234);
 }
 [theme='swift']>span[tip]:before
@@ -268,7 +268,7 @@ div[theme='swift'] {
 
 div[theme='swift']>[content-resizable]
 {
-  min-width:280px;
+  min-width:250px;
 }
 
 
@@ -443,7 +443,7 @@ div[theme='swift'][inline]
     font-size: 12px;
     display: inline-block;
     min-width: calc(100% - 2em);
-    max-width: 280px;
+    max-width: 250px;
     padding: 1em;
     margin-bottom: 1em;
     background: #ffd280;
@@ -753,6 +753,7 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 [theme="swift"]>[lobload]
 {
   position:relative;
+  min-width:250px;
 }
 [theme="swift"]>[lobload]>button
 {
@@ -833,10 +834,14 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   overflow:hidden;
   position:relative;
 }
+[theme="swift"]>[lobload][accept^='image/'][empty]>img
+{
+  display:none;
+}
 [theme="swift"]>[lobload][accept^='image/']>img
 {
-  max-width:280px;
-  max-height:280px;
+  max-width:250px;
+  max-height:250px;
 }
 [theme="swift"]>[lobload][accept^='image/']>button
 {
