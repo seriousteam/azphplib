@@ -585,7 +585,7 @@ function load_template($file) {
 $CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
 
-function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
+function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
 	global $CURRENT_TEMPLATE_URI, $LOCALIZED_URI;	
 	
 	if(!$file) $file = $caller;
@@ -631,7 +631,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 	$args = [];
 }
 
-function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm) {
+function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
 	global $CURRENT_TEMPLATE_URI;
 	
 	$uri = $CURRENT_TEMPLATE_URI;
