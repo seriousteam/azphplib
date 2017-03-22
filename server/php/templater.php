@@ -536,7 +536,7 @@ EEE;
 					$cmd = preg_replace_callback('/
 						\'[^\\\']*+(\.[^\\\']*+)*\'
 					|
-						\"[^\\\"]*+(\.[^\\\"]*+)*\"
+						"[^\\"]*+(\.[^\\"]*+)*"
 					/sx', function($m) use(&$strings) {
 							$c = count($strings); $strings[] = $m[0];
 							return "'$c'";
