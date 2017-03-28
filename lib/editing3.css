@@ -1014,13 +1014,3 @@ input[tag][vtype="D"][add_button="table"] +[calendcont]:hover
 {
   display:none;
 }
-
-[rel-to-container]>*
-{
-  display:none;
-}
-[rel-to-container]>*:last-child:nth-child(1),
-[rel-to-container]>*:last-child:nth-child(2)
-{
-  display:block;
-}

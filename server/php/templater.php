@@ -89,19 +89,6 @@ library reference
 
 [[CACHED]] - take this template from cache and end processing (use all args as a key!)
 
-attribute table: 
-	$attrdef->table = 'atable';
-	$attrdef->filter = ''; //filter to get records from atable (may depends from :adm, :period, :dt, :prefix)
-	$attrdef->fixed = []; //fixed val for inserted values
-	$attrdef->adm = 'adm'; 		//name of special fields
-	$attrdef->lvl = 'lvl'; 	// --/--
-	$attrdef->period = 'period'; 	// --/--
-	$attrdef->dt = 'dt';		// --/--
-	$attrdef->param = 'param';	// --/--
-	$attrdef->fn = 'fn';		// --/--
-	$attrdef->fs = 'fs';		// --/--
-	$attrdef->ft = 'ft';		// --/--
-	$attrdef->fb = 'fb'		// --/--
 	
 dates
 Y: YYYY			2014
@@ -427,7 +414,7 @@ ST;
 		}
 		if(array_key_exists($s, $selects))
 			throw new Exception("select name '$s' redefinition");
-		if(preg_match('/^\s*+SAMPLE\s++AND\s++(.*)/si', $m[3][$i], $g))
+		if(preg_match('/^\s*+SAMPLE\s++(?:AND|OR)\s++(.*)/si', $m[3][$i], $g))
 			$m[3][$i] = $g[1];
 		$c = $selects[$s] = new stdClass;
 		$c->select = unescape_template_command($m[3][$i]);
@@ -462,8 +449,9 @@ ST;
 				$sample = '';
 				$a_add = '';
 				$a_add_top = '';
-				if(preg_match('/^\s*+SAMPLE\s++AND\s/si', $m[3])) {
-					$sample = '_and_sample';
+				if(preg_match('/^\s*+SAMPLE\s++(AND|OR)\s/si', $m[3],$mm)) {
+					$con = strtolower($mm[1]);
+					$sample = '_'.$con.'_sample';
 				}
 				if(@$m[2])
 					$res = "foreach(with_loop_info$sample(\${$m[2]}->$m[1], \$counters->{$m[1]}, \$statements->{$m[1]} = \${$m[2]}->subselect_info('$m[1]')) as $keypart\$$m[1])";
