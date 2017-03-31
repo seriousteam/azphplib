@@ -115,8 +115,8 @@ class loop_helper extends IteratorIterator {
 	++$this->counter;
   }
   function rewind (  ) {
-	$this->counter = $this->initial;
 	parent::rewind();
+	$this->counter = $this->initial === NULL ? (parent::valid()? 1 : 0) : $this->initial;
 	if($i = $this->offset) {
 		while($i--)
 			parent::next();
@@ -148,6 +148,7 @@ class loop_helper extends IteratorIterator {
 }
 function with_loop_info($collection, &$counter = null, $info = null) { return new loop_helper($collection, $counter, 1, $info); }
 function with_loop_info_and_sample($collection, &$counter = null, $info = null) { return new loop_helper($collection, $counter, 0, $info); }
+function with_loop_info_or_sample($collection, &$counter = null, $info = null) { return new loop_helper($collection, $counter, NULL, $info); }
 
 class everything_you_want { 
   private $cmd = null;
