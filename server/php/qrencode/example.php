@@ -1,7 +1,7 @@
 <?php
 // test
 //http://localhost/qrencode/example.php?size=4&qrtxt=это пример текста
-include 'qrimg.php';
+require_once __DIR__.'/qrimg.php';
 
 $tmpdir=__DIR__."\\tmp\\";
 $text=$_GET['qrtxt'];

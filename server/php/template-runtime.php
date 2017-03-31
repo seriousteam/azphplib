@@ -570,6 +570,8 @@ function to_client_tz($v) { return $v ?
 		: $v
 	; }
 
+function ru_BOOL($v) { return $v === NULL || $v === '' ? '' : ($v[0] === '0' ? 'нет' : 'да'); }
+
 require_once __DIR__."/ru_number.php";
 
 function load_template($file) {
