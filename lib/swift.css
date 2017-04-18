@@ -55,8 +55,7 @@ div[theme='swift'] {
 [theme='swift']>[lobload]:focus
 {
   outline:none;
-  box-shadow: 0 0 16px rgba(0,170,255,0.7);
-  border:1px solid rgba(0,0,0,0);
+  border:1px solid rgba(0,170,255,0.7);
 }
 [theme='swift']>input[tag][error="Y"],
 [theme='swift']>textarea[tag][error="Y"]
