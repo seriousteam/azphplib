@@ -124,6 +124,8 @@ div[theme='swift'] {
   vertical-align:middle;
   min-width:100%;
   margin:0;
+  z-index:1;
+  position:relative;
 }
 [theme='swift']>[bool2]
 {
@@ -146,7 +148,7 @@ div[theme='swift'] {
   padding-left:0.5em;
   padding-right:2em;
   position:absolute;
-  z-index:-1;
+  z-index:0;
 }
 [theme='swift']>input[tag][value=""][disabled]~label,
 [theme='swift']>textarea[tag][disabled]:empty~label,
@@ -263,6 +265,10 @@ div[theme='swift'] {
   margin-top: -1px;
   display: inline-block;
   visibility: hidden;
+}
+[theme='swift'][label][vtype="2"]:before
+{
+  font-size:12px;
 }
 
 div[theme='swift']>[content-resizable]
@@ -538,6 +544,12 @@ button[theme="swift"]:focus
 {
   outline:none;
 }
+button[theme="swift"][ok]
+{
+  color: white;
+  background: darkseagreen;
+  border: 1px solid transparent;
+}
 /* Swift Button END */
 
 
@@ -581,6 +593,17 @@ button[theme="swift"]:focus
 }
 /* Swift Button END */
 
+/* Swift link BEGIN */
+a[theme="swift"]
+{
+  display:inline-block;
+  text-decoration:none;
+  border-bottom:1px dashed gray;
+  padding:4px;
+  padding-bottom:0px;
+  margin-bottom:4px;
+}
+/* Swift link END */
 
 /** 
  *
