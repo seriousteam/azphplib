@@ -470,7 +470,7 @@ div[theme='swift'][inline]
 }
 [group-tip][intro]
 {
-  background: #bee5f4;
+  background: #eee;
   color: black;
   font-size:14px;
 }
@@ -983,6 +983,8 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   background: rgba(0,0,0,0.4);
   text-shadow: 0 0 1px black;
   font-weight: bold;
+  border-bottom-left-radius:25px;
+  border-bottom-right-radius:25px;
   color: white;
   left: 0;
   top: auto;
@@ -994,6 +996,8 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 {
   height:100%;
   background: rgba(0,0,0,0.2);
+  border-top-left-radius:25px;
+  border-top-right-radius:25px;
 }
 [theme="swift"]>[lobload][accept^='image/']>button:after
 {
