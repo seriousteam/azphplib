@@ -115,7 +115,8 @@ div[theme='swift'] {
 [theme='swift']>[list],
 [theme='swift']>[bool-state],
 [theme='swift']>[bool2],
-[theme='swift']>[lobload]
+[theme='swift']>[lobload],
+select[theme='swift']
 {
   padding-top:0.8em;
   padding-bottom:0.2em;
@@ -530,7 +531,7 @@ div[theme='swift'][inline]
 }
 
 /* Swift Button BEGIN */
-button[theme="swift"]
+button[theme="swift"],a[button][theme="swift"]
 {
   font-size: 16px;
   padding: 0.7em;
@@ -540,11 +541,11 @@ button[theme="swift"]
   color: black;
   margin-bottom:0.5em;
 }
-button[theme="swift"]:focus
+button[theme="swift"]:focus,a[button][theme="swift"]:focus
 {
   outline:none;
 }
-button[theme="swift"][ok]
+button[theme="swift"][ok],a[button][theme="swift"][ok]
 {
   color: white;
   background: darkseagreen;
@@ -552,6 +553,26 @@ button[theme="swift"][ok]
 }
 /* Swift Button END */
 
+/* Swift Select BEGIN */
+
+select[theme="swift"] {
+  font-size: 16px;
+  padding: 0.7em;
+  background: none;
+  padding-right: 2.5em;
+  box-shadow:none;
+  border-radius: 5px;
+  background: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAnLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4nICAnaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkJz48c3ZnIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDI1NiAyNTYiIGhlaWdodD0iMjU2cHgiIGlkPSJMYXllcl8xIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2cHgiIHhtbDpzcGFjZT0icHJlc2VydmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPjxwYXRoIGQ9Ik0zOC4zOTksNzYuOGMxLjYzNywwLDMuMjc0LDAuNjI1LDQuNTI0LDEuODc1bDg1LjA3NSw4NS4wNzZsODUuMDc1LTg1LjA3NmMyLjUtMi41LDYuNTUtMi41LDkuMDUsMHMyLjUsNi41NSwwLDkuMDUgIGwtODkuNiw4OS42MDFjLTIuNSwyLjUtNi41NTEsMi41LTkuMDUxLDBsLTg5LjYtODkuNjAxYy0yLjUtMi41LTIuNS02LjU1LDAtOS4wNUMzNS4xMjQsNzcuNDI1LDM2Ljc2Miw3Ni44LDM4LjM5OSw3Ni44eiIvPjwvc3ZnPg==") no-repeat calc(100% - 0.5em) 50%;
+  background-size: 1.5em;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+select[theme="swift"]:focus {
+  outline:none;
+  border:1px solid cornflowerblue;
+}
+/* Swift Select END*/
 
 /* Swift Expander BEGIN */
 [theme="swift"][expander]
