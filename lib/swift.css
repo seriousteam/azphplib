@@ -116,10 +116,10 @@ div[theme='swift'] {
 [theme='swift']>[bool-state],
 [theme='swift']>[bool2],
 [theme='swift']>[lobload],
-select[theme='swift']
+[theme='swift']>select
 {
-  padding-top:0.8em;
-  padding-bottom:0.2em;
+  padding-top:0.5em;
+  padding-bottom:0.5em;
   border:1px solid rgba(0,0,0,0.1);
   font-family:sans-serif;  
   vertical-align:middle;
@@ -131,6 +131,18 @@ select[theme='swift']
 [theme='swift']>[bool2]
 {
   padding-bottom:0.4em;
+}
+[theme='swift'][label]>a[tag="A"],
+[theme='swift'][label]>input[tag],
+[theme='swift'][label]>textarea[tag],
+[theme='swift'][label]>[list],
+[theme='swift'][label]>[bool-state],
+[theme='swift'][label]>[bool2],
+[theme='swift'][label]>[lobload],
+[theme='swift'][label]>select
+{
+  padding-top:0.8em;
+  padding-bottom:0.2em;
 }
 /* macro label */
 [theme='swift']>input[tag][value=""]~label,
@@ -555,7 +567,7 @@ button[theme="swift"][ok],a[button][theme="swift"][ok]
 
 /* Swift Select BEGIN */
 
-select[theme="swift"] {
+[theme="swift"]>select {
   font-size: 16px;
   padding: 0.7em;
   background: none;
@@ -568,7 +580,7 @@ select[theme="swift"] {
   -moz-appearance: none;
   appearance: none;
 }
-select[theme="swift"]:focus {
+[theme="swift"]>select:focus {
   outline:none;
   border:1px solid cornflowerblue;
 }
