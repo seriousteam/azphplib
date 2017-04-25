@@ -938,7 +938,7 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 }
 [theme="swift"]>[lobload]
 {
-  position:relative;
+  position:static;
   min-width:250px;
 }
 [theme="swift"]>[lobload]>button
@@ -1018,7 +1018,7 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   min-width: 150px;
   min-height: 150px;
   overflow:hidden;
-  position:relative;
+  position:static;
 }
 [theme="swift"]>[lobload][accept^='image/'][empty]>img
 {
