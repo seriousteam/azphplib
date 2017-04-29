@@ -1163,11 +1163,92 @@ function get_filter_control($f)
 	return $descr;
 }
 
+function getValueType($value) {
+	global $Tables;
+	$name = name_of_field_in_nv($value);
+	if($name && $value instanceof namedString) {
+		$table = $Tables->{$value->container->getName()};
+		$table_name = $table->___name;
+		$f = $table->fields[$name];
+		return $f->type;
+	}
+}
+class ValueContext {
+	static $stack = [];
+	var $check = null; // set this when you want only 'OK' or 'Error:...' as template output
+	var $show_errors = null; // set this when you want template output with errors shown
+	var $errors = [];
+	function print() {
+		//TODO
+	}
+	function hasErrors() {
+		return false;//TODO
+	}
+	function pushStack() { $this->stack[] = $this; return new ValueContext; }
+	function popStack() { return array_pop($this->stack); }
+}
+$valueContext = new ValueContext;
+
+function _setError($value, $op) {
+	global $valueContext;
+	$value->errors[] = $op;
+	$valueContext->errors[] = $op;//TODO
+}
+
+function _V($op, $value, $sample = null, $month = null, $day = null) 
+{
+	if( $op == 'required' && $value == '' || $op == 'check' && !$sample ) {
+		_setError($value, $op);
+	} else if($value instanceof namedString) {
+		if($month && !date_parse($value)['error_count']) {
+			//Date
+			$vv = new DateTime($value);
+			$day = $day || 1;
+			$ss = new DateTime((int)$sample."-$month-$day");
+		} else {
+			switch(getValueType($value)) {
+			case 'DECIMAL': $vv = (float) $value; $ss = (float) $sample; break;
+			case 'INTEGER': $vv = (int) $value; $ss = (int) $sample; break;
+			default: $vv = $value; $ss = $sample;
+			}
+		}
+		if(	$op == 'min' && $vv < $ss ||
+				$op == 'max' && $vv > $ss
+			) {
+			_setError($value, $op);
+		}
+	}
+	return $value;
+}
+function Vre($value, $re) { //TODO
+	return $value;
+}
+function Vrequired($value) {
+	if($value instanceof namedString) { 
+		$value->checkers[] = 'required'; 
+	}
+	return _V('required', $value); 
+}
+function Vmin($value, $sample, $month=null, $day=null) {
+	if($value instanceof namedString) { 
+		$value->checkers[] = 'vmin="'.($month ? ("date($sample,$month,".($day?:1).')') : $sample).'"'; 
+	}
+	return _V('min', $value, $sample, $month, $day); 
+}
+function Vmax($value, $sample, $month=null, $day=null) {
+	if($value instanceof namedString) { 
+		$value->checkers[] = 'vmax="'.($month ? ("date($sample,$month,".($day?:1).")") : $sample).'"'; 
+	}
+	return _V('max', $value, $sample, $month, $day); 
+}
+function Vcheck($value, $expr) { return _V('check', $value, $expr); }
+
 function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
 	global $Tables;
 	global $_ENV_UI_THEME;
-	
+	global $valueContext;
+
 	$name = name_of_field_in_nv($value);
 	$size = '';
 	$precision = '';
@@ -1241,6 +1322,14 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$attrs .= $f->getControlProps();
 		$size = $f->size;
 		$precision = $f->precision;
+
+		if($value->checkers) {
+			$attrs .= ' '.implode(' ', $value->checkers);
+		}
+
+		if($valueContext->show_errors && $value->errors) {
+			$attrs .= ' error="'.implode(' ', $value->errors).'"';
+		}
 	}
 	if(!$name) {//field doesn't exist
 		$value_only = true;

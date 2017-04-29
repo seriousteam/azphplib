@@ -72,6 +72,14 @@ loops
 [[...~Quarters]]
 [[...~HalfYears]]
 
+controls checks:
+[[$data.a.f1~Vrequired~Vmin(1000)~Vmax(2000)~Vcheck($$ > $data.a.field)~e:]]
+~Vmax(YYYY,M,D)
+~Vmin(YYYY,M,D)
+
+url & show_errors="Y" - turn on server-side checks
+
+
 TODO:
 
 file reference
@@ -170,14 +178,31 @@ function templater_take_zones($text, $file) {
 
 	\$params->fieldvals = sas_coder_DecodeMap(\$params->fieldvals);
 	\$fieldvals = new smap(null, \$params->fieldvals);
-			
+	
+	global \$valueContext;
+	\$valueContext = \$valueContext->pushStack();
+	\$valueContext->show_errors = \$params->show_errors || \$params->check;
+	\$valueContext->check = \$params->check;
+
+	if(\$valueContext->check) {
+		ob_start();
+	}
+
 $v
+	if(\$valueContext->check) {
+		if(\$valueContext->hasErrors()) {
+			ob_end_clean();
+		} else {
+			ob_end_flush();
+		}
+	}
+	\$valueContext = \$valueContext->popStack();
 };
 FUNC;
 }
 	foreach($zones as $k=>$v)
 		templater_take_one_zone($k, $v, $file);
-		
+
 	echo "\n\nif(__FILE__ != TOPLEVEL_FILE) return \$functions;";
 	echo "\n\ndispatch_template(main_argument(),  main_subarguments());";
 
@@ -221,6 +246,14 @@ global \$G_TEMPLATER_GLOBALS; foreach(\$G_TEMPLATER_GLOBALS as \$TEMPLATER_GLOBA
 
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
+global \$valueContext;
+\$valueContext = \$valueContext->pushStack();
+\$valueContext->show_errors = \$params->show_errors || \$params->check;
+\$valueContext->check = \$params->check;
+
+if(\$valueContext->check) {
+	ob_start();
+}
 
 FUNC;
 	$selects = []; //varname => select definition
@@ -542,76 +575,84 @@ EEE;
 						else
 							$db_part = $m[2];
 					}
+
 					//process field part
 					$db_part = preg_replace("/\\\$params\s*\.\s*($RE_ID)/", 
 						'$params->$1', $db_part);
-					$db_part = preg_replace_callback(
-						"/\\$($RE_ID)\s*+
-							\.
-							( 
-									(?:\s*+$RE_ID\s*+\.)*
-									\s*+
-									$RE_ID
-								|
-									\\{(?<expr>[^}]*+)\\}
-							)
-						/sx",
-						function($m) use(&$selects, $strings) {
-							//var_dump($m);
-							if(!array_key_exists($m[1], $selects)) return $m[0]; //nothing to do
-							$select = $selects[$m[1]];
-							if(isset($m['expr'])) {
-								$f = preg_replace_callback("/'(\d+)'/", 
-									function($m) use($strings) { return $strings[(int)$m[1]];}
-									,trim($m['expr'])
-									);
-								switch($f) {
-								case 'NPP': return "\$counters->$m[1]";
-								case 'COUNT': return "(\$counters->$m[1]-1)";
-								case 'FIRST': return "(\$counters->$m[1] === 1)";
-								case 'SAMPLE': return "(\$counters->$m[1] === 0? 'sample' : '')";
-								case 'SQL': return "make_counting_command(\$statements->$m[1])"; 
+
+					$field_part_processor = function($field_part) use(&$selects, $strings) {
+						global $RE_ID;
+						return preg_replace_callback(
+							"/\\$($RE_ID)\s*+
+								\.
+								( 
+										(?:\s*+$RE_ID\s*+\.)*
+										\s*+
+										$RE_ID
+									|
+										\\{(?<expr>[^}]*+)\\}
+								)
+							/sx",
+							function($m) use(&$selects, $strings) {
+								//var_dump($m);
+								if(!array_key_exists($m[1], $selects)) return $m[0]; //nothing to do
+								$select = $selects[$m[1]];
+								if(isset($m['expr'])) {
+									$f = preg_replace_callback("/'(\d+)'/", 
+										function($m) use($strings) { return $strings[(int)$m[1]];}
+										,trim($m['expr'])
+										);
+									switch($f) {
+									case 'NPP': return "\$counters->$m[1]";
+									case 'COUNT': return "(\$counters->$m[1]-1)";
+									case 'FIRST': return "(\$counters->$m[1] === 1)";
+									case 'SAMPLE': return "(\$counters->$m[1] === 0? 'sample' : '')";
+									case 'SQL': return "make_counting_command(\$statements->$m[1])"; 
+									}
+									global $RE_ID;
+									if(preg_match("/^CMD([ID])?(\\+PK)?\\s+(.*)/", $f, $mc)) { 
+										$ins = $mc[1];
+										$with_pk = $mc[2];
+										$cmd_fields = $mc[3];
+										
+										preg_match_all("/a\\.($RE_ID)/", $cmd_fields, $mc);
+										foreach($mc[0] as $v)
+											if(!array_key_exists($v,$select->fields))
+												$select->fields[$v] = str_replace('.','__',$v);
+										if($with_pk) $with_pk = implode(',', $mc[1]);
+										return 
+										$ins == 'I'?
+										"make_manipulation_command(null, 0, \$statements->$m[1], '$with_pk')"
+										:
+										($ins == 'D'?
+										"make_manipulation_command(\$$m[1], -1, \$statements->$m[1], '$with_pk')"
+										:
+										"make_manipulation_command(\$$m[1], \$counters->$m[1], \$statements->$m[1], '$with_pk')");
+									}	
+									if(preg_match("/^(\\$.*)$/",$f,$mc)) {
+										return "\${$m[1]}->{{$mc[1]}}";
+									}
+									$alias = 'x_'.count($select->fields);
+								} else {
+									$f = preg_replace('/\s+/s', '', $m[2]);
+									$alias = strpos($f,'.')? 
+										//'x_'.count($select->fields) 
+										str_replace('.','__',$f)
+										: $f;
 								}
-								global $RE_ID;
-								if(preg_match("/^CMD([ID])?(\\+PK)?\\s+(.*)/", $f, $mc)) { 
-									$ins = $mc[1];
-									$with_pk = $mc[2];
-									$cmd_fields = $mc[3];
-									
-									preg_match_all("/a\\.($RE_ID)/", $cmd_fields, $mc);
-									foreach($mc[0] as $v)
-										if(!array_key_exists($v,$select->fields))
-											$select->fields[$v] = str_replace('.','__',$v);
-									if($with_pk) $with_pk = implode(',', $mc[1]);
-									return 
-									$ins == 'I'?
-									"make_manipulation_command(null, 0, \$statements->$m[1], '$with_pk')"
-									:
-									($ins == 'D'?
-									"make_manipulation_command(\$$m[1], -1, \$statements->$m[1], '$with_pk')"
-									:
-									"make_manipulation_command(\$$m[1], \$counters->$m[1], \$statements->$m[1], '$with_pk')");
-								}	
-								if(preg_match("/^(\\$.*)$/",$f,$mc)) {
-									return "\${$m[1]}->{{$mc[1]}}";
+								if(array_key_exists($f,$select->fields)) {
+									$alias = $select->fields[$f];
+									return "\$$m[1]->$alias";
 								}
-								$alias = 'x_'.count($select->fields);
-							} else {
-								$f = preg_replace('/\s+/s', '', $m[2]);
-								$alias = strpos($f,'.')? 
-									//'x_'.count($select->fields) 
-									str_replace('.','__',$f)
-									: $f;
-							}
-							if(array_key_exists($f,$select->fields)) {
-								$alias = $select->fields[$f];
+								$select->fields[$f] = $alias;
 								return "\$$m[1]->$alias";
 							}
-							$select->fields[$f] = $alias;
-							return "\$$m[1]->$alias";
-						}
-						,$db_part
-					);
+							,$field_part
+						);
+					};
+
+					$db_part = $field_part_processor($db_part);
+
 					$res = $db_part;
 					
 					if($cmd_part && 
@@ -624,6 +665,7 @@ EEE;
 							,@$mend[2])
 						);
 					}
+					
 					if($cmd_part && 
 						preg_match('/^(e|v):(ro:|RO:)?([a-zA-Z0-9+-]*)(?:\s+(.*))?$/s'
 							, end($cmd_part), $mend )) {						
@@ -641,6 +683,12 @@ EEE;
 						$strings[] = phpDQuote($mend[1]);
 					}
 					
+					foreach($cmd_part as &$cc) {
+						if(preg_match("/($RE_ID)/s", $cc, $m)) {
+							$cc = $field_part_processor($cc);
+						}
+					}
+
 					foreach($cmd_part as $c) {
 						if(preg_match("/^\\\$call_params\\.(.*)/s", $c, $m))
 							$res = "\$call_params->$m[1] = $res";
@@ -668,20 +716,25 @@ EEE;
 							}
 							else if($c == '#') {}
 							else if($c == '?') {}
+							else if(preg_match("/^(Vcheck\()(.*)/s", $c, $m)) {
+								$res = $m[1].'$curcheck=('.$res.'), '.preg_replace('/\$\$/s', '$curcheck', $m[2]);
+							}
 							else if(preg_match("/^($RE_ID\()(.*)/s", $c, $m))
 								$res = $m[1].$res.', '.$m[2];
 							else
 								if($c)
 									$res = "$c($res)";
 					}
+					
 					if(!$cmd_part) $cmd_part = ['.'];
+
 					$res = 
 						preg_replace('/^output_editor_([a-zA-Z0-9]+)\(([^-]+)->([^,]+)(,(.*))?\)$/s'
 							, 'output_editor(\'$1\',$2->ns("$3")$4)'
 							, $res );
 					$res = 
-						preg_replace('/^output_editor2\(([^-]+)->([^,]+)(,(.*))?\)$/s'
-							, 'output_editor2($1->ns("$2")$3)'
+						preg_replace('/^(output_editor2[a-zA-Z0-9_()$=]+)->([^,)]+)((.*))?\)$/s'
+							, '$1->ns("$2")$3)'
 							, $res );
 					$cmd_part[] = 
 						preg_replace('/^output_editor_[a-zA-Z0-9]+\(.*/s'
@@ -837,7 +890,16 @@ EEE;
 	echo "\n?>";
 	echo $text;
 	echo "<?php \n";
-
+	echo <<<END
+	if(\$valueContext->check) {
+		if(\$valueContext->hasErrors()) {
+			ob_end_clean();
+		} else {
+			ob_end_flush();
+		}
+	}
+	\$valueContext = \$valueContext->popStack();
+END;
 	echo "\n};\n";
 }
 
