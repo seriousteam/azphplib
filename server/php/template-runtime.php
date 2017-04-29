@@ -1173,6 +1173,15 @@ function getValueType($value) {
 		return $f->type;
 	}
 }
+/*
+modificationRequest(http://.../?...&show_errors=Y).done(function(text) {
+	if(text == OK) {
+		location.reload
+	} else {
+		
+	}
+})
+*/
 class ValueContext {
 	static $stack = [];
 	var $check = null; // set this when you want only 'OK' or 'Error:...' as template output
@@ -1181,9 +1190,7 @@ class ValueContext {
 	function print() {
 		//TODO
 	}
-	function hasErrors() {
-		return false;//TODO
-	}
+	function hasErrors() { return count($this->errors);	}
 	function pushStack() { $this->stack[] = $this; return new ValueContext; }
 	function popStack() { return array_pop($this->stack); }
 }
