@@ -1246,7 +1246,7 @@ function _A($op, $value, $sample = null, $month = null, $day = null)
 			$attr = "re=''";
 		}
 		if($attr) {
-			$value->checkAttrs[] = $attr;
+			$value->attrs[] = $attr;
 		}
 	}
 }
@@ -1267,6 +1267,12 @@ function Vmax($value, $sample, $month=null, $day=null) {
 	return _V('max', $value, $sample, $month, $day); 
 }
 function Vcheck($value, $expr) { return _V('check', $value, $expr); }
+function Label($value, $expr) {
+	if($value instanceof namedString) {
+		$value->attrs[] = "label=\"$expr\"";
+	}
+	return $value;
+}
 
 function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
@@ -1348,8 +1354,8 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$size = $f->size;
 		$precision = $f->precision;
 
-		if($value->checkAttrs) {
-			$attrs .= ' '.implode(' ', $value->checkAttrs);
+		if($value->attrs) {
+			$attrs .= ' '.implode(' ', $value->attrs);
 		}
 
 		if($valueContext->check_card && $value->errors) {
