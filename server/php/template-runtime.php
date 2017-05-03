@@ -590,7 +590,7 @@ $CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
 	global $CURRENT_TEMPLATE_URI, $LOCALIZED_URI;	
-	
+		
 	if(!$file) $file = $caller;
 	
 	else if($file[0] === '/') {
@@ -609,7 +609,7 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
 			$file = dirname($caller). '/' . $file;
 		}
-	
+	$_file = $file;
 	if(_ENV_CACHE_DIR) {
 		//template-cache rules		
 		$cache = new TemplaterCache( urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
@@ -623,7 +623,12 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 		//template monitor rules
 		$file = preg_replace('/\.t$/','',$file);
 		$file = realpath( $file );
-	}	
+	}
+
+	if(!$file) {
+		throw new Exception("$_file not found");
+		exit;
+	}
 	$funcs = load_template($file);
 
 	if(!$args) $args = [];
@@ -632,6 +637,18 @@ function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $p
 	$func($cmd, $args, $call_parameters); // call_parameters cleared in func automatically (with destroctor)
 
 	$args = [];
+}
+
+function check_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
+	global $valueContext;
+	$valueContext = $valueContext->pushStack();
+		$call_parameters->check_card = true;
+			ob_start();
+				call_template($name, $file, $cmd, $args, $call_parameters, $caller, $perm);
+			ob_end_clean();
+		$ok = !$valueContext->hasError;
+	$valueContext = $valueContext->popStack();
+	return $ok;
 }
 
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
@@ -1163,6 +1180,15 @@ function get_filter_control($f)
 	return $descr;
 }
 
+class ValueContext {
+	static $stack = [];
+	var $check_card = null; // set this when you want template output with errors shown
+	var $hasError = FALSE;
+	function pushStack() { $this->stack[] = $this; return new ValueContext; }
+	function popStack() { return array_pop($this->stack); }
+}
+$valueContext = new ValueContext;
+
 function getValueType($value) {
 	global $Tables;
 	$name = name_of_field_in_nv($value);
@@ -1173,37 +1199,19 @@ function getValueType($value) {
 		return $f->type;
 	}
 }
-/*
-modificationRequest(http://.../?...&show_errors=Y).done(function(text) {
-	if(text == OK) {
-		location.reload
-	} else {
-		
-	}
-})
-*/
-class ValueContext {
-	static $stack = [];
-	var $check = null; // set this when you want only 'OK' or 'Error:...' as template output
-	var $show_errors = null; // set this when you want template output with errors shown
-	var $errors = [];
-	function print() {
-		//TODO
-	}
-	function hasErrors() { return count($this->errors);	}
-	function pushStack() { $this->stack[] = $this; return new ValueContext; }
-	function popStack() { return array_pop($this->stack); }
-}
-$valueContext = new ValueContext;
 
 function _setError($value, $op) {
 	global $valueContext;
 	$value->errors[] = $op;
-	$valueContext->errors[] = $op;//TODO
+	$valueContext->hasError = TRUE;
 }
 
 function _V($op, $value, $sample = null, $month = null, $day = null) 
 {
+	global $valueContext;
+	if(!$valueContext->check_card) {
+		return $value;
+	}
 	if( $op == 'required' && $value == '' || $op == 'check' && !$sample ) {
 		_setError($value, $op);
 	} else if($value instanceof namedString) {
@@ -1227,25 +1235,35 @@ function _V($op, $value, $sample = null, $month = null, $day = null)
 	}
 	return $value;
 }
-function Vre($value, $re) { //TODO
+function _A($op, $value, $sample = null, $month = null, $day = null) 
+{
+	if($value instanceof namedString) { 
+		if($op == 'min' || $op == 'max') {
+			$attr = ($op=='min'?'vmin':'vmax').'='.($month ? ("date($sample,$month,".($day?:1).')') : $sample).'"'; 
+		} else if($op == 'required') {
+			$attr = 'required';
+		} else if($op == 're') {
+			$attr = "re=''";
+		}
+		if($attr) {
+			$value->checkAttrs[] = $attr;
+		}
+	}
+}
+function Vre($value, $re) { 
+	_A('re', $value);//TODO
 	return $value;
 }
 function Vrequired($value) {
-	if($value instanceof namedString) { 
-		$value->checkers[] = 'required'; 
-	}
+	_A('required', $value);
 	return _V('required', $value); 
 }
 function Vmin($value, $sample, $month=null, $day=null) {
-	if($value instanceof namedString) { 
-		$value->checkers[] = 'vmin="'.($month ? ("date($sample,$month,".($day?:1).')') : $sample).'"'; 
-	}
+	_A('min', $value);
 	return _V('min', $value, $sample, $month, $day); 
 }
 function Vmax($value, $sample, $month=null, $day=null) {
-	if($value instanceof namedString) { 
-		$value->checkers[] = 'vmax="'.($month ? ("date($sample,$month,".($day?:1).")") : $sample).'"'; 
-	}
+	_A('max', $value);
 	return _V('max', $value, $sample, $month, $day); 
 }
 function Vcheck($value, $expr) { return _V('check', $value, $expr); }
@@ -1330,12 +1348,12 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$size = $f->size;
 		$precision = $f->precision;
 
-		if($value->checkers) {
-			$attrs .= ' '.implode(' ', $value->checkers);
+		if($value->checkAttrs) {
+			$attrs .= ' '.implode(' ', $value->checkAttrs);
 		}
 
-		if($valueContext->show_errors && $value->errors) {
-			$attrs .= ' error="'.implode(' ', $value->errors).'"';
+		if($valueContext->check_card && $value->errors) {
+			$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
 		}
 	}
 	if(!$name) {//field doesn't exist

@@ -180,23 +180,10 @@ function templater_take_zones($text, $file) {
 	\$fieldvals = new smap(null, \$params->fieldvals);
 	
 	global \$valueContext;
-	\$valueContext = \$valueContext->pushStack();
-	\$valueContext->show_errors = \$params->show_errors || \$params->check;
-	\$valueContext->check = \$params->check;
-
-	if(\$valueContext->check) {
-		ob_start();
-	}
+	\$valueContext->check_card = \$valueContext->check_card || \$params->check_card;
 
 $v
-	if(\$valueContext->check) {
-		if(\$valueContext->hasErrors()) {
-			ob_end_clean();
-		} else {
-			ob_end_flush();
-		}
-	}
-	\$valueContext = \$valueContext->popStack();
+
 };
 FUNC;
 }
@@ -247,13 +234,7 @@ global \$G_TEMPLATER_GLOBALS; foreach(\$G_TEMPLATER_GLOBALS as \$TEMPLATER_GLOBA
 if(\$params === null) \$params = new smap;
 \$call_params = new smap(\$params); 
 global \$valueContext;
-\$valueContext = \$valueContext->pushStack();
-\$valueContext->show_errors = \$params->show_errors || \$params->check;
-\$valueContext->check = \$params->check;
-
-if(\$valueContext->check) {
-	ob_start();
-}
+\$valueContext->check_card = \$valueContext->check_card || \$params->check_card;
 
 FUNC;
 	$selects = []; //varname => select definition
@@ -891,14 +872,7 @@ EEE;
 	echo $text;
 	echo "<?php \n";
 	echo <<<END
-	if(\$valueContext->check) {
-		if(\$valueContext->hasErrors()) {
-			ob_end_clean();
-		} else {
-			ob_end_flush();
-		}
-	}
-	\$valueContext = \$valueContext->popStack();
+
 END;
 	echo "\n};\n";
 }
