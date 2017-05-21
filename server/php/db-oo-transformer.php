@@ -104,8 +104,8 @@ class _XPath {
 	return $this->___node->table->fields[$this->___name]->getExpression($alias);
   }
   function __toString() {
-	if($this->___name == '_id_') {
-		return $this->___node->table->ID($this->___node->alias);
+	if(preg_match("/^_id(\d*)_$/",$this->___name,$m)) {
+		return $this->___node->table->ID($this->___node->alias, $m[1]?:0);
 	}
 	$field = @$this->___node->table->fields[$this->___name];  
     return 

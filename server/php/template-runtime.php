@@ -1149,6 +1149,12 @@ function name_of_field_in_nv($value)
 		return explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	return '';
 }
+function name_of_relfield_in_nv($value)
+{
+	if($value instanceof namedString)
+		return explode('__',$value->name,3)[2]; //FIXME: dirty, we need a field object here, not a string
+	return '';
+}
 function get_filter_control($f)
 {
 	$descr = [];
@@ -1244,6 +1250,8 @@ function _A($op, $value, $sample = null, $month = null, $day = null)
 			$attr = 'required';
 		} else if($op == 're') {
 			$attr = "re=''";
+		} else if($op == 'unique') {
+			$attr = "check_unique";
 		}
 		if($attr) {
 			$value->attrs[] = $attr;
@@ -1257,6 +1265,10 @@ function Vre($value, $re) {
 function Vrequired($value) {
 	_A('required', $value);
 	return _V('required', $value); 
+}
+function Vunique($value) {
+	_A('unique', $value);
+	return $value; 
 }
 function Vmin($value, $sample, $month=null, $day=null) {
 	_A('min', $value);
@@ -1312,10 +1324,12 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			if($_ENV_UI_THEME) {
 				$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
 			}
+			$field_by_rel = name_of_relfield_in_nv($value);
 			$rel_target = file_URI($uri, 
 				[ 'table' => 
 						@$value->rel_target ?: $f->target->___name 
 				  , 'add_empty' => $f->required ? '' : 'Y'
+				  , 'id' => $field_by_rel
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 		}

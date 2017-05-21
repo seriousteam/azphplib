@@ -542,6 +542,54 @@ div[theme='swift'][inline]
   color:rgba(0,0,0,0.1);
 }
 
+[section] 
+{
+  font-size: 12px;
+  display: inline-block;
+  min-width: calc(100% - 1em);
+  max-width: 250px;
+  padding: 0.5em;
+  margin-bottom: 1em;
+  border-radius: 5px;
+  color: black;
+  position:relative;
+}
+[section]:before {
+  font-size:14px;
+  content: attr(section);
+  display: inline-block;
+  color: gray;
+  font-weight:bold;
+  vertical-align:middle;
+}
+[section][working]
+{
+  background: rgba(241,218,54,0.5)
+}
+[section][info]
+{
+  background: rgba(0,0,0,0.1)
+}
+[section] [area] {
+  display: inline-block;
+  background: rgba(255,255,255,0.7);
+  padding: 0.5em;
+  margin:0.25em;
+  border-radius:0.5em;
+  vertical-align:middle;
+}
+
+[section] [area] a { 
+  color:black; 
+  text-decoration:none;
+  border-left: 1px solid gray;
+  padding-left:0.5em;
+  padding-right:0.5em;
+}
+[section] [area] a:first-child {
+  border-left: none;
+}
+
 /* Swift Button BEGIN */
 button[theme="swift"],a[button][theme="swift"]
 {

@@ -36,7 +36,7 @@ if($has_choose) {
 }
 
 //define field structures
-$used_fields[] = "a._id_ AS a__table__id";
+$used_fields[] = "a.".(@$_REQUEST['id']?:'_id_')." AS a__table__id";
 if(!isset($table_fields[$ui->choose_key]))
 	$used_fields[] = "a.{$ui->choose_key} AS a__{$ui->choose_key}";
 

@@ -50,10 +50,14 @@ class Table {
 	ksort($ret);
 	return array_values($ret);
   }
-  function ID($path = '') {
+  function ID($path = '', $num = 0) {
 	$id = @$this->table_props['ID'];
-	if(!$id && $path)
+	if(!$id && $path) {
 		$id = '$a.'.$this->PK();
+	} else
+		if($path) {
+			$id = $id[$num];
+		}
 	return $path ? preg_replace('/(?:^|[^\$])\$a(?=\.)/', $path, $id)  : $id;
   }
   function default_filter() {
@@ -283,8 +287,8 @@ class modelParser extends _PreCmd {
 					//var_dump($fields);
 					foreach($fields as $f) {
 						if(preg_match("/^\s*+(?<name>$RE_ID):\s*+(?<value>(.*))/", $f, $m)) { // ID: 
-							if($m['name'] == 'ID' && preg_match("/'(\d+)'/", $m['value'], $m ))
-								$props[ 'ID' ] = $this->unescape($m[1]);
+							if(preg_match("/^ID\d*$/", $m['name'], $m1) && preg_match("/'(\d+)'/", $m['value'], $m ))
+								$props[ 'ID' ][] = $this->unescape($m[1]);
 							else if($m['name'] == 'DEFAULT_FILTER' && preg_match("/'(\d+)'/", $m['value'], $m ))
 								$props[ 'DEFAULT_FILTER' ] = $this->unescape($m[1]);
 							else if($m['name'] == 'TRIGGER_VAR')
