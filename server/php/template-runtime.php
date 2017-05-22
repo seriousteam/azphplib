@@ -1252,6 +1252,8 @@ function _A($op, $value, $sample = null, $month = null, $day = null)
 			$attr = "re=''";
 		} else if($op == 'unique') {
 			$attr = "check_unique";
+		} else if($op == 'readonly') {
+			$attr = $sample ? 'readonly' : '';
 		}
 		if($attr) {
 			$value->attrs[] = $attr;
@@ -1270,6 +1272,10 @@ function Vunique($value) {
 	_A('unique', $value);
 	return $value; 
 }
+function Vreadonly($value, $sample = null) {
+	_A('readonly', $value, $sample);
+	return $value;
+}
 function Vmin($value, $sample, $month=null, $day=null) {
 	_A('min', $value);
 	return _V('min', $value, $sample, $month, $day); 
@@ -1279,12 +1285,13 @@ function Vmax($value, $sample, $month=null, $day=null) {
 	return _V('max', $value, $sample, $month, $day); 
 }
 function Vcheck($value, $expr) { return _V('check', $value, $expr); }
-function Label($value, $expr) {
+function Attr($value, $name, $expr) {
 	if($value instanceof namedString) {
-		$value->attrs[] = "label=\"$expr\"";
+		$value->attrs[] = "$name=\"$expr\"";
 	}
 	return $value;
 }
+
 
 function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
