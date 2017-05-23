@@ -92,6 +92,7 @@ foreach($table_fields as $n=>$f) {
 		$ui_search[] = new uiSearchField($n, $f->caption, $f->search_op, $f->search_re, $f->search_priority);
 	}
 }
+
 foreach($ui_form as &$page) {
 	foreach($page as &$group) {
 		$maxcol = 0;
@@ -156,6 +157,9 @@ function group(o, st) {
 		for(var i = 0; i < a.length; ++i)
 			X.autoResizeOnEvent(null, a[i]);		
 	}	
+}
+function openExpander(o, row) {
+	o.hasA('required_in_form') && row && row.QS('[expand_form_button]') && row.QS('[expand_form_button]').setDN_TR(toggle);
 }
 </script>
 </head>
@@ -350,12 +354,7 @@ if($ui->tabler || $ui->grouped) {
 ST;
 	if($ui->tabler) {
 	echo <<<ST
-	<script>
-	function openExpander(o, row) {
-		o.hasA('required_in_form') && row && row.QS('[expand_form_button]') && row.QS('[expand_form_button]').setDN_TR(toggle);
-	}
-	</script>
-	<button {$ui->required_in_form} type=button onclick="openExpander(this,startAddRow(this))" static add=suspend unlocked=Y
+	<button {$ui->required_in_form} type=button onclick="startAddRow(this).done(function(r){openExpander(this, r)}.bind(this))" static add=suspend unlocked=Y
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span></button>
 ST;

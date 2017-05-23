@@ -191,7 +191,7 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 				'oracle' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) FROM DUAL INTERSECT SELECT MAX($2) FROM DUAL) END$3",
 				'mssql' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) INTERSECT SELECT MAX($2)) END$3",
 				'mysql' => "$1CASE COUNT(*) WHEN COUNT($2) THEN (SELECT MIN($2) INTERSECT SELECT MAX($2)) END$3"
-				]
+				],
 	];
 	static $frepl_from = null;
 	static $frepl_to = null;
