@@ -168,7 +168,7 @@ $empty_search = !count($ui_search) ? 'empty-filter' : '';
 echo "\n<div edit-panel $empty_search>";
 if($ui->tabler || $ui->grouped) {
 	echo "\n<button type=button qe-start qe-root={$ui->table} qe-output=\"B().QS('[edit-view]')\" qe-hide=\"this.parentNode\"></button>";
-	echo "\n<button type=button d3c-start onclick=\"D3C.turn( this.QSattrNext('d3c-row') ) \"></button>";
+	//echo "\n<button type=button d3c-start onclick=\"D3C.turn( this.QSattrNext('d3c-row') ) \"></button>";
 }
 
 //we need filter even for paging

@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /** 
  *
  * Swift form controls
@@ -1170,3 +1171,19 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   min-width:100px;
 }
 /* FROM LOCKER SUPPORT END */
+
+table[main] > tbody > tr > td > div[ctrl-inline] > div[theme="swift"] > label {
+	display: none;
+}
+
+[theme='swift'][subtable-show][label]:before {
+     visibility: visible; 
+	content: "";
+}
+[theme='swift'][subtable-show][label]:after {
+     content: attr(label); 
+	width: auto; height: 1em;
+	border: none;
+}
+
+[qe-start] { display: none; }
