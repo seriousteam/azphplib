@@ -13,6 +13,7 @@ div[theme='swift'] {
   position: relative;
   margin-bottom:0.75em;
   vertical-align:top;
+  width:auto;
 }
 [theme='swift'][wide],
 [theme='swift'][inline]
@@ -44,8 +45,6 @@ div[theme='swift'] {
   box-sizing:border-box;
   color:black;
   text-shadow:0 0 4px white;
-  /*position:relative;
-  z-index:2;*/
 }
 [theme='swift']>input[tag]:focus,
 [theme='swift']>textarea[tag]:focus,
@@ -128,6 +127,10 @@ div[theme='swift'] {
   margin:0;
   z-index:1;
   position:relative;
+}
+[theme='swift']>[list]
+{
+  z-index:auto;
 }
 [theme='swift']>[bool2]
 {
@@ -216,6 +219,7 @@ div[theme='swift'] {
 {
   text-align:left;
 }
+[theme='swift']>input[vtype="N"]
 [theme='swift']>textarea {resize: none}
 [theme='swift']>a[tag="A"][space_only]:after { content:none }
 
@@ -280,15 +284,57 @@ div[theme='swift'] {
   display: inline-block;
   visibility: hidden;
 }
-[theme='swift'][label][vtype="2"]:before
+
+[theme='swift'][label][vtype="2"]:before,
+[theme='swift'][label][vtype="3"]:before
 {
   font-size:12px;
+  padding-right:0.5em;
+}
+
+
+/* Bool controls customization */
+
+[theme='swift'] [bool-state] a
+{
+  color:black;
+  text-decoration:none;
+  border-bottom:1px dashed gray;
+}
+[theme='swift'] [bool-state] a:first-child
+{
+  padding-right:0.25em;
+}
+[theme='swift'] [bool-state] a:last-child
+{
+  padding-left:0.25em;
 }
 
 div[theme='swift']>[content-resizable]
 {
   min-width:250px;
 }
+
+/* Readonly BEGIN */
+
+[theme='swift'][readonly][vtype="3"] [bool-state]>*
+{
+  display:none;
+}
+[theme='swift'][readonly][vtype="3"] [bool-state="?"]:before
+{
+  content:"?";
+}
+[theme='swift'][readonly][vtype="3"] [bool-state="yes"]>a:first-child
+{
+  display:inline-block;
+}
+[theme='swift'][readonly][vtype="3"] [bool-state="no"]>a:last-child
+{
+  display:inline-block;
+}
+/* Readonly END */
+
 
 
 /*  Inline Form Controls BEGIN */
@@ -307,6 +353,21 @@ div[theme='swift'][inline]
 {
   border:none;
 }
+[theme='swift'][inline]>[bool-state],
+[theme='swift'][inline]>[bool2]
+{
+  text-align:center;
+}
+tr>td>[theme='swift'][inline]>label
+{display:none}
+
+tr:first-child>td>[theme='swift'][inline]>label, 
+tr[sample]+tr>td>[theme='swift'][inline]>label
+{
+  display:inline-block;
+  top:-5px;
+}
+
 /*  Inline Form Controls END */
 
 
@@ -431,6 +492,12 @@ div[theme='swift'][inline]
   background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAEC0lEQVR4Xu2dMYoVURREaxBjY5dirrgETQZz9yCCSzAxMBDExB24AlMXYS4aCoLS6fjnU1D31/RrjnH9++6cV54x8Hdfaf0/DyV9kPRY0r0L/Di/JL2V9FrS3wvMv9ORV3d6+szhXyQ9nRl1dsoLSR8L51SPOEIB/lzob/7Ni/gk6bp6O4XDjlCAlpY/S3peuJPqERTAx00BfFbVJAYIcGMAHx4G8FlVkxggwI0BfHgYwGdVTWKAADcG8OFhAJ9VNYkBAtwYwIeHAXxW1SQGCHBjAB8eBvBZVZMYIMCNAXx4GMBnVU1igAA3BvDhYQCfVTWJAQLcGMCHhwF8VtUkBghwYwAfHgbwWVWTGCDAjQF8eBjAZ1VNYoAANwbw4WEAn1U1iQEC3BjAh4cBfFbVJAYIcGMAHx4G8FlVkxggwI0BfHgYwGdVTWKAADcG8OFhAJ9VNYkBAtwYwIeHAXxW1SQGCHBjAB8eBvBZVZMYIMCNAXx4GMBnVU1igAA3BvDhYQCfVTWJAQLcGMCHhwF8VtUkBghwYwAfHgbwWVWTGCDAvRng0s/bD9bjowMEzr7vYCtA63n7Az8LIwICJ993sBWg9bz9YHc+OkDg5PsOtgK0focO/AyMCAic/EcsBQiILvZRCrDYhU2vSwGmiS42jwIsdmHT61KAaaKLzaMAi13Y9LoUYJroYvMowGIXNr0uBZgmutg8CrDYhU2vSwGmiS42jwIsdmHT61KAaaKLzaMAi13Y9LoUYJroYvMowGIXNr0uBZgmutg8CrDYhU2vSwGmiS42jwIsdmHT695agJ+SHkyfxrzdEXgn6eXNrbb/FPpG0qvdrctCkwR+S3ok6dupAmwluJb0RNL9yVNLs56Vzvku6WvprMljfkh6f+ryt0P4cqiPmi+H+qyqydYXWyhA9Vr9wyiAz+q/JL8CfHgYwGdVTWKAADcG8OFhAJ9VNYkBAtwYwIeHAXxW1SQGCHBjAB8eBvBZVZMYIMCNAXx4GMBnVU1igAA3BvDhYQCfVTWJAQLcGMCHhwF8VtUkBghwYwAfHgbwWVWTGCDAjQF8eBjAZ1VNYoAANwbw4WEAn1U1iQEC3BjAh4cBfFbVJAYIcGMAHx4G8FlVkxggwI0BfHgYwGdVTWKAADcG8OFhAJ9VNYkBAtwYwIeHAXxW1SQGCHBjAB8eBvBZVZMYIMCNAXx4GMBnVU1igAA3BvDhYQCfVTWJAQLcGMCHhwF8VtUkBghwYwAfHgbwWVWTGCDAjQF8eBjAZ1VNYoAA9xEM0Hrfwcnn7Qfsd/HRIxSg8b6DW5+3v4tbDJY4QgEu/b6Ds8/bD9jv4qNHKMAuQK66BAVY9eaG9qYAQyBXHUMBVr25ob0pwBDIVcf8A7KzAJDPJYpnAAAAAElFTkSuQmCC');
   background-size:100% 100%;
   opacity:0.5;
+  z-index:2;
+}
+
+[theme='swift']>[list][max-achieved] button[add]
+{
+  display:none;
 }
 
 [theme='swift']>[list] [add="resume"]:empty:after,
@@ -543,8 +610,71 @@ div[theme='swift'][inline]
   color:rgba(0,0,0,0.1);
 }
 
+[section] 
+{
+  font-size: 12px;
+  display: inline-block;
+  min-width: calc(100% - 1em);
+  max-width: 250px;
+  padding: 0.5em;
+  margin-bottom: 1em;
+  border-radius: 5px;
+  color: black;
+  position:relative;
+}
+[section]:before {
+  font-size:14px;
+  content: attr(section);
+  display: inline-block;
+  color: gray;
+  font-weight:bold;
+  vertical-align:middle;
+}
+[section][working]
+{
+  background: rgba(241,218,54,0.5)
+}
+[section][info]
+{
+  background: rgba(0,0,0,0.1)
+}
+[section][switch]
+{
+  background: rgba(155,255,255,0.4)
+}
+[section] [area] {
+  display: inline-block;
+  background: rgba(255,255,255,0.7);
+  padding: 0.5em;
+  margin:0.25em;
+  border-radius:0.5em;
+  vertical-align:middle;
+}
+
+[section] [area] a { 
+  color:black; 
+  text-decoration:none;
+  border-left: 1px solid gray;
+  padding-left:0.5em;
+  padding-right:0.5em;
+}
+[section] [area] a
+{
+  font-weight:bold;
+}
+[section] [area] a[href]
+{
+  font-weight:normal;
+}
+
+[section] [area] a:first-child {
+  border-left: none;
+}
+
 /* Swift Button BEGIN */
-button[theme="swift"],a[button][theme="swift"]
+button[theme="swift"],
+a[button][theme="swift"],
+[theme="swift"]>button[tag]
 {
   font-size: 16px;
   padding: 0.7em;
@@ -554,11 +684,15 @@ button[theme="swift"],a[button][theme="swift"]
   color: black;
   margin-bottom:0.5em;
 }
-button[theme="swift"]:focus,a[button][theme="swift"]:focus
+button[theme="swift"]:focus,
+a[button][theme="swift"]:focus,
+[theme="swift"]>button[tag]:focus
 {
   outline:none;
 }
-button[theme="swift"][ok],a[button][theme="swift"][ok]
+button[theme="swift"][ok],
+a[button][theme="swift"][ok],
+[theme="swift"]>button[tag][ok]
 {
   color: white;
   background: darkseagreen;
@@ -1165,11 +1299,29 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   font-family: sans-serif;
 }
 [locker="Y"] [theme='swift']>dfn:empty:before,
-[locker="Y"] [theme='swift']>pre:empty:before
+[locker="Y"] [theme='swift']>pre:empty:before,
+[locker="Y"] [theme='swift']>a[tag="A"]:empty:before
 {
   content:'—';
   min-width:100px;
 }
+
+[locker="Y"] tr>td>[theme='swift'][inline]>label,
+[locker="Y"] tr:first-child>td>[theme='swift'][inline]>label, 
+[locker="Y"] tr[sample]+tr>td>[theme='swift'][inline]>label
+{
+  display:none;
+}
+[locker="Y"] tr>td>[theme='swift'][inline][label]:before
+{
+  content:none;
+}
+[locker="Y"] tr:first-child>td>[theme='swift'][inline][label]:before, 
+[locker="Y"] tr[sample]+tr>td>[theme='swift'][inline][label]:before
+{
+  content:attr(label);
+}
+
 /* FROM LOCKER SUPPORT END */
 
 table[main] > tbody > tr > td > div[ctrl-inline] > div[theme="swift"] > label {

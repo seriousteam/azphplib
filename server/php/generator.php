@@ -29,7 +29,7 @@ class TemplaterCache {
 	function generate($fromfile, $tofile, $sourcefile = "") {
 		$sourcefile = $sourcefile? "-s$sourcefile" : "";
 		system(PHP_PATH." -f ".
-			__DIR__."/templater.php -- -c $fromfile -p{$this->cdir} $sourcefile > $tofile");
+			__DIR__."/templater.php -- -c \"$fromfile\" -p{$this->cdir} \"$sourcefile\" > $tofile");
 	}
 	function __construct($in_cache_name) {
 		$this->cdir = getenv('cache') ?: _ENV_CACHE_DIR;
