@@ -49,7 +49,9 @@ case 'C':
 	
 	foreach($vals as $f=>$v) {
 		if($f[0] == '+') {
-			$v = GenCID($table, $v?:0);
+			$v = $table->ZERO_RECORD() !== '' ?
+				GenStringCID($table->___name, strlen($table->ZERO_RECORD())) 
+				: GenCID($table->___name, $v?:0);
 			unset($vals[$f]);
 			$vals[substr($f,1)] = $v;
 		}

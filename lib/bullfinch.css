@@ -766,6 +766,7 @@ body[bullfinch]
   font-size:14pt;
   border-spacing:0.25em 0.25em;
   padding-bottom:0.5em;
+  width: 100%;
 }
 [bullfinch] tr[ctrl-group-head]>td
 {

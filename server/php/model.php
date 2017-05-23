@@ -66,7 +66,8 @@ class Table {
   function TRIGGER_VAR() { return @$this->table_props['TRIGGER_VAR']; }
   function AUTO_KEY() { return @$this->table_props['AUTO_KEY'] ? $this->PK() : ''; }
   function AUTO_GROUP() { return @$this->table_props['AUTO_GROUP']; }
-  function ZERO_RECORD() { return @$this->table_props['ZERO_RECORD'] ?: ''; }
+  function ZERO_RECORD() { return isset($this->table_props['ZERO_RECORD']) ? 
+		$this->table_props['ZERO_RECORD']: ''; }
 }
 
 class _Field {

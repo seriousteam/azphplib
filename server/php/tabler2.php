@@ -238,6 +238,7 @@ echo <<<ST
 	<tr data-row>
 	[[@tr \$data : SAMPLE AND SELECT *, $used_fields FROM {$ui->table}]]
 	[[cmd@tr \$data.{CMD {$ui->cmd_key}}]]
+	[[auto-key@tr \$table-:ZERO_RECORD()!==''~?syrecordidw]]
 ST;
 if($ui->chooser) {
 	echo <<<ST
