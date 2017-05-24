@@ -697,7 +697,7 @@ EEE;
 							}
 							else if($c == '#') {}
 							else if($c == '?') {}
-							else if(preg_match("/^(Vcheck\()(.*)/s", $c, $m)) {
+							else if(preg_match("/^((?:Vcheck|Attr)\()(.*)/s", $c, $m)) {
 								$res = $m[1].'$curcheck=('.$res.'), '.preg_replace('/\$\$/s', '$curcheck', $m[2]);
 							}
 							else if(preg_match("/^($RE_ID\()(.*)/s", $c, $m))

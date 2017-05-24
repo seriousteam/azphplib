@@ -1060,6 +1060,7 @@ static $a = [
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
 	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
 	, 'MENU' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$rel_target</menu>'
+	, 'MENU-' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn>'
 	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
 	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><menu mctl ref=Y $attrs2 $disabled>$rel_target</menu>'
 	, 'SUBTABLE' =>

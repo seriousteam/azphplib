@@ -849,6 +849,7 @@ table[theme='swift']>tbody>tr>td,
 [theme='swift'][mctl]>li,
 [theme='swift']>[mctl]>li
 {
+  text-align:left;
   padding:0.5em;
   border-bottom:1px solid rgba(0,0,0,0.1);
 }
