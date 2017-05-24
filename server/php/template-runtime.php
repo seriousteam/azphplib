@@ -315,7 +315,7 @@ function merge_ce($target, &$ce) {
 			
 			return ($m[1] ? ',' : '').implode(',', $fields ).($m[3] ? ',' : '');
 		}
-		return $m[1] && $m[3] ? ',' : '';
+		return $m[1] && @$m[3] ? ',' : '';
 	}, $target);
 }
 function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
@@ -694,13 +694,14 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 	echo $ret;
 }
 
-function dispatch_template($cmd, $args) {
-
+function dispatch_template($cmd, $args, $params = null, $file = null) {
+	if($file && !file_exists($file)) return FALSE;
+		
 	if(is_string($cmd) && preg_match('/^O:(.*)\.(xlsx|csv)$/i', $cmd, $m)) {
 		$f = "$m[2]_file_output";
 		ob_start();
 			$cmd = array_shift($args);
-			dispatch_template( $cmd, $args);
+			dispatch_template( $cmd, $args, $params, $file);
 			$text = ob_get_contents();
 		ob_end_clean();
 		$f($m[1], $text);
@@ -714,13 +715,28 @@ function dispatch_template($cmd, $args) {
 		$func_name = '_main_';
 	}
 
-	global $functions;
+	if($file)
+	if(_ENV_CACHE_DIR) {
+		//template-cache rules		
+		$cache = new TemplaterCache( urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
+		if(dirname($file) !== _ENV_CACHE_DIR) {
+			if( $cache->need_to_gen_from( $file ) ) {
+				$cache->gen_from_file( $file );
+			}
+		}		
+		$file = realpath( $cache->file() );	
+	} else {
+		//template monitor rules
+		$file = preg_replace('/\.t$/','',$file);
+	}
+	
+	$functions = load_template($file ?: TOPLEVEL_FILE);
 	
 	if(!@$functions[$func_name])
-		throw new Exception("cannot find template function '$func_name' in ".TOPLEVEL_FILE);
+		throw new Exception("cannot find template function '$func_name' in ".($file ?: TOPLEVEL_FILE));
 	
 	$func = $functions[$func_name];
-	$func($cmd, $args, new smap(null, $_REQUEST));
+	$func($cmd, $args, new smap(null, $params ?: $_REQUEST));
 }
 
 
