@@ -576,19 +576,24 @@ function setDbSessionVar($name, $value, $args = [], $for_table = '') {
 */
 
 /* fieldPart function MSSQL
-USE [decfift]
+
+
+USE [new_decfift]
 GO
+
 
 SET ANSI_NULLS ON
 GO
+
 SET QUOTED_IDENTIFIER ON
 GO
+
 -- =============================================
 -- Author:		<Author,,Name>
 -- Create date: <Create Date, ,>
 -- Description:	<Description, ,>
 -- =============================================
-ALTER FUNCTION [dbo].[field_part]
+CREATE FUNCTION [dbo].[field_part]
 (
 	@part nvarchar(64),
 	@fld  nvarchar(max),
@@ -608,18 +613,20 @@ BEGIN
 	else 
 		begin
 			select @p1 = CHARINDEX(@s1, @fld);
-			if @p1<>0 select @p1 = @p1 + LEN(@s1)-1;
+			if @p1<>0 and @p1 is not null select @p1 = @p1 + LEN(@s1)-1;
 		end;
 	
-	if @p1<>0 select @p2 = CHARINDEX(@s2, @fld, @p1); 
-	
+	if @p1<>0 and @p1 is not null select @p2 = CHARINDEX(@s2, @fld, @p1); 
 	 --Return the result of the function
 	RETURN case 
-	    when @p1=0 and @fld is null then CONCAT(@s0,@value,@s2)
-		when @p1=0 and @fld is not null then CONCAT(@fld,@s1,@value,@s2)
-		else CONCAT(SUBSTRING(@fld, 1, @p1),@value,SUBSTRING(@fld, @p2, LEN(@fld) - @p2 + 1)) --SUBSTRING(@fld, @p1, @p2 - @p1)
+	    when (@p1=0 or @p1 is null) and @fld is null then CONCAT(@s0,char(13),char(10),@value,@s2)
+		when (@p1=0 or @p1 is null) and @fld is not null then CONCAT(@fld,@s1,char(13),char(10),@value,@s2)
+		else CONCAT(SUBSTRING(@fld, 1, @p1),char(13),char(10),@value,SUBSTRING(@fld, @p2, LEN(@fld) - @p2 + 1)) --SUBSTRING(@fld, @p1, @p2 - @p1)
 		end;
 
 END
+
+
+GO
 
 */

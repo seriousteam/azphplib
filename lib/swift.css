@@ -622,6 +622,9 @@ tr[sample]+tr>td>[theme='swift'][inline]>label
   color: black;
   position:relative;
 }
+[section]:empty { display: none }
+[section]:empty:before { content:none }
+
 [section]:before {
   font-size:14px;
   content: attr(section);
@@ -1251,14 +1254,14 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 
 
 /* FORM LOCKER SUPPORT BEGIN */
-[locker="Y"] div[theme='swift'] 
+div[theme='swift'][locked]
 { 
   padding:0.25em;
   margin-right:0.75em;
 }
-[locker="Y"] [theme='swift']>label { display:none }
-[locker="Y"] [theme='swift']>span[tip] { display:none }
-[locker="Y"] [theme='swift'][label]:before
+[theme='swift'][locked]>label { display:none }
+[theme='swift'][locked]>span[tip] { display:none }
+[theme='swift'][locked][label]:before
 {
   content: attr(label);
   padding:0;
@@ -1270,17 +1273,17 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   font-size:14px;
   color:rgba(0,0,0,0.4);
 }
-[locker="Y"] [theme='swift']>[list]
+[theme='swift'][locked]>[list]
 {
   border:none;
   padding:0;
   border-spacing:0;
 }
-[locker="Y"] [theme='swift']>[list] button[del]
+[theme='swift'][locked]>[list] button[del]
 {
   display:none;
 }
-[locker="Y"] [theme='swift']>[list]>tfoot
+[theme='swift'][locked]>[list]>tfoot
 {
   display:none;
 }
@@ -1288,39 +1291,44 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 {
   display:none;
 }
-[locker="Y"] [theme='swift']>a[tag="A"]
+[theme='swift'][locked]>a[tag="A"]
 {
   padding: 0;
   border: none;
   vertical-align: middle;
   margin: 0;
 }
-[locker="Y"] [theme='swift']>pre
+[theme='swift'][locked]>pre
 {
   font-family: sans-serif;
 }
-[locker="Y"] [theme='swift']>dfn:empty:before,
-[locker="Y"] [theme='swift']>pre:empty:before,
-[locker="Y"] [theme='swift']>a[tag="A"]:empty:before
+[theme='swift'][locked]>dfn:empty:before,
+[theme='swift'][locked]>pre:empty:before,
+[theme='swift'][locked]>a[tag="A"]:empty:before
 {
   content:'—';
   min-width:100px;
 }
 
-[locker="Y"] tr>td>[theme='swift'][inline]>label,
-[locker="Y"] tr:first-child>td>[theme='swift'][inline]>label, 
-[locker="Y"] tr[sample]+tr>td>[theme='swift'][inline]>label
+tr>td>[theme='swift'][locked][inline]>label,
+tr:first-child>td>[theme='swift'][locked][inline]>label, 
+tr[sample]+tr>td>[theme='swift'][locked][inline]>label
 {
   display:none;
 }
-[locker="Y"] tr>td>[theme='swift'][inline][label]:before
+tr>td>[theme='swift'][locked][inline][label]:before
 {
   content:none;
 }
-[locker="Y"] tr:first-child>td>[theme='swift'][inline][label]:before, 
-[locker="Y"] tr[sample]+tr>td>[theme='swift'][inline][label]:before
+tr:first-child>td>[theme='swift'][locked][inline][label]:before, 
+tr[sample]+tr>td>[theme='swift'][locked][inline][label]:before
 {
   content:attr(label);
+}
+[theme='swift'][locked]>[lobload]
+{
+  padding:0;
+  border:none;
 }
 
 /* FROM LOCKER SUPPORT END */

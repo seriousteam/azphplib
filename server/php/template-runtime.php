@@ -1265,8 +1265,8 @@ function _A($op, $value, $sample = null, $month = null, $day = null)
 			$attr = ($op=='min'?'vmin':'vmax').'='.($month ? ("date($sample,$month,".($day?:1).')') : $sample).'"'; 
 		} else if($op == 'required') {
 			$attr = 'required';
-		} else if($op == 're') {
-			$attr = "re=''";
+		} else if($op == 're' && $sample) {
+			$attr = "re='$sample'";
 		} else if($op == 'unique') {
 			$attr = "check_unique";
 		} else if($op == 'readonly') {
@@ -1277,8 +1277,8 @@ function _A($op, $value, $sample = null, $month = null, $day = null)
 		}
 	}
 }
-function Vre($value, $re) { 
-	_A('re', $value);//TODO
+function Vre($value, $re) {
+	_A('re', $value, $re);
 	return $value;
 }
 function Vrequired($value) {
