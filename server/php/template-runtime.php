@@ -1212,8 +1212,11 @@ class ValueContext {
 }
 $valueContext = new ValueContext;
 
-function getValueType($value) {
+
+
+function getValueType($value, $vtype) {
 	global $Tables;
+	if($vtype) return $vtype;
 	$name = name_of_field_in_nv($value);
 	if($name && $value instanceof namedString) {
 		$table = $Tables->{$value->container->getName()};
@@ -1223,85 +1226,39 @@ function getValueType($value) {
 	}
 }
 
-function _setError($value, $op) {
-	global $valueContext;
-	$value->errors[] = $op;
-	$valueContext->hasError = TRUE;
-}
 
-function _V($op, $value, $sample = null, $month = null, $day = null) 
-{
-	global $valueContext;
-	if(!$valueContext->check_card) {
-		return $value;
-	}
-	if( $op == 'required' && $value == '' || $op == 'check' && !$sample ) {
-		_setError($value, $op);
-	} else if($value instanceof namedString) {
-		if($month && !date_parse($value)['error_count']) {
-			//Date
-			$vv = new DateTime($value);
-			$day = $day || 1;
-			$ss = new DateTime((int)$sample."-$month-$day");
-		} else {
-			switch(getValueType($value)) {
-			case 'DECIMAL': $vv = (float) $value; $ss = (float) $sample; break;
-			case 'INTEGER': $vv = (int) $value; $ss = (int) $sample; break;
-			default: $vv = $value; $ss = $sample;
-			}
-		}
-		if(	$op == 'min' && $vv < $ss ||
-				$op == 'max' && $vv > $ss
-			) {
-			_setError($value, $op);
-		}
-	}
-	return $value;
-}
-function _A($op, $value, $sample = null, $month = null, $day = null) 
-{
-	if($value instanceof namedString) { 
-		if($op == 'min' || $op == 'max') {
-			$attr = ($op=='min'?'vmin':'vmax').'='.($month ? ("date($sample,$month,".($day?:1).')') : $sample).'"'; 
-		} else if($op == 'required') {
-			$attr = 'required';
-		} else if($op == 're' && $sample) {
-			$attr = "re='$sample'";
-		} else if($op == 'unique') {
-			$attr = "check_unique";
-		} else if($op == 'readonly') {
-			$attr = $sample ? 'readonly' : '';
-		}
-		if($attr) {
-			$value->attrs[] = $attr;
-		}
-	}
-}
 function Vre($value, $re) {
-	_A('re', $value, $re);
+	$value->run['re'] = $re; 
 	return $value;
 }
 function Vrequired($value) {
-	_A('required', $value);
-	return _V('required', $value); 
+	$value->run['required'] = TRUE;
+	return $value;
 }
 function Vunique($value) {
-	_A('unique', $value);
-	return $value; 
+	$value->run['unique'] = TRUE;
+	return $value;
 }
 function Vreadonly($value, $sample = null) {
-	_A('readonly', $value, $sample);
+	$value->run['readonly'] = $sample;
 	return $value;
 }
 function Vmin($value, $sample, $month=null, $day=null) {
-	_A('min', $value);
-	return _V('min', $value, $sample, $month, $day); 
+	$value->run['min'] = [ 'sample' => $sample, 'month' => $month, 'day' => $day];
+	return $value;
 }
 function Vmax($value, $sample, $month=null, $day=null) {
-	_A('max', $value);
-	return _V('max', $value, $sample, $month, $day); 
+	$value->run['max'] = [ 'sample' => $sample, 'month' => $month, 'day' => $day];
+	return $value;
 }
-function Vcheck($value, $expr) { return _V('check', $value, $expr); }
+function ru_word($value, $sample) {
+	$value->run['ru_word'] = $sample;
+	return $value;
+}
+function Vcheck($value, $expr) {
+	$value->run['check'] = $expr;
+	return $value;
+}
 function Attr($value, $name, $expr) {
 	if($value instanceof namedString) {
 		$value->attrs[] = "$name=\"$expr\"";
@@ -1391,13 +1348,64 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$attrs .= $f->getControlProps();
 		$size = $f->size;
 		$precision = $f->precision;
+		if($value->run) {
+			foreach($value->run as $op=>$p) {
+				switch($op) {
+				case 'min':
+				case 'max':
+					$value->attrs[] = ($op=='min'?'vmin':'vmax').'="'.($p['month'] ? ("date({$p['sample']},{$p['month']},".($p['day']?:1).')') : $p['sample']).'"'; break;
+				case 'required':
+					$value->attrs[] = $op; break;
+				case 're':
+					$value->attrs[] = "re='$p'";break;
+				case 'unique':
+					$value->attrs[] = "check_unique";break;
+				case 'readonly':
+					$value->attrs[] = $p ? "readonly" : ''; break;
+				case 'ru_word':
+					$value->attrs[] = 'suffix="'.ru_number_take_word((int)(string)$value, $p).'"';
+					$value->attrs[] = "ru_word='".json_encode( $p , JSON_UNESCAPED_UNICODE )."'";
+					break;
+				}
+			}
+		}
 
 		if($value->attrs) {
 			$attrs .= ' '.implode(' ', $value->attrs);
 		}
-
-		if($valueContext->check_card && $value->errors) {
-			$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
+		
+		if($valueContext->check_card && $value->run) {
+			$vv = $value;
+			if(preg_match('/(?:^|\s+)field_part=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
+				$part = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
+				$vv = fieldPart($value, $part);
+			}
+			foreach($value->run as $op=>$p) {
+				if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
+					$value->errors[] = $op;
+					$valueContext->hasError = TRUE;
+				} else {
+					if(@$p['month'] && !date_parse($vv)['error_count']) {
+						//Date
+						$vv = new DateTime($vv);
+						$p['day'] = $p['day'] || 1;
+						$ss = new DateTime((int)$p['sample']."-{$p['month']}-{$p['day']}");
+					} else {
+						switch(getValueType($value,$vtype)) {
+						case 'DECIMAL': $vv = (float) $vv; $ss = (float) $p['sample']; break;
+						case 'INTEGER': $vv = (int) $vv; $ss = (int) $p['sample']; break;
+						default: $ss = $p['sample'];
+						}
+					}
+					if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
+						$value->errors[] = $op;
+						$valueContext->hasError = TRUE;
+					}
+				}
+			}
+			if($value->errors) {
+				$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
+			}
 		}
 	}
 	if(!$name) {//field doesn't exist
