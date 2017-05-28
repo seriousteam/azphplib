@@ -236,6 +236,9 @@ if(\$params === null) \$params = new smap;
 global \$valueContext;
 \$valueContext->check_card = \$valueContext->check_card || \$params->check_card;
 
+	\$dynVals = new dynVals;
+	\$dynVals->lastZone =& \$dynVals;
+
 FUNC;
 	$selects = []; //varname => select definition
 	//$select->fields = []; //expression => alias
@@ -633,19 +636,10 @@ EEE;
 					};
 
 					$db_part = $field_part_processor($db_part);
+					
+					if($db_part === '') $db_part = 'NULL';
 
 					$res = $db_part;
-					
-					if($cmd_part && 
-						preg_match('/^(E[a-z0-9]?)(?:\s+(.*))?$/s'
-							, end($cmd_part), $mend )) {
-						array_pop ($cmd_part);
-						$cmd_part[] = "output_editor_$mend[1]('".count($strings)."')";
-						$strings[] = phpDQuote(preg_replace_callback("/'(\d+)'/", 
-							function($m) use(&$strings) { return $strings[(int)$m[1]];}
-							,@$mend[2])
-						);
-					}
 					
 					if($cmd_part && 
 						preg_match('/^(e|v):(ro:|RO:)?([a-zA-Z0-9+-]*)(?:\s+(.*))?$/s'
@@ -662,10 +656,13 @@ EEE;
 						
 						$strings[] = phpDQuote($mend[0]);
 						$strings[] = phpDQuote($mend[1]);
+						
+						$res = explode('->', $res, 2);
+						$res = @$res[1] ? "$res[0]->ns('$res[1]')" : $res[0];
 					}
 					
 					foreach($cmd_part as &$cc) {
-						if(preg_match("/($RE_ID)/s", $cc, $m)) {
+						if(preg_match("/^$RE_ID/s", $cc)) {
 							$cc = $field_part_processor($cc);
 						}
 					}
@@ -673,12 +670,30 @@ EEE;
 					foreach($cmd_part as $c) {
 						if(preg_match("/^\\\$call_params\\.(.*)/s", $c, $m))
 							$res = "\$call_params->$m[1] = $res";
-						else if(preg_match("/^\\$$RE_ID/", $c, $m))
-								$res = "$m[0] = $res";
-						else if(preg_match('/^([+-]?\d+(\.\d*)?|\'.*\')$/s', $c))
+						else if(preg_match("/^\\$$RE_ID(?:\s*=(.*))?/s", $c, $m)) {
+								if($m[2]) 
+									$res = "( $m[0] )||true ?: $res ";
+								else
+									$res = "$m[0] = $res";
+						} else if(preg_match("/^\{(.*)\}$/s", $c, $m)) {
+								$a = explode(';', $ins = $m[1]);
+								$r = [];
+								foreach($a as $p) {
+										preg_match("/^\s*([^:=]*)(\s*:\s*([^:=]+))?(\s*=(.*))?/", $p, $m);
+										$vname = $m[1];
+										$vagg = $m[3];
+										$vfunc = $m[5];
+										$vfunc = preg_replace("/\[(\S+?)\]/", '$ctx->{\'$1\'}->value', $vfunc);
+										$vfunc = str_replace( "@V()", '$value', $vfunc);
+										$vfunc = str_replace( "@N()", '$value', $vfunc);
+										$vfunc = $vfunc ? "function (\$ctx, \$value) { return $vfunc; }" : 'null';
+										$r[] = "[ \"$vname\", \"$vagg\", $vfunc ]";
+									}
+									$r = implode(', ', $r);
+									$res = "\$dynVals->def( $res, [ $r ], \"$ins\" )";
+					   } else if(preg_match('/^([+-]?\d+(\.\d*)?|\'.*\')$/s', $c))
 							$res = "NVL( $res, $c )";
-						else
-							if($c == '=') {
+						else if($c == '=') {
 								$res =	"unescaped_output($res)";
 							}
 							else if($c == '.') {
@@ -709,18 +724,6 @@ EEE;
 					
 					if(!$cmd_part) $cmd_part = ['.'];
 
-					$res = 
-						preg_replace('/^output_editor_([a-zA-Z0-9]+)\(([^-]+)->([^,]+)(,(.*))?\)$/s'
-							, 'output_editor(\'$1\',$2->ns("$3")$4)'
-							, $res );
-					$res = 
-						preg_replace('/^(output_editor2[a-zA-Z0-9_()$=]+)->([^,)]+)((.*))?\)$/s'
-							, '$1->ns("$2")$3)'
-							, $res );
-					$cmd_part[] = 
-						preg_replace('/^output_editor_[a-zA-Z0-9]+\(.*/s'
-							, 'output_editor'
-							, array_splice($cmd_part, -1)[0] );
 					$cmd_part[] = 
 						preg_replace('/^output_editor2\(.*/s'
 							, 'output_editor'
