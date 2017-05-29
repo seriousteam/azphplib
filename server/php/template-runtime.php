@@ -445,12 +445,15 @@ function HASROLE() {
 }
 function ERROR($cond, $text) { if($cond === null || $cond === '') throw new Exception($text); }
 
-function fieldPart($v, $p) {
+function fieldPart($value, $p) {
 	$part = preg_quote($p);
-	
-	if(preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", $v, $m)) return $m[1];
-	
-	return '';
+	$fp = preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", (string)$value, $m) ? $m[1] : '';
+	if($value instanceof namedString) {
+		$value->value = $fp;
+		$value->part = $part;
+		return $value;
+	}
+	return $fp;
 }
 
 function URIPart($val, $name) {
@@ -1152,6 +1155,11 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$table_name = $table->___name;
 		$f = $table->fields[$name];
 
+		if($value->part) {
+			$name = "$name({$value->part})";
+		}
+
+
 		//we can specify control type explicitly
 		if(!$vtype) {
 			//if not, we take control from model
@@ -1159,7 +1167,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 				var_dump($f, $name, $value, $table);
 				die('!!!!');
 			}
-			$vtype = $f->getControlType();			
+			$vtype = $f->getControlType();
 		}
 
 		$read_only = $f->readonly || $read_only;		
@@ -1233,11 +1241,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 				}
 			}
 			if($valueContext->check_card) {
-				$vv = $value;
-				if(preg_match('/(?:^|\s+)field_part=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
-					$part = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
-					$vv = fieldPart($value, $part);
-				}
+				$vv = (string)$value;
 				foreach($value->run as $op=>$p) {
 					if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
 						$value->errors[] = $op;
@@ -1292,10 +1296,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			break;
 		default:
 	}
-	if(preg_match('/(?:^|\s+)field_part=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
-		$part = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
-		$value = fieldPart($value, $part);
-	}
+
 	$template = $value_only ? '<span value-only $attrs>$value</span>' : default_templated_editor($vtype);
 	
 	/*

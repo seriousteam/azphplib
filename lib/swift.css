@@ -147,6 +147,7 @@ div[theme='swift'] {
 {
   padding-top:0.8em;
   padding-bottom:0.2em;
+  clear: both;
 }
 /* macro label */
 [theme='swift']>input[tag][value=""]~label,
@@ -290,6 +291,7 @@ div[theme='swift'] {
   margin-top: -1px;
   display: inline-block;
   visibility: hidden;
+  float:left;
 }
 
 [theme='swift'][label][vtype="2"]:before,
@@ -1280,6 +1282,7 @@ div[theme='swift'][locked]
   visibility: visible;
   font-size:14px;
   color:rgba(0,0,0,0.4);
+  float:none;
 }
 [theme='swift'][locked]>[list]
 {
@@ -1319,8 +1322,7 @@ div[theme='swift'][locked]
 }
 [theme='swift'][locked]>dfn:empty:before,
 [theme='swift'][locked]>pre:empty:before,
-[theme='swift'][locked]>a[tag="A"]:empty:before,
-
+[theme='swift'][locked]>a[tag="A"]:empty:before
 {
   content:'—';
   min-width:100px;
@@ -1352,6 +1354,11 @@ tr[sample]+tr>td>[theme='swift'][locked][inline][label]:before
 {
   padding:0;
   border:none;
+}
+
+[theme='swift'][locked]>[lobload][accept^='image/']
+{
+  line-height: 0px;
 }
 
 /* FROM LOCKER SUPPORT END */
