@@ -835,142 +835,6 @@ function make_counting_command($stmt) {
 	return file_URI('//az/server/php/counter.php', $params);
 }
 
-class ctx {
-	var $outer = null;
-	
-	var $Date = '2000-01-01';
-	var $Period = 'Y';
-	
-	var $Adm = null;
-	
-	var $Param = '';
-	
-	static $current = null;
-	
-	static $periods = [ 'Y' => '1 year', 
-		'H' => '6 months', 
-		'Q' => '3 months', 
-		'M' => '1 months', 
-		'D' => '1 day'
-	];
-	
-	static $attribute_database = [];
-	
-	static function push($v) { 
-		$v->outer = ctx::$current;
-		return ctx::$current = $v;
-	}
-	static function pop($v) { 
-		return ctx::$current = ctx::$current->outer;
-	}
-	
-	function __construct($p, $axis, $v = null) {
-		if(!$p)
-			return;
-		$this->Date = $p->Date;
-		$this->Period = $p->Period;
-		$this->Adm = $p->Adm;
-		$this->Param = $p->Param;
-		switch($axis) {
-			case 'D': case 'M': case 'Q': case 'H': case 'Y':
-				$this->Date = $v->format('Y-mm-DD');
-				$this->Period = $axis;
-				break;
-			case 'A':
-				$this->Adm = $v; //switch to child Adm
-				break;
-			case 'P':
-				$this->Param .= '.'.$v;
-				break;
-		}
-	}
-
-	function Begin() { return date_create($this->Date); }
-	function End() { return date_modify($this->Begin(), ctx::$periods[ $this->Period ] ); }
-	function DP($m) {
-		static $dpl = [
-			'D' => '1 day',
-			'M' => '1 month',
-			'Q' => '3 month',
-			'H' => '6 month'
-		];
-		return	new ctx_loop( $this, $m,
-				new DatePeriod( $this->Begin()
-				,DateInterval::createFromDateString($dpl[$m])
-				, $this->End())
-			);
-	
-	}
-
-	function Days() { return DP('D'); }
-	function Months() { return DP('M'); }
-	function Quarters() { return DP('Q'); }
-	function HalfYears() { return DP('H'); }
-	
-	function day($n) { return new ctx($this, 'D', date_modify($his->Begin(), "+$n day")); }
-	function month($n) { return new ctx($this, 'M', date_modify($his->Begin(), "+$n month")); }
-	function quarter($n) { $n *= 3; return new ctx($this, 'Q', date_modify($his->Begin(), "+$n month")); }
-	function halfyear($n) { $n *= 6; return new ctx($this, 'HY', date_modify($his->Begin(), "+$n month")); }
-	
-	function Items() {
-		return new ctx_loop( $this, 'P',
-			array_unique(
-			array_filter(
-			array_map(
-				function($v) {
-					$re = '/^'.preg_quote($this->Param).'\.(\d+)\./';
-					return preg_match($re, $v, $m)? $m[1] : NULL;
-				}
-				,
-				array_keys(
-					@ctx::$attribute_database
-						[$this->Adm]
-						[$this->Period][$this->Date] ?: []
-				)
-			))));
-	}
-	function __get($name) { 
-		switch($name) {
-			case 'month': return new ctx($this, 'M', $this->Date);
-			case 'quarter': return new ctx($this, 'Q', $this->Date);
-			case 'halfyear': return new ctx($this, 'H', $this->Date);
-			case 'year': return new ctx($this, 'Y', $this->Date);
-		}
-		return new ctx($this, 'P', $name); 
-	}
-	
-	function V() {
-		return @ctx::$attribute_database
-			[$this->Adm]
-			[$this->Period][$this->Date]
-			[$this->Param]
-			;
-	}
-	function __toString() { return NVL($this->V(),''); }
-}
-
-class ctx_loop extends loop_helper {
-  var $c = null;
-  var $m = null;
-  var $loop = null;
-  
-  function __construct($loop, $mode, $i, &$counter = null, $initial = 1) { 
-  	parent::__construct($i, $counter, $initial);
-  	$this->c = ctx::$current;
-  	$this->loop = $loop;
-  	$this->m = $mode;
-  }
-
-  function __destruct() { 
-    ctx::$current = $this->c;
-  }
-
-  function current() { 
-  	return ctx::$current = new ctx($this->loop, $this->m, parent::current());
-  }
-}
-
-
 function wrap_notnull($res, $shell) {
 	return $res !== '' && $res !== [] && $res !== FALSE && $res !== null? 
 		str_replace('$$', $res, $shell)
@@ -988,71 +852,6 @@ function output_html($res) {
 function output_js($res) {
 	echo json_encode($res, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 	return $res;
-}
-
-function output_editor($mode, $value, $attrs = '')
-{
-	$tag = 'dfn';
-	$tag_a = 'tag';
-	$translate = null;
-	if($value instanceof namedString)
-		$name = explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
-	if($mode == 'Er' || $mode == 'Em') { 
-		$tag = 'a'; $attrs2 = '';
-		$rel_target = $attrs;
-		//var_dump($attrs);
-		//var_dump($value);
-		if(preg_match('/^([^:]*+):(.*)/s',  $attrs, $m)) {
-			$rel_target = trim($m[1]);
-			$attrs = $m[2];
-		} else $attrs = '';
-		
-		if(preg_match('/^{add}\s*+(.*)/', $rel_target, $m)) {
-			$rel_target = $m[1];
-			$tag = 'button';
-			$value = '+';
-			$attrs .= ' add';
-		}
-		
-		if(!$rel_target) {
-			global $Tables;
-			$table = $Tables->{$value->container->getName()};
-			if(!isset($table->fields[$name])) echo $value->name;
-			$f = $table->fields[$name];
-			$rel_target = file_URI('//az/server/php/chooser2.php', [ 'table' => $f->target->___name ]);
-		}
-		if(preg_match('/^\\$(.*)/',$rel_target, $m)) {
-			$b = $m[1];
-			$translate = $$b;
-		} else
-			$rel_target = '"'.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'"';
-		//$attrs .= ' href=javascript:undefined onclick="setWithMenu(this)" ';
-	}
-	if($mode == 'Et') $tag = 'pre';
-	if($mode == 'Et') $attrs .= ' content-resizable ';
-	if($mode == 'Es') { $attrs .= ' content-resizable=F '; $tag_a = 'tag=textarea'; }
-	static $md= [ 'E' => '', 'Es' => 'S', 'En' => 'N', 'Ei' => 'I', 'Ed' => 'D', 'E2' => '2', 'E3' => '3', 'Et' => '', 'Eh' => '', 'Er' => '', 'Em' => ''];
-	$vtype="";
-	if(!preg_match('/^\s*vtype=/',$attrs)) if($vtype = $md[$mode]) $vtype = "vtype=$vtype";
-	if($mode == 'Ei' || $mode == 'En') $value = trimZ($value);
-	if($mode == 'Ed') $value = substr(ru_date($value), 0, 16);
-	if($translate) $value = @$translate[ $value ];
-	if($mode == 'Eh')
-		echo "<input type=hidden name=\"$name\" fctl $attrs value=\"",htmlspecialchars($value),"\">";
-	else 	
-		echo "<$tag $tag_a $vtype name=\"$name\" fctl $attrs>",htmlspecialchars($value),"</$tag>";
-	if($mode == 'Er') {
-		echo "<dl mctl ref=Y $attrs2>$rel_target</dl>";
-	}
-	else if($mode == 'Em') {
-		if($translate) {
-			echo	"<menu mctl $attrs2>";
-			foreach($translate as $k=>$v) 
-			{ echo "<li value-patch='"; output_html($k); echo "'>"; output_html($v); echo "</li>"; }
-			echo "</menu>";
-		} else
-			echo "<menu mctl ref=Y $attrs2>$rel_target</menu>";
-	}
 }
 
 function default_templated_editor($t) {
@@ -1163,7 +962,7 @@ function with_rid($v, $rid) {
 function name_of_field_in_nv($value)
 {
 	if($value instanceof namedString)
-		return explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
+		return @explode('__',$value->name,3)[1]; //FIXME: dirty, we need a field object here, not a string
 	return '';
 }
 function name_of_relfield_in_nv($value)
@@ -1201,6 +1000,69 @@ function get_filter_control($f)
 		}
 	}
 	return $descr;
+}
+
+class dynVals { // === zone
+	var $index = [];
+	var $parent = null;
+	var $name = '';
+	var $lastZone = null;
+	
+	function __get($name) {
+			if($name === $this->name) return $this;
+ 			if( isset($this->index[$name]) ) return $this->index[$name];
+			return $this->parent->{$name};
+	}
+	function __construct($name = '', $parent = null) {
+		$this->name = $name;
+		$this->parent = $parent;
+		if($parent) $this->lastZone =& $parent->lastZone; 
+	}
+	
+	function defZone($name, $parent) {
+		$zone = $this->{ $parent ? "+$parent" : '' };
+		if($name === '+') return $zone;
+		$z = new dynVals($name, $zone);
+		return $z;
+	}
+
+	function defVal($src, $name, $agg, $code) {
+		if ( $name && $name[0] === '+' )
+			return  $this->lastZone = $this->defZone($name, $agg);
+		
+		$zone = $this;
+		
+		$v = new stdClass;
+			$v->value = null;
+			$v->aggregateTo = $agg ? $zone->{$agg} : NULL;
+		
+		if($name) $zone->index[$name] = $v;
+		
+		$v->initValue =  $val = $code ? $code( $zone, (string)$src ) : NULL;
+		$this->setVal($v, $val);
+		return $val;
+	}
+
+	function setVal($v, $value) {
+			$v->value = $value;
+
+			if( $v->aggregateTo && 	!isset($v->aggregateTo->initValue) ) 
+				$this->setVal(
+				   $v->aggregateTo, 
+					($v->aggregateTo->value ?:  0) + ($value ?: 0)
+				);
+	}
+		
+	function def($src, $arr, $def) {
+		$ret = $src;
+		foreach($arr  as $a) {
+			$v = $this->defVal($src, $a[0], $a[1], $a[2]);
+			if( !$a[0] )
+				$ret = $v;
+		}
+		return Attr($ret, 'dyn-val', $def);
+	}
+	
 }
 
 class ValueContext {
@@ -1262,6 +1124,8 @@ function Vcheck($value, $expr) {
 function Attr($value, $name, $expr) {
 	if($value instanceof namedString) {
 		$value->attrs[] = "$name=\"$expr\"";
+	} else {
+		return Attr(new namedString('', $value, null), $name, $expr );
 	}
 	return $value;
 }
@@ -1368,46 +1232,47 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					break;
 				}
 			}
-		}
-
-		if($value->attrs) {
-			$attrs .= ' '.implode(' ', $value->attrs);
-		}
-		
-		if($valueContext->check_card && $value->run) {
-			$vv = $value;
-			if(preg_match('/(?:^|\s+)field_part=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
-				$part = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
-				$vv = fieldPart($value, $part);
-			}
-			foreach($value->run as $op=>$p) {
-				if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
-					$value->errors[] = $op;
-					$valueContext->hasError = TRUE;
-				} else {
-					if(@$p['month'] && !date_parse($vv)['error_count']) {
-						//Date
-						$vv = new DateTime($vv);
-						$p['day'] = $p['day'] || 1;
-						$ss = new DateTime((int)$p['sample']."-{$p['month']}-{$p['day']}");
-					} else {
-						switch(getValueType($value,$vtype)) {
-						case 'DECIMAL': $vv = (float) $vv; $ss = (float) $p['sample']; break;
-						case 'INTEGER': $vv = (int) $vv; $ss = (int) $p['sample']; break;
-						default: $ss = $p['sample'];
-						}
-					}
-					if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
+			if($valueContext->check_card) {
+				$vv = $value;
+				if(preg_match('/(?:^|\s+)field_part=(\'.*?\'|".*?"|[^\s]+)/',$attrs,$m)) {
+					$part = preg_replace('/(^[\'"]|[\'"]$)/','',$m[1]);
+					$vv = fieldPart($value, $part);
+				}
+				foreach($value->run as $op=>$p) {
+					if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
 						$value->errors[] = $op;
 						$valueContext->hasError = TRUE;
+					} else {
+						if(@$p['month'] && !date_parse($vv)['error_count']) {
+							//Date
+							$vv = new DateTime($vv);
+							$p['day'] = $p['day'] || 1;
+							$ss = new DateTime((int)$p['sample']."-{$p['month']}-{$p['day']}");
+						} else {
+							switch(getValueType($value, $vtype)) {
+							case 'DECIMAL': $vv = (float) $vv; $ss = (float) $p['sample']; break;
+							case 'INTEGER': $vv = (int) $vv; $ss = (int) $p['sample']; break;
+							default: $ss = $p['sample'];
+							}
+						}
+						if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
+							$value->errors[] = $op;
+							$valueContext->hasError = TRUE;
+						}
 					}
 				}
 			}
-			if($value->errors) {
-				$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
-			}
 		}
 	}
+
+	if($value->errors) {
+		$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
+	}
+
+	if($value->attrs) {
+		$attrs .= ' '.implode(' ', $value->attrs);
+	}
+
 	if(!$name) {//field doesn't exist
 		$value_only = true;
 	}
@@ -1630,22 +1495,6 @@ function make_request($url, $srv = 'http://localhost') {
 	return file_get_contents('http://localhost/'.$url, false, $opts);
 }
 
-/*TODO
-1) make attribute table description
-	it defines:
-		- table name
-		- adm, date, period field names
-		- number, string, text, blob field names
-		- initial filter
-		- how filter paramtrized by adm, period, date
-		- how we take adm, period and date from main recordset
-	as a start we can decide
-		- main rowset contain adm, period, dt, param fields
-		- attribute filter can take 4 paramaters ( :adm , :period , :dt, :param )
-			
-		- attribute rowset has adm, period, dt, param, fs, ft, fb fields
-		- adm, period, dt, param is a key
-*/
 
 if(__FILE__ != TOPLEVEL_FILE) return;
 
