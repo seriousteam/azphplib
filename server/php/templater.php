@@ -237,7 +237,6 @@ global \$valueContext;
 \$valueContext->check_card = \$valueContext->check_card || \$params->check_card;
 
 	\$dynVals = new dynVals;
-	\$dynVals->lastZone =& \$dynVals;
 
 FUNC;
 	$selects = []; //varname => select definition
