@@ -1155,7 +1155,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$table_name = $table->___name;
 		$f = $table->fields[$name];
 
-		if($value->part) {
+		if(@$value->part) {
 			$name = "$name({$value->part})";
 		}
 
@@ -1220,7 +1220,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$attrs .= $f->getControlProps();
 		$size = $f->size;
 		$precision = $f->precision;
-		if($value->run) {
+		if(@$value->run) {
 			foreach($value->run as $op=>$p) {
 				switch($op) {
 				case 'min':
@@ -1240,7 +1240,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					break;
 				}
 			}
-			if($valueContext->check_card) {
+			if(@$valueContext->check_card) {
 				$vv = (string)$value;
 				foreach($value->run as $op=>$p) {
 					if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
@@ -1269,11 +1269,11 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		}
 	}
 
-	if($value->errors) {
+	if(@$value->errors) {
 		$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
 	}
 
-	if($value->attrs) {
+	if(@$value->attrs) {
 		$attrs .= ' '.implode(' ', $value->attrs);
 	}
 
