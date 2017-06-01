@@ -86,7 +86,7 @@ case 'D':
 case 'U':
 	foreach($fieldvals as $field=>$value) {
 		if(preg_match('/^([^(]+)\((.+)\)$/', $field, $m)) {
-			$fields[$m[1].":FIELD_PART('".$m[2]."',".$m[1].", ? )"] = $value;
+			$fields[$m[1].":FIELD_PART('$m[2]',$m[1], ? )"] = $value;
 		} else {
 			$fields[$field] = $value;
 		}

@@ -1003,6 +1003,7 @@ function get_filter_control($f)
 		}
 	}
 	return $descr;
+
 }
 
 class dynVals { // === zone
@@ -1014,34 +1015,39 @@ class dynVals { // === zone
 	function __get($name) {
 			if($name === $this->name) return $this;
  			if( isset($this->index[$name]) ) return $this->index[$name];
-			return $this->parent->{$name};
+			return  $this->parent ? $this->parent->{$name} : null;
 	}
-	function __construct($name = '', $parent = null) {
+	function __construct($name = '^', $parent = null) {
 		$this->name = $name;
 		$this->parent = $parent;
 		if($parent) $this->lastZone =& $parent->lastZone; 
+		else $this->lastZone = $this;
 	}
 	
 	function defZone($name, $parent) {
-		$zone = $this->{ $parent ? "+$parent" : '' };
-		if($name === '+') return $zone;
+		$zone = $this->{ "^$parent" };
+		if($name === '^') return $zone;
 		$z = new dynVals($name, $zone);
 		return $z;
 	}
 
 	function defVal($src, $name, $agg, $code) {
-		if ( $name && $name[0] === '+' )
+		if ( $name && $name[0] === '^' )
 			return  $this->lastZone = $this->defZone($name, $agg);
 		
-		$zone = $this;
+		if($this->{$name}) {
+			$v = $this->{$name};
+			return $v->source;
+		}
 		
 		$v = new stdClass;
 			$v->value = null;
-			$v->aggregateTo = $agg ? $zone->{$agg} : NULL;
+			$v->aggregateTo = $agg ? $this->{$agg} : NULL;
+			$v->source = $src;
 		
-		if($name) $zone->index[$name] = $v;
+		if($name) $this->index[$name] = $v;
 		
-		$v->initValue =  $val = $code ? $code( $zone, (string)$src ) : NULL;
+		$v->initValue =  $val = $code ? $code( $this, (string)$src ) : NULL;
 		$this->setVal($v, $val);
 		return $val;
 	}
@@ -1059,8 +1065,8 @@ class dynVals { // === zone
 	function def($src, $arr, $def) {
 		$ret = $src;
 		foreach($arr  as $a) {
-			$v = $this->defVal($src, $a[0], $a[1], $a[2]);
-			if( !$a[0] )
+			$v = $this->lastZone->defVal($src, $a[0], $a[1], $a[2]);
+			if( !$a[0]  ||  !$a[2]  && $v  )
 				$ret = $v;
 		}
 		return Attr($ret, 'dyn-val', $def);
@@ -1155,7 +1161,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$table_name = $table->___name;
 		$f = $table->fields[$name];
 
-		if($value->part) {
+		if(@$value->part) {
 			$name = "$name({$value->part})";
 		}
 
@@ -1220,7 +1226,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$attrs .= $f->getControlProps();
 		$size = $f->size;
 		$precision = $f->precision;
-		if($value->run) {
+		if(@$value->run) {
 			foreach($value->run as $op=>$p) {
 				switch($op) {
 				case 'min':
@@ -1240,7 +1246,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					break;
 				}
 			}
-			if($valueContext->check_card) {
+			if(@$valueContext->check_card) {
 				$vv = (string)$value;
 				foreach($value->run as $op=>$p) {
 					if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
@@ -1269,11 +1275,11 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		}
 	}
 
-	if($value->errors) {
+	if(@$value->errors) {
 		$attrs .= ' error="Y" error-type="'.implode(' ', $value->errors).'"';
 	}
 
-	if($value->attrs) {
+	if(@$value->attrs) {
 		$attrs .= ' '.implode(' ', $value->attrs);
 	}
 
