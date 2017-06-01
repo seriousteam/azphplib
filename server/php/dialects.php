@@ -181,6 +181,9 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 		'FIELD_PART' => [
 				'mssql' => 'dbo.FIELD_PART$1$2$3'
 				],
+		'FP' => [
+				'mssql' => 'dbo.FP$1$2$3'
+				],
 		'PARTS' =>
 				[
 				'pgsql' => '$1SELECT REGEXP_SPLIT_TO_TABLE($2, E\'#\')$3'
