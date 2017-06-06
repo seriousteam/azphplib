@@ -710,6 +710,14 @@ a[button][theme="swift"][ok],
   background: darkseagreen;
   border: 1px solid transparent;
 }
+button[theme="swift"][delete],
+a[button][theme="swift"][delete],
+[theme="swift"]>button[tag][delete]
+{
+  color: white;
+  background: tomato;
+  border: 1px solid transparent;
+}
 /* Swift Button END */
 
 /* Swift Select BEGIN */
@@ -813,7 +821,7 @@ a[theme="swift"]
   top: 100%;
   min-width:100%;
   position: absolute;
-  z-index:10000;
+  z-index:50000;
 }
 [theme='swift'][mctl],
 [theme='swift']>[mctl],
