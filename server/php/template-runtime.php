@@ -1021,7 +1021,6 @@ class dynVals { // === zone
 		$this->name = $name;
 		$this->parent = $parent;
 		if($parent) $this->lastZone =& $parent->lastZone; 
-		else $this->lastZone = $this;
 	}
 	
 	function defZone($name, $parent) {
@@ -1065,7 +1064,7 @@ class dynVals { // === zone
 	function def($src, $arr, $def) {
 		$ret = $src;
 		foreach($arr  as $a) {
-			$v = $this->lastZone->defVal($src, $a[0], $a[1], $a[2]);
+			$v = $this->defVal($src, $a[0], $a[1], $a[2]);
 			if( !$a[0]  ||  !$a[2]  && $v  )
 				$ret = $v;
 		}
