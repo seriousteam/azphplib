@@ -1006,6 +1006,31 @@ function get_filter_control($f)
 
 }
 
+/* DYNAMIC VALUES
+[[... ~{dynvals}~...]
+
+dyvals ::=  dynval ';' {dynvals}
+
+dynval ::=
+	'=' expr  //calculate expr, setV/return result
+	name '=' expr //calculate expr, assing result to name
+	':' name '=' expr //calculate expr, sum it to name
+	name-1 ':' name-2 '=' expr //calculate expr, assing result to name-1, sum it to name-2
+	'^' name-1 [ ':' name-2 ] //create zone name-1 in zone name-2 (or in root zone)
+	'^' ':' name //return context to zone name (which is a current zone parent )
+	
+expr ::= 
+	restricted php/js expr
+	with
+		'[' name ']'  // get name value
+		'[:]' - get current control value
+		'[:N]' '[:D]'  - get current control typed value
+		
+		= [a] + [b]
+		= [:] + [a] + 1
+		= [:N] + 1
+*/
+
 class dynVals { // === zone
 	var $index = [];
 	var $parent = null;
@@ -1063,12 +1088,18 @@ class dynVals { // === zone
 		
 	function def($src, $arr, $def) {
 		$ret = $src;
+		$check = null;
 		foreach($arr  as $a) {
 			$v = $this->defVal($src, $a[0], $a[1], $a[2]);
 			if( !$a[0]  ||  !$a[2]  && $v  )
 				$ret = $v;
+			if($a[0] === '@check')
+				$check = $v;
 		}
-		return Attr($ret, 'dyn-val', $def);
+		$ret = Attr($ret, 'dyn-val', $def);
+		if( isset($check) )
+			Vcheck($ret, $check);
+		return $ret;
 	}
 	
 }
@@ -1113,12 +1144,12 @@ function Vreadonly($value, $sample = null) {
 	$value->run['readonly'] = $sample;
 	return $value;
 }
-function Vmin($value, $sample, $month=null, $day=null) {
-	$value->run['min'] = [ 'sample' => $sample, 'month' => $month, 'day' => $day];
+function Vmin($value, $sample) {
+	$value->run['min'] = (string)$sample;
 	return $value;
 }
-function Vmax($value, $sample, $month=null, $day=null) {
-	$value->run['max'] = [ 'sample' => $sample, 'month' => $month, 'day' => $day];
+function Vmax($value, $sample) {
+	$value->run['max'] = (string)$sample;
 	return $value;
 }
 function ru_word($value, $sample) {
@@ -1131,11 +1162,11 @@ function Vcheck($value, $expr) {
 }
 function Attr($value, $name, $expr) {
 	if($value instanceof namedString) {
-		$value->attrs[] = "$name=\"$expr\"";
+		$value->attrs[] = "$name=\"".htmlspecialchars($expr)."\"";
+		return $value;
 	} else {
 		return Attr(new namedString('', $value, null), $name, $expr );
 	}
-	return $value;
 }
 
 
@@ -1225,16 +1256,17 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$attrs .= $f->getControlProps();
 		$size = $f->size;
 		$precision = $f->precision;
+		
 		if(@$value->run) {
 			foreach($value->run as $op=>$p) {
 				switch($op) {
 				case 'min':
 				case 'max':
-					$value->attrs[] = ($op=='min'?'vmin':'vmax').'="'.($p['month'] ? ("date({$p['sample']},{$p['month']},".($p['day']?:1).')') : $p['sample']).'"'; break;
+					$value->attrs[] = ($op=='min'?'vmin':'vmax')."=\"'$p'\""; break;
 				case 'required':
 					$value->attrs[] = $op; break;
 				case 're':
-					$value->attrs[] = "re='$p'";break;
+					$value->attrs[] = "re=$p";break;
 				case 'unique':
 					$value->attrs[] = "check_unique";break;
 				case 'readonly':
@@ -1246,23 +1278,29 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 				}
 			}
 			if(@$valueContext->check_card) {
-				$vv = (string)$value;
 				foreach($value->run as $op=>$p) {
-					if( $op == 'required' && $vv == '' || $op == 'check' && !$p ) {
+					$vv = (string)$value;
+					if( $op == 'required' && $vv == '' 
+						|| $op == 'check' && !$p 
+						|| $op == 're' && !preg_match($p, $vv)
+						) {
 						$value->errors[] = $op;
 						$valueContext->hasError = TRUE;
 					} else {
-						if(@$p['month'] && !date_parse($vv)['error_count']) {
-							//Date
-							$vv = new DateTime($vv);
-							$p['day'] = $p['day'] || 1;
-							$ss = new DateTime((int)$p['sample']."-{$p['month']}-{$p['day']}");
-						} else {
-							switch(getValueType($value, $vtype)) {
-							case 'DECIMAL': $vv = (float) $vv; $ss = (float) $p['sample']; break;
-							case 'INTEGER': $vv = (int) $vv; $ss = (int) $p['sample']; break;
-							default: $ss = $p['sample'];
+						switch(getValueType($value, $vtype)) {
+						case 'DATE':
+							$vv = date_parse($vv);
+							if($vv['error_count']) {
+								$value->errors[] = 're';
+								$valueContext->hasError = TRUE;
+							} else {
+								$vv = "$vv[year]-$vv[month]-$vv[day]";
+								$ss = $p;
 							}
+							break;
+						case 'DECIMAL': $vv = (float) $vv; $ss = $p; break;
+						case 'INTEGER': $vv = (int) $vv; $ss = $p; break;
+						default: $ss = $p['sample'];
 						}
 						if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
 							$value->errors[] = $op;
