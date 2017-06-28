@@ -1266,7 +1266,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 				case 'required':
 					$value->attrs[] = $op; break;
 				case 're':
-					$value->attrs[] = "re=$p";break;
+					$value->attrs[] = "re=\"$p\"";break;
 				case 'unique':
 					$value->attrs[] = "check_unique";break;
 				case 'readonly':
