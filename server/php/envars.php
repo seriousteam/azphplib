@@ -62,37 +62,11 @@ define('_ENV_MODEL_DATA', get_cfg_path('model.data.ini'));
 define('_ENV_LOCAL_ROLES', get_cfg_path('roles.ini'));
 define('_ENV_LIB_MAPPING', get_cfg_path('lib.map.ini'));
 define('_ENV_MFM_USERS', get_cfg_path('mfm.users.ini'));
+define('_ENV_RL', get_cfg_path('rl.ini'));
 define('G_ENV_TEMPLATE_INIT', get_cfg_path('template.init.php'));
 define('_ENV_CRUD_URI', '//az/server/php/crud.php');
 
 $G_LIBS_LIST = ['//az/lib/editing3.css', '//az/lib/editing3-ru.css', '//az/lib/choco.js', '//az/lib/editing3.js'];
-
-//Register Log In
-$RL_CREATE_USER_IN_LINK = 'yes';// 'yes' or 'no'
-$RL_CRYPT_KEY = 'D2fq9No8pzsTb12nTx';
-//application address
-$RL_DIR = 'http://localhost/az/server/php/loginregister/';
-$RL_SITEEMAIL = 'redmsmtptst@gmail.com';
-// DB constants, also used in http querry
-$RL_DBTABLE = 'lr_users';
-$RL_EMAIL_CONST = 'email';
-$RL_USER_CONST = 'username';
-$RL_PASSWORD_CONST = 'password';
-$RL_ACTIVE_CONST='active';
-$RL_RESET_TOKEN_CONST = 'resetToken';
-$RL_RESET_COMPL_CONST = 'resetComplete';
-// MSG strings
-$RL_REG_MAIL_SUBJ = "Подтверждение регистрации";
-$RL_REG_MAIL_HEAD = "Вы успешно зарегистрированы в нашей системе.\n\n Для активации аккаунта пройдите по ссылке:\n\n ";
-$RL_REG_MAIL_END = "\n\n С наилучшими пожеланиями. \n\n"; // is it need?!
-$RL_RESET_MAIL_SUBJ = "Сброс пароля";
-$RL_RESET_MAIL_BODY = "Вы запросили сброс пароля. \n\n Для сброса пройдите по сcылке: ";
-$RL_RESET_CHK = "На ваш email была выслана ссылка для сброса пароля.";
-$RL_RESET_LOGOK = "Аккаунт активирован, можете войти.";
-$RL_RESET_INV_TOKEN = 'Неправильный токен сброса пароля.';
-$RL_RESET_ALR_CHANGED = 'Пароль был уже изменен!';
-$RL_RESET_CH_OK = "Пароль изменен, можете войти.";
-$RL_LOG_WRG = 'Неверный пароль или имя пользователя, или пользователь не активирован.';
 
 @include get_cfg_path('env.php');
 

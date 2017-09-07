@@ -82,7 +82,7 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 		'SUBSTRING' => [ 'pgsql' => 'SUBSTR', 'oracle' => 'SUBSTR', 'mssql' => 'SUBSTRING', 'mysql' => 'SUBSTRING' ],
 		'LENGTH' => [ 'pgsql' => 'LENGTH', 'oracle' => 'LENGTHC', 'mssql' => "LEN$1REPLACE($2,' ','_')$3", 'mysql' => 'CHAR_LENGTH' ],
 
-		'CONCAT' => [ 'pgsql' => 'CONCAT$1\' \', $2$3$4$5' ],
+		'CONCAT' => [ 'pgsql' => 'CONCAT$1$2$3$4$5' ],
 		'CONCAT_WS' => [ 'pgsql' => 'CONCAT_WS$1\' \', $2$3$4$5' ],
 		'TITLE' => [ 'pgsql' => '$1SUBSTR($2,1,1)||\'.\'$3' ],
 		

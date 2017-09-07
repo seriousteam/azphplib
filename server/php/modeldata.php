@@ -16,8 +16,10 @@ if(!@$_REQUEST['table']) {
 	$vals = [];	
 	foreach($ModelDB[$t] as $k => $v)
 		if($k === '.') {
-			$vnull = @$ModelDB[$t.'.info']['.'];
-			$vals[] = [ 'value' => "$vnull", 'text' => htmlspecialchars($v), 'rt' => htmlspecialchars($v), 'empty' => '' ];
+			if(@$_REQUEST['add_empty']) {
+				$vnull = @$ModelDB[$t.'.info']['.'];
+				$vals[] = [ 'value' => "$vnull", 'text' => htmlspecialchars($v), 'rt' => htmlspecialchars($v), 'empty' => '' ];
+			}
 		} else
 			$vals[] = [ 'value' => htmlspecialchars($k), 'text' => htmlspecialchars($v)  ];
 

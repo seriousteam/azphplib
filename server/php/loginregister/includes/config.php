@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__.'../../../cfg.php');
+extract(parse_ini_file(_ENV_RL));
 
 ob_start();
 session_start();

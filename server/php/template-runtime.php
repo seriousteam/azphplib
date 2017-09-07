@@ -1217,7 +1217,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			$rel_target = file_URI($uri, 
 				[ 'table' => 
 						@$value->rel_target ?: $f->target->___name 
-				  , 'add_empty' => $f->required ? '' : 'Y'
+				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
 				  , 'id' => $field_by_rel
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
@@ -1237,7 +1237,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	
 			$rel_target = file_URI('//az/server/php/modeldata.php', 
 				[ 'table' => $f->values 
-				  , 'add_empty' => $f->required ? '' : 'Y'
+				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 			//$attrs .= ' add_button=N ';

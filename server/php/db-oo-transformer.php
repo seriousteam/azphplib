@@ -456,7 +456,7 @@ class _Cmd extends _PreCmd {
         foreach($paths as $i=>$p)
           $a->args[] = $m['alias'].($i? '__'.$i :'');
         $subselects[$a->args[0]] = $a; //store linked 'selects to array' in parent
-        return strlist(function($p, $alias) { return "$p AS $alias"; }, $paths, $a->args);
+        return strlist(function($p, $alias) { return "$p AS \"$alias\""; }, $paths, $a->args);
       },
       $select
     );

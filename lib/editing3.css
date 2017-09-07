@@ -1,13 +1,18 @@
 @charset "UTF-8";
 
-body, html {
-    height: 100%;
+html {
+    	height: 100%;
+	box-sizing:border-box;
+}
+body {
+    	height: 100%;
+	box-sizing:border-box;
 }
 
 .popupFrame, #testPopuframe {
 	background: white;
 	position: absolute;
-	z-index: 10000; 
+	z-index: 50000; 
 }
 
 .popupFrame, [close-box] {
@@ -260,7 +265,7 @@ IMG[src=""], [fileref][href=""] {
 [lobload] button[drop]:after { content: attr(drop);}
 
 [xdate], [sample], .sample {
-	display: none
+	display: none !important
 }
 
 .barcode { 
@@ -433,8 +438,10 @@ ul.echoose[error="Y"] {
 	width:0;
 
 }
-.coverBox + [calendcont] { 
-	z-index:10000;
+.coverBox + [calendcont] 
+, .coverBox + .calendar
+{ 
+	z-index:50000;
 }
 input[tag][vtype="D"] 
 { padding-right:24px; vertical-align:top;}
@@ -462,7 +469,7 @@ input[tag][vtype="D"][add_button="table"] +[calendcont]:hover
   display:inline-block;
   position:relative;
   font-family:sans-serif;
-  z-index:2;
+  z-index:50000;
   -webkit-user-select: none; /* Chrome/Safari */
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* IE10+ */
