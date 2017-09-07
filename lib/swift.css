@@ -826,7 +826,8 @@ a[theme="swift"]
 [theme='swift'][mctl],
 [theme='swift']>[mctl],
 [theme='swift'][mctl]>[edit-panel],
-[theme='swift']>[mctl]>[edit-panel]
+[theme='swift']>[mctl]>[edit-panel],
+[theme='swift']>[edit-panel]
 {
   border-top-left-radius: 0.4em;
   border-top-right-radius: 0.4em;
@@ -873,7 +874,10 @@ table[theme='swift']>tbody>tr>td,
   padding:0.5em;
   border-bottom:1px solid rgba(0,0,0,0.1);
 }
-
+table[theme='swift']>tfoot>tr>td
+{
+  text-align:center;
+}
 [theme='swift'][mctl]>li[empty],
 [theme='swift']>[mctl]>li[empty]
 {
@@ -921,7 +925,8 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 /* INLINE FILTER */
 
 [theme='swift'][mctl]>[edit-panel],
-[theme='swift']>[mctl]>[edit-panel]
+[theme='swift']>[mctl]>[edit-panel],
+[theme='swift']>[edit-panel]
 {
   border-bottom:1px solid rgba(0,0,0,0.05);
   background: rgba(255,255,255,0.8);
@@ -941,7 +946,8 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   margin:0;
 }
 
-[theme='swift']>[edit-panel]>[filter_def]>input
+[theme='swift']>[edit-panel]>[filter_def]>input,
+[theme='swift']>input[filter]
 {
   font-size:18px;
   line-height:1em;
@@ -959,7 +965,9 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
   background-position:left center;
 }
 [theme='swift'][mctl]>[edit-panel]>[filter_def]>input,
-[theme='swift']>[mctl]>[edit-panel]>[filter_def]>input
+[theme='swift']>[mctl]>[edit-panel]>[filter_def]>input,
+[theme='swift']>[edit-panel]>[filter_def]>input,
+[theme='swift']>input[filter]
 {
   border:1px solid transparent;
   box-shadow:none;
@@ -967,7 +975,9 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 }
 
 [theme='swift'][mctl]>[edit-panel]>[filter_def]>input:focus,
-[theme='swift']>[mctl]>[edit-panel]>[filter_def]>input:focus
+[theme='swift']>[mctl]>[edit-panel]>[filter_def]>input:focus,
+[theme='swift']>[edit-panel]>[filter_def]>input:focus,
+[theme='swift']>input[filter]:focus
 {
   outline:none;
   box-shadow:none;
@@ -1386,3 +1396,14 @@ table[main] > tbody > tr > td > div[ctrl-inline] > div[theme="swift"] > label {
 }
 
 [qe-start] { display: none; }
+
+[theme="swift"] [note] {
+  background-color: rgba(255,200,90,0.8);
+  border-bottom-left-radius: 0.4em;
+  border-bottom-right-radius: 0.4em;
+  padding: 5px;
+  font-size: 13px;
+  color: black;
+  text-align:left;
+}
+[theme="swift"]>tfoot>[if_no_rows]>td { padding:5px }
