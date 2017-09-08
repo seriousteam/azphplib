@@ -956,6 +956,11 @@ function choose_from($v, $target) {
 	return $v;
 }
 
+function choose_url($v, $url) {
+	$v->choose_url = $url;
+	return $v;
+}
+
 function with_rid($v, $rid) {
 	$v->key = $rid;
 	return $v;
@@ -1209,17 +1214,21 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$read_only = $f->readonly || $read_only;		
 			
 		if(@$value->rel_target || $f->target) {
-			$uri = '//az/server/php/chooser2.php';
-			if($_ENV_UI_THEME) {
-				$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
+			if(@$value->choose_url) {
+				$rel_target = file_URI($value->choose_url, []);
+			} else {
+				$uri = '//az/server/php/chooser2.php';
+				if($_ENV_UI_THEME) {
+					$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
+				}
+				$field_by_rel = name_of_relfield_in_nv($value);
+				$rel_target = file_URI($uri, 
+					[ 'table' => 
+							@$value->rel_target ?: $f->target->___name 
+					  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
+					  , 'id' => $field_by_rel
+					]);
 			}
-			$field_by_rel = name_of_relfield_in_nv($value);
-			$rel_target = file_URI($uri, 
-				[ 'table' => 
-						@$value->rel_target ?: $f->target->___name 
-				  , 'add_empty' => $f->required ? '' : 'Y'
-				  , 'id' => $field_by_rel
-				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 		}
 
@@ -1237,7 +1246,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	
 			$rel_target = file_URI('//az/server/php/modeldata.php', 
 				[ 'table' => $f->values 
-				  , 'add_empty' => $f->required ? '' : 'Y'
+				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
 				]);
 			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
 			//$attrs .= ' add_button=N ';

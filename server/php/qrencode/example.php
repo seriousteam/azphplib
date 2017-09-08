@@ -11,4 +11,3 @@ if (isset($_GET['size'])) $size=$_GET['size'];
 $b64txt=getQRBASE64($text,$size,$tmpdir);
 
 echo '<html><img src="'.$b64txt.'"/><br></html>'; 
-?>
