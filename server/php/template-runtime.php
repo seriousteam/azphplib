@@ -876,14 +876,16 @@ static $a = [
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs $disabled>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs $disabled content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
-	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
-	, 'MENU' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$rel_target</menu>'
+	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
+	, 'MENU' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$menu</menu>'
 	, 'MENU-' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn>'
-	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><dl mctl ref=Y $attrs2 $disabled>$rel_target</dl>'
-	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><menu mctl ref=Y $attrs2 $disabled>$rel_target</menu>'
+	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
+	, 'MENU+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><menu mctl $attrs2 $disabled>$menu</menu>'
 	, 'SUBTABLE' =>
 					'<button subtable-show type=button onclick="this.setDN(toggle)" display_next $attrs></button>
-					<div subtable ref=Y $attrs2 $disabled>"/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %3F".setURLParam("args[]",findRid(this))</div>
+					<div subtable $attrs2 $disabled
+						ref-src="{{once}}/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %3F&args[]={{findRid(this)}}"
+					></div>
 				'
 	, 'FILE' =>
 		'<span lobload=filer accept="" filetypes="*" $disabled>
@@ -953,6 +955,11 @@ class templated_editors_helper implements ArrayAccess {
 
 function choose_from($v, $target) {
 	$v->rel_target = $target;
+	return $v;
+}
+
+function choose_url($v, $url) {
+	$v->choose_url = $url;
 	return $v;
 }
 
@@ -1180,6 +1187,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	$size = '';
 	$precision = '';
 	$rel_target = '';
+	$menu = '';
 	$table_name = '';
 	$rid = '';
 	if($_ENV_UI_THEME) {
@@ -1209,18 +1217,22 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		$read_only = $f->readonly || $read_only;		
 			
 		if(@$value->rel_target || $f->target) {
-			$uri = '//az/server/php/chooser2.php';
-			if($_ENV_UI_THEME) {
-				$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
+			if(@$value->choose_url) {
+				$rel_target = file_URI($value->choose_url, []);
+			} else {
+				$uri = '//az/server/php/chooser2.php';
+				if($_ENV_UI_THEME) {
+					$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
+				}
+				$field_by_rel = name_of_relfield_in_nv($value);
+				$rel_target = file_URI($uri, 
+					[ 'table' => 
+							@$value->rel_target ?: $f->target->___name 
+					  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
+					  , 'id' => $field_by_rel
+					]);
 			}
-			$field_by_rel = name_of_relfield_in_nv($value);
-			$rel_target = file_URI($uri, 
-				[ 'table' => 
-						@$value->rel_target ?: $f->target->___name 
-				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
-				  , 'id' => $field_by_rel
-				]);
-			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
+			$rel_target = htmlspecialchars($rel_target);
 		}
 
 		$rid = $value->key;
@@ -1235,22 +1247,22 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					(@$ModelDB[$f->values][(string)$value?:0] ?: '')
 			;
 	
-			$rel_target = file_URI('//az/server/php/modeldata.php', 
+			$menu_src = file_URI('//az/server/php/modeldata.php', 
 				[ 'table' => $f->values 
-				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
+				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) 
+				  							? '' : 'Y'
 				]);
-			$rel_target = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $rel_target).'\'';
-			//$attrs .= ' add_button=N ';
-			$attrs2 .= ' ref=Y ';
+			$attrs2 .= ' ref-src="' . htmlspecialchars($menu_src) . '" ';
 		}
 
 		if(@$value->tr) { // translated value --> use tr array as choose items
 			$data = [];
-			if(!$f->required)
+			if(!(@$value->run && $value->run['required'] || $f->required))
 				$data[] = "<li value-patch=''>?</li>";
 			foreach($value->tr as $k=>$v) 
-			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>". htmlspecialchars($v). "</li>"; }
-			$rel_target = implode("\n", $data);
+			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>".
+				 htmlspecialchars($v). "</li>"; }
+			$menu = implode("\n", $data);
 		}
 		
 		$attrs .= $f->getControlProps();
