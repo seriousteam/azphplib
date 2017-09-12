@@ -347,6 +347,7 @@ function merge_queries($target, $cmd, &$args, &$offset, &$limit, &$page) {
 		$limit = $parsed_target->LIMIT = $offset + $page; 
 		return (string)$parsed_target;
 	}
+	$cmd = preg_replace('/^\s*\*\*/', '*WHERE ', $cmd);
 	if(!preg_match('/^\s*SELECT\s/si', $cmd)) $cmd = 'SELECT '. $cmd;
 	$parsed_src = new parsedCommandSmart($SELECT_STRUCT, $cmd, $parsed_target->pre);
 	if(!$parsed_src->ok || !$parsed_target->ok) return $target; //FIXME: throw
@@ -958,8 +959,8 @@ function choose_from($v, $target) {
 	return $v;
 }
 
-function choose_url($v, $url) {
-	$v->choose_url = $url;
+function choose_url($v, $url, $args = []) {
+	$v->choose_url = file_URI($url, $args);
 	return $v;
 }
 
@@ -1218,7 +1219,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			
 		if(@$value->rel_target || $f->target) {
 			if(@$value->choose_url) {
-				$rel_target = file_URI($value->choose_url, []);
+				$rel_target = $value->choose_url;
 			} else {
 				$uri = '//az/server/php/chooser2.php';
 				if($_ENV_UI_THEME) {
