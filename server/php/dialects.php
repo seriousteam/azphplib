@@ -590,12 +590,6 @@ GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-
--- =============================================
--- Author:		<Author,,Name>
--- Create date: <Create Date, ,>
--- Description:	<Description, ,>
--- =============================================
 CREATE FUNCTION [dbo].[field_part]
 (
 	@part nvarchar(64),
@@ -628,6 +622,32 @@ BEGIN
 		end;
 
 END
+
+CREATE FUNCTION [dbo].[FP] 
+(
+	@part nvarchar(64),
+	@fld  nvarchar(max)
+)
+RETURNS nvarchar(max)
+AS
+BEGIN
+	DECLARE @s0 varchar, @s1 varchar, @s2 varchar, @p1 bigint, @p2 bigint
+	
+	SELECT @s0 = '§§'+@part+':';
+	SELECT @s1 = char(13)+char(10)+'§§'+@part+':';
+	SELECT @s2 = char(13)+char(10)+'§§'+@part+'.';
+	
+	if SUBSTRING(@fld, 1, LEN(@s0)) = @s0 
+		select @p1 = 1 + len(@s0); 
+	else select @p1 = CHARINDEX(@s1, @fld)  + len(@s0);
+	
+	if @p1 is not null select @p2 = CHARINDEX(@s2, @fld, @p1); 
+	
+	 --Return the result of the function
+	RETURN case when @p1 > len(@s0) then SUBSTRING(@fld, @p1, @p2 - @p1) end;
+
+END
+
 
 
 GO
