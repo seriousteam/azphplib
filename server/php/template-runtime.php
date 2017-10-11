@@ -1148,6 +1148,10 @@ function Vrequired($value) {
 	$value->run['required'] = TRUE;
 	return $value;
 }
+function Vdummy($value, $dummy) {
+	$value->run['dummy'] = $dummy;
+	return $value;
+}
 function Vunique($value) {
 	$value->run['unique'] = TRUE;
 	return $value;
@@ -1307,6 +1311,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					if( $op == 'required' && $vv == '' 
 						|| $op == 'check' && !$p 
 						|| $op == 're' && !preg_match($p, $vv)
+						|| $op == 'dummy' && $vv === $p
 						) {
 						$value->errors[] = $op;
 						$valueContext->hasError = TRUE;
