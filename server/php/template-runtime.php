@@ -1185,7 +1185,7 @@ function Verror($status) {
 	global $valueContext;
 	if(@$valueContext->check_card && $status)
 		return $valueContext->hasError = TRUE;
-	return $false;
+	return false;
 }
 
 
