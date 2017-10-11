@@ -863,7 +863,7 @@ static $a = [
 	'' => NULL
 	, 'V' => '$value'
 	, 'SPAN' => '<span $attrs $disabled>$value</span>'
-	, 'A' => '<a tag fctl name="$name" rid="$rid" $attrs $disabled>$value</a>'
+	, 'A' => '<a tag=A fctl name="$name" rid="$rid" $attrs $disabled>$value</a>'
 	, 'NAMED_SPAN' => '<span name="$name" $attrs $disabled>$value</span>'
 	, 'TAG' => '<$name $attrs $disabled>$value</$name>'
 	, 'TAGV' => '<$name $attrs $disabled value="$value" />'
@@ -878,6 +878,7 @@ static $a = [
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs $disabled content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
 	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
+	, 'SELECT' => '<dfn tag=select fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$menu</menu>'
 	, 'MENU' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$menu</menu>'
 	, 'MENU-' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn>'
 	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
@@ -968,7 +969,10 @@ function with_rid($v, $rid) {
 	$v->key = $rid;
 	return $v;
 }
-
+function with_self_rid($v) {
+	$v->key = $v;
+	return $v;
+}
 
 function name_of_field_in_nv($value)
 {
@@ -1175,6 +1179,13 @@ function Attr($value, $name, $expr) {
 	} else {
 		return Attr(new namedString('', $value, null), $name, $expr );
 	}
+}
+
+function Verror($status) {
+	global $valueContext;
+	if(@$valueContext->check_card && $status)
+		return $valueContext->hasError = TRUE;
+	return $false;
 }
 
 

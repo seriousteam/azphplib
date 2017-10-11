@@ -1021,3 +1021,8 @@ input[tag][vtype="D"][add_button="table"] +[calendcont]:hover
 {
   display:none;
 }
+
+[if-error] { display: none; }
+[if-error][error="Y"] {
+	display: inherit;
+}
