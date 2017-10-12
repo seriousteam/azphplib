@@ -1237,7 +1237,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 
 		$read_only = $f->readonly || $read_only;		
 			
-		if(@$value->rel_target || $f->target) {
+		if(@$value->rel_target || @$value->choose_url || $f->target) {
 			if(@$value->choose_url) {
 				$rel_target = $value->choose_url;
 			} else {
