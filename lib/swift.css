@@ -155,6 +155,7 @@ div[theme='swift'] {
 [theme='swift']>textarea[tag]:empty~label,
 [theme='swift']>[list][count="0"]~label,
 [theme='swift']>a[tag="A"]:empty~label,
+[theme='swift']>select[tag="select"]:empty~label,
 [theme='swift']>[lobload][empty]~label
 {
   font-size:18px;
@@ -172,6 +173,7 @@ div[theme='swift'] {
 [theme='swift']>input[tag][value=""][disabled]~label,
 [theme='swift']>textarea[tag][disabled]:empty~label,
 [theme='swift']>a[tag="A"][disabled]:empty~label,
+[theme='swift']>select[tag="select"][disabled]:empty~label,
 {
   color:rgba(0,0,0,0.2);
 }
@@ -180,6 +182,7 @@ div[theme='swift'] {
 [theme='swift']>input[tag]~label,
 [theme='swift']>textarea[tag]~label,
 [theme='swift']>a[tag="A"]~label,
+[theme='swift']>select[tag="select"]~label,
 [theme='swift']>[list]~label,
 [theme='swift']>input[tag][value=""]:focus~label,
 [theme='swift']>textarea[tag]:empty:focus~label,
@@ -204,6 +207,7 @@ div[theme='swift'] {
 [theme='swift']>input[tag][disabled]~label,
 [theme='swift']>textarea[tag][disabled]~label,
 [theme='swift']>a[tag="A"][disabled]~label,
+[theme='swift']>select[tag="select"][disabled]~label,
 [theme='swift']>[list][disabled]~label,
 [theme='swift']>input[tag][value=""][disabled]:focus~label,
 [theme='swift']>textarea[tag][disabled]:empty:focus~label
