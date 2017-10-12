@@ -64,6 +64,7 @@ div[theme='swift'] {
 [theme='swift']>input[tag][error="Y"],
 [theme='swift']>textarea[tag][error="Y"],
 [theme='swift']>a[tag="A"][error="Y"],
+[theme='swift']>select[tag="select"][error="Y"],
 [theme='swift']>[lobload][error="Y"]
 {
   outline:none;

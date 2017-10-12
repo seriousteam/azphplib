@@ -879,6 +879,7 @@ static $a = [
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
 	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
 	, 'SELECT' => '<dfn tag=select fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$menu</menu>'
+	, 'SELECT-' => '<dfn tag=select fctl name="$name" rid="$rid" $attrs>$value</dfn>'
 	, 'MENU' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn><menu mctl $attrs2 $disabled>$menu</menu>'
 	, 'MENU-' => '<dfn tag=A fctl name="$name" rid="$rid" $attrs>$value</dfn>'
 	, 'DL+' => '<button type=button tag add fctl $attrs onclick="setWithMenu(this)" $attrs></button><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
@@ -1152,6 +1153,10 @@ function Vdummy($value, $dummy) {
 	$value->run['dummy'] = $dummy;
 	return $value;
 }
+function VdummyKey($value, $dummy) {
+	$value->run['dummy-key'] = $dummy;
+	return $value;
+}
 function Vunique($value) {
 	$value->run['unique'] = TRUE;
 	return $value;
@@ -1273,10 +1278,15 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 
 		if(@$value->tr) { // translated value --> use tr array as choose items
 			$data = [];
-			if(!(@$value->run && $value->run['required'] || $f->required))
+			if(!(@$value->run && @$value->run['required'] || $f->required))
 				$data[] = "<li value-patch=''>?</li>";
 			foreach($value->tr as $k=>$v) 
-			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'>".
+			{ $data[] = "<li value-patch='".htmlspecialchars($k). "'"
+					.( @$value->run && @$value->run['dummy'] === $v
+						||
+						@$value->run && @$value->run['dummy-key'] === $k
+					? ' disabled' :''
+					) .">".
 				 htmlspecialchars($v). "</li>"; }
 			$menu = implode("\n", $data);
 		}
@@ -1312,6 +1322,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 						|| $op == 'check' && !$p 
 						|| $op == 're' && !preg_match($p, $vv)
 						|| $op == 'dummy' && $vv === $p
+						|| $op == 'dummy-key' && @$value->key === $p
 						) {
 						$value->errors[] = $op;
 						$valueContext->hasError = TRUE;
@@ -1329,7 +1340,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 							break;
 						case 'DECIMAL': $vv = (float) $vv; $ss = $p; break;
 						case 'INTEGER': $vv = (int) $vv; $ss = $p; break;
-						default: $ss = $p['sample'];
+						default: $ss = $p;
 						}
 						if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
 							$value->errors[] = $op;
