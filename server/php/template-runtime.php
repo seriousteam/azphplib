@@ -1109,7 +1109,10 @@ class dynVals { // === zone
 			if($a[0] === '@check')
 				$check = $v;
 		}
-		$ret = Attr($ret, 'dyn-val', $def);
+		if(!($value instanceof namedString))
+			$ret = new namedString('', $ret, null);
+		$ret->run['dyn'][] = $def;
+
 		if( isset($check) )
 			Vcheck($ret, $check);
 		return $ret;
@@ -1313,6 +1316,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					$value->attrs[] = 'suffix="'.ru_number_take_word((int)(string)$value, $p).'"';
 					$value->attrs[] = "ru_word='".json_encode( $p , JSON_UNESCAPED_UNICODE )."'";
 					break;
+				case 'dyn': $value->attrs[] = 'dyn-val="' . implode(';', array_map('htmlspecialchars ', $p) ) . '"'; break;
 				}
 			}
 			if(@$valueContext->check_card) {
