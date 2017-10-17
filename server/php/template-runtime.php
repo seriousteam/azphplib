@@ -1050,6 +1050,14 @@ class dynVals { // === zone
 	var $name = '';
 	var $lastZone = null;
 	
+	static $sharedArea = null;
+	static function allocate() {
+		$r = dynVals::$sharedArea ?: new dynVals;
+		dynVals::$sharedArea = null;
+		return $r;
+	}
+	function share() { dynVals::$sharedArea = $this; }
+	
 	function __get($name) {
 			if($name === $this->name) return $this;
  			if( isset($this->index[$name]) ) return $this->index[$name];
