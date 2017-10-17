@@ -1108,8 +1108,8 @@ class dynVals { // === zone
 				$ret = $v;
 			switch($a[0])
 			{case: '@check': $check = $v; break;
-			  case: '@min':  $check = $ret <= $v;
-			  case: '@max': 	$check = $ret >= $v;
+			  case: '@min':  $check = $ret <= $v; break;
+			  case: '@max': 	$check = $ret >= $v; break;
 			}
 		}
 		if(!($value instanceof namedString))
@@ -1184,7 +1184,9 @@ function ru_word($value, $sample) {
 	return $value;
 }
 function Vcheck($value, $expr) {
-	$value->run['check'] = $expr;
+	$value->run['check'] = isset($value->run['check']) ? 
+						$value->run['check'] && $expr
+						: $expr;
 	return $value;
 }
 function Attr($value, $name, $expr) {
