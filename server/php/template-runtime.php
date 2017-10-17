@@ -1082,7 +1082,7 @@ class dynVals { // === zone
 			$v->aggregateTo = $agg ? $this->{$agg} : NULL;
 			$v->source = $src;
 		
-		if($name) $this->index[$name] = $v;
+		if($name && $name[0] !== '@') $this->index[$name] = $v;
 		
 		$v->initValue =  $val = $code ? $code( $this, (string)$src ) : NULL;
 		$this->setVal($v, $val);
@@ -1106,8 +1106,11 @@ class dynVals { // === zone
 			$v = $this->defVal($src, $a[0], $a[1], $a[2]);
 			if( !$a[0]  ||  !$a[2]  && $v  )
 				$ret = $v;
-			if($a[0] === '@check')
-				$check = $v;
+			switch($a[0])
+			{case: '@check': $check = $v; break;
+			  case: '@min':  $check = $ret <= $v;
+			  case: '@max': 	$check = $ret >= $v;
+			}
 		}
 		if(!($value instanceof namedString))
 			$ret = new namedString('', $ret, null);
