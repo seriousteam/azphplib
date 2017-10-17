@@ -1101,15 +1101,15 @@ class dynVals { // === zone
 		
 	function def($src, $arr, $def) {
 		$ret = $src;
-		$check = null;
+		$check = null; 
 		foreach($arr  as $a) {
 			$v = $this->defVal($src, $a[0], $a[1], $a[2]);
 			if( !$a[0]  ||  !$a[2]  && $v  )
 				$ret = $v;
 			switch($a[0])
-			{case: '@check': $check = $v; break;
-			  case: '@min':  $check = $ret <= $v; break;
-			  case: '@max': 	$check = $ret >= $v; break;
+			{ case '@check': $check = $v; break;
+			  case '@min':  $check = $ret <= $v; break;
+			  case '@max': 	$check = $ret >= $v; break;
 			}
 		}
 		if(!($value instanceof namedString))
