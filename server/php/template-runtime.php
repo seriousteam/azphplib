@@ -1127,8 +1127,8 @@ class dynVals { // === zone
 				$ret = $v;
 			switch($a[0])
 			{ case '@check': $check = $v; break;
-			  case '@min':  $check = $ret <= $v; break;
-			  case '@max': 	$check = $ret >= $v; break;
+			  case '@min':  $check = $ret >= $v; break;
+			  case '@max': 	$check = $ret <= $v; break;
 			}
 		}
 		if(!($ret instanceof namedString))
