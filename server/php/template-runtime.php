@@ -1051,10 +1051,19 @@ class dynVals { // === zone
 	var $lastZone = null;
 	
 	static $sharedArea = null;
-	static function allocate() {
-		$r = dynVals::$sharedArea ?: new dynVals;
-		dynVals::$sharedArea = null;
-		return $r;
+	
+	static function allocate(&$dv) {
+		if(dynVals::$sharedArea) {
+			//var_dump(dynVals::$sharedArea);
+			$dv = dynVals::$sharedArea->lastZone;
+			dynVals::$sharedArea = false;
+			//var_dump('S', $dv, dynVals::$sharedArea);
+		} else {
+			$dv = new dynVals;
+			$dv->lastZone =& $dv;
+			//var_dump('N', $dv, dynVals::$sharedArea);
+		}
+		//var_dump('X', $dv);
 	}
 	function share() { dynVals::$sharedArea = $this; }
 	
@@ -1120,7 +1129,7 @@ class dynVals { // === zone
 			  case '@max': 	$check = $ret >= $v; break;
 			}
 		}
-		if(!($value instanceof namedString))
+		if(!($ret instanceof namedString))
 			$ret = new namedString('', $ret, null);
 		$ret->run['dyn'][] = $def;
 
@@ -1211,6 +1220,11 @@ function Verror($status) {
 	if(@$valueContext->check_card && $status)
 		return $valueContext->hasError = TRUE;
 	return false;
+}
+
+function Vdump($v) {
+	var_dump($v);
+	return $v;
 }
 
 
@@ -1309,60 +1323,61 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		
 		$attrs .= $f->getControlProps();
 		$size = $f->size;
-		$precision = $f->precision;
-		
-		if(@$value->run) {
-			foreach($value->run as $op=>$p) {
-				switch($op) {
-				case 'min':
-				case 'max':
-					$value->attrs[] = ($op=='min'?'vmin':'vmax')."=\"'$p'\""; break;
-				case 'required':
-					$value->attrs[] = $op; break;
-				case 're':
-					$value->attrs[] = "re=\"$p\"";break;
-				case 'unique':
-					$value->attrs[] = "check_unique";break;
-				case 'readonly':
-					$value->attrs[] = $p ? "readonly" : ''; break;
-				case 'ru_word':
-					$value->attrs[] = 'suffix="'.ru_number_take_word((int)(string)$value, $p).'"';
-					$value->attrs[] = "ru_word='".json_encode( $p , JSON_UNESCAPED_UNICODE )."'";
-					break;
-				case 'dyn': $value->attrs[] = 'dyn-val="' . implode(';', array_map('htmlspecialchars ', $p) ) . '"'; break;
-				}
+		$precision = $f->precision;	
+	}
+	
+	if(@$value->run) {
+		foreach($value->run as $op=>$p) {
+			switch($op) {
+			case 'min':
+			case 'max':
+				$value->attrs[] = ($op=='min'?'vmin':'vmax')."=\"'$p'\""; break;
+			case 'required':
+				$value->attrs[] = $op; break;
+			case 're':
+				$value->attrs[] = "re=\"$p\"";break;
+			case 'unique':
+				$value->attrs[] = "check_unique";break;
+			case 'readonly':
+				$value->attrs[] = $p ? "readonly" : ''; break;
+			case 'ru_word':
+				$value->attrs[] = 'suffix="'.ru_number_take_word((int)(string)$value, $p).'"';
+				$value->attrs[] = "ru_word='".json_encode( $p , JSON_UNESCAPED_UNICODE )."'";
+				break;
+			case 'dyn': $value->attrs[] = 'dyn-val="'
+				. implode(';', array_map('htmlspecialchars', $p) ) . '"'; break;
 			}
-			if(@$valueContext->check_card) {
-				foreach($value->run as $op=>$p) {
-					$vv = (string)$value;
-					if( $op == 'required' && $vv == '' 
-						|| $op == 'check' && !$p 
-						|| $op == 're' && !preg_match($p, $vv)
-						|| $op == 'dummy' && $vv === $p
-						|| $op == 'dummy-key' && @$value->key === $p
-						) {
+		}
+		if(@$valueContext->check_card) {
+			foreach($value->run as $op=>$p) {
+				$vv = (string)$value;
+				if( $op == 'required' && $vv == '' 
+					|| $op == 'check' && !$p 
+					|| $op == 're' && !preg_match($p, $vv)
+					|| $op == 'dummy' && $vv === $p
+					|| $op == 'dummy-key' && @$value->key === $p
+					) {
+					$value->errors[] = $op;
+					$valueContext->hasError = TRUE;
+				} else {
+					switch(getValueType($value, $vtype)) {
+					case 'DATE':
+						$vv = date_parse($vv);
+						if($vv['error_count']) {
+							$value->errors[] = 're';
+							$valueContext->hasError = TRUE;
+						} else {
+							$vv = "$vv[year]-$vv[month]-$vv[day]";
+							$ss = $p;
+						}
+						break;
+					case 'DECIMAL': $vv = (float) $vv; $ss = $p; break;
+					case 'INTEGER': $vv = (int) $vv; $ss = $p; break;
+					default: $ss = $p;
+					}
+					if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
 						$value->errors[] = $op;
 						$valueContext->hasError = TRUE;
-					} else {
-						switch(getValueType($value, $vtype)) {
-						case 'DATE':
-							$vv = date_parse($vv);
-							if($vv['error_count']) {
-								$value->errors[] = 're';
-								$valueContext->hasError = TRUE;
-							} else {
-								$vv = "$vv[year]-$vv[month]-$vv[day]";
-								$ss = $p;
-							}
-							break;
-						case 'DECIMAL': $vv = (float) $vv; $ss = $p; break;
-						case 'INTEGER': $vv = (int) $vv; $ss = $p; break;
-						default: $ss = $p;
-						}
-						if(	$op == 'min' && $vv < $ss || $op == 'max' && $vv > $ss ) {
-							$value->errors[] = $op;
-							$valueContext->hasError = TRUE;
-						}
 					}
 				}
 			}
