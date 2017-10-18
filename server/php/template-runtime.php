@@ -414,9 +414,11 @@ function NVL($v, $def) {
 }
 function tr($v, $arr = null) {
 	{
-		$nv = $v === NULL ? 
+		$nv = $v;
+		if($v instanceof namedString)  $nv = $v->value;
+		$nv = $nv === NULL ? 
 				NULL :
-				$arr[(string)$v?:0]
+				$arr[(string)$nv?:0]
 		;
 		if($v instanceof namedString) {
 			$v->key = (string)$v;
@@ -1274,7 +1276,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 
 		$rid = $value->key;
 		
-		if(@$f->values) {
+		if(!@$value->tr && @$f->values) {
 			global $ModelDB;
 			
 			$rid = $value->value; //use untraslated value as rid

@@ -166,12 +166,12 @@ MENU.wide {
 }
 .t1data {
 font-weight: bold;
-font-family: Helvetica, Arial, Serif, Times New Roman, Verdana, Georgia;
+/*font-family: Helvetica, Arial, Serif, Times New Roman, Verdana, Georgia;*/
 }
 
 .t10data {
 font-weight: normal;
-font-family: Helvetica, Arial, Serif, Times New Roman, Verdana, Georgia;
+/*font-family: Helvetica, Arial, Serif, Times New Roman, Verdana, Georgia;*/
 line-height: 1.5;
 /* font-size: 12pt; */
 }
