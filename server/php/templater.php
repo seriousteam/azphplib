@@ -236,7 +236,7 @@ if(\$params === null) \$params = new smap;
 global \$valueContext;
 \$valueContext->check_card = \$valueContext->check_card || \$params->check_card;
 
-\$dynVals = dynVals::allocate(); \$dynVals->lastZone =& \$dynVals;
+dynVals::allocate(\$dynVals); 
 
 FUNC;
 	$selects = []; //varname => select definition
