@@ -1,6 +1,6 @@
 <?php
 
-require_once(__DIR__.'/db-oo.php');
+$1.php);
 
 $db_oo_transform_tests = [
 	//simple select

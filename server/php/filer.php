@@ -50,6 +50,8 @@ if(!checkrights_cmd($cmd, $key)) {
 */
 $fdir = $a_table_db["$tname.$fld"];
 
+$filer_uri = file_URI(_ENV_FILER_URI);
+
 $fname = rawurlencode(implode('~',$key));
 
 if( isset($_REQUEST['list']) ) {
@@ -63,14 +65,14 @@ if( isset($_REQUEST['list']) ) {
 			  file_get_contents("$fdir/$fname/$f/meta") : '';
 return <<<FFF
 <span lobload=filer accept="" filetypes="*" onfileok=*refresh files changefile drop>
-  <a href="/az/server/php/filer.php?fld=$fld&table=$tname&$key&file=$f" target="_blank"
+  <a href="$filer_uri?fld=$fld&table=$tname&$key&file=$f" target="_blank"
 		onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
   >$content_name</a>
 </span>
 FFF;
   }, $files);
   $files[] = "<span lobload=filer accept='' filetypes='*' onfileok=*refresh files newfile>
-		<span style='display:none' href='/az/server/php/filer.php?fld=$fld&table=$tname&$key&file='></span>";
+		<span style='display:none' href='$filer_uri?fld=$fld&table=$tname&$key&file='></span>";
   header("Content-Type: text/html");
   echo implode('',$files);
   exit;

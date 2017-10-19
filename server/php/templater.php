@@ -682,7 +682,7 @@ EEE;
 										$vname = $m[1];
 										$vagg = $m[3];
 										$vfunc = $m[5];
-										$vfunc = preg_replace("/\[:N\]/", '+($value)', $vfunc);
+										$vfunc = preg_replace("/\[:N\]/", '+(string)($value)', $vfunc);
 										$vfunc = preg_replace("/\[:([a-zA-Z0-9_]*)\]/", '$value', $vfunc);
 										$vfunc = preg_replace("/\[(\S+?)\]/", '$ctx->{\'$1\'}->value', $vfunc);
 										$vfunc = $vfunc ? "function (\$ctx, \$value) { return $vfunc; }" : 'null';
@@ -800,14 +800,15 @@ EEE;
 	// master declared before details
 	// so we just go backward
 	//var_dump($selects);
-	end($selects);
 	global $SELECT_STRUCT, $RE_ID;
-	while($s = current($selects)) {
+	for(end($selects); $s = current($selects); prev($selects)) {
+		if(!is_object($s)) continue;
 		//var_dump($s);
 		$fields = 
 			array_map(function($a,$b) { return $a===$b ? $a : "$a AS $b"; }
 			,array_keys($s->fields), array_values($s->fields)
-		);
+			)
+			;
 		$fields = array_merge($fields, 
 			array_map(function($a,$b) { return "( $b->select ) AS ARRAY $a"; }
 			,array_keys($s->arrays), array_values($s->arrays)
@@ -823,7 +824,6 @@ EEE;
 		}
 		$fields = implode(', ', $fields);
 		$s->select = preg_replace('/(^SELECT\s(?:DISTINCT\s)?|\sSELECT\s(?:DISTINCT\s)?|,|^)\s*\*\s*(?=,|FROM\s|$)/', "$1 $fields ", $s->select);
-		prev($selects);
 	}	
 	//take first select as 'MAIN'
 	if(!$selects) $selects = [ '-' ];

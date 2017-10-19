@@ -1,8 +1,8 @@
 <?php
 
-require_once(__DIR__.'/db-oo-transformer.php');
-require_once(__DIR__.'/modeldata.php');
-require_once(__DIR__.'/log_utils.php');
+require_once __DIR__.'/db-oo-transformer.php';
+require_once __DIR__.'/modeldata.php';
+require_once __DIR__.'/log_utils.php';
 
 class namedString {
 var $name = '';

@@ -1,5 +1,5 @@
 <?php
-require_once(getenv('P_LIB_PATH').'/template-runtime.php');
+$1.php);
 
 $functions['_main_'] = function($cmd, $args = null, $context = null) {
 	$args_rest = func_get_args(); 

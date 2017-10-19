@@ -68,7 +68,7 @@ case 'C':
 					sas_coder_ValList([sas_coder_ValList($d)])//sas compatible!
 		];
 	
-	$ncmd = file_URI('//az/server/php/crud.php', $arr);
+	$ncmd = file_URI(_ENV_CRUD_URI, $arr);
 	
 	$ret[] = "I: _ $ncmd";
 	break;

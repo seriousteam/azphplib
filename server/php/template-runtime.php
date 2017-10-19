@@ -483,7 +483,7 @@ function pageSeqCookie() {
 }
 
 function tabler_ref($table, $link = "") {
-	return file_URI('//az/server/php/tabler2.php', [ 'table' => $table, 'link' => $link ]);
+	return file_URI(_ENV_TABLER_URI, [ 'table' => $table, 'link' => $link ]);
 }
 
 function sas_PROC($v, $pname, $proc, $file, $root = '/') {
@@ -838,7 +838,7 @@ function make_counting_command($stmt) {
 	if(!$cmd) return ''; //no command
 	$params['cmd'] = $cmd->doToString((string)$cmd->parsed);
 	$params['args'] = $stmt->args;
-	return file_URI('//az/server/php/counter.php', $params);
+	return file_URI(_ENV_COUNTER_URI, $params);
 }
 
 function wrap_notnull($res, $shell) {
@@ -889,32 +889,34 @@ static $a = [
 	, 'SUBTABLE' =>
 					'<button subtable-show type=button onclick="this.setDN(toggle)" display_next $attrs></button>
 					<div subtable $attrs2 $disabled
-						ref-src="{{once}}/az/server/php/tabler2.php?table=$size&link=$precision&cmd=*WHERE $precision = %3F&args[]={{findRid(this)}}"
+						ref-src="{{once}}file_URI:_ENV_TABLER_URI?table=$size&link=$precision&cmd=*WHERE $precision = %3F&args[]={{findRid(this)}}"
 					></div>
 				'
 	, 'FILE' =>
 		'<span lobload=filer accept="" filetypes="*" $disabled>
-			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
+			<a href="file_URI:_ENV_FILER_URI?fld=$name&table=$table_name&key=$value" target="_blank"
 				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
 			></a>
 		</span>'
 	, 'FILE_IMAGE' =>
 		'<span lobload=filer accept="image/*" filetypes="*" $disabled>
-			<img src="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
-				href="/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value"
+			<img src="file_URI:_ENV_FILER_URI?fld=$name&table=$table_name&key[]=$value"
+				href="file_URI:_ENV_FILER_URI)?fld=$name&table=$table_name&key[]=$value"
 				onrefresh="var e = this; e.setA(\'src\', 
 						e.A(\'src\').setURLParam(\'key\\\\[\\\\]\', findRid(e)))"
 			>
 		</span>'
 	, 'FILE_PDF' =>
 		'<span lobload=filer accept="application/pdf" filetypes="pdf" $disabled>
-			<a href="/az/server/php/filer.php?fld=$name&table=$table_name&key=$value" target="_blank"
+			<a href="file_URI:_ENV_FILER_URI?fld=$name&table=$table_name&key=$value" target="_blank"
 				onclick="this.href = this.href.setURLParam(\'key[]\', findRid(this))"
 			></a>
 		</span>'
-	, 'FILES' => '<div filelist $disabled dynamic="\'/az/server/php/filer.php?fld=$name&table=$table_name&key[]=$value&list=1\'.setURLParam(\'args[]\',findRid(this))"></div>'
+	, 'FILES' => '<div filelist $disabled dynamic="\'file_URI:_ENV_FILER_URI?fld=$name&table=$table_name&key[]=$value&list=1\'.setURLParam(\'args[]\',findRid(this))"></div>'
 ];
-	return $a[$t];
+	return preg_replace_callback('/file_URI:([a-zA-Z0-9_])/',
+		function($m) { return file_URI(constant($m[1])); }
+		, $a[$t]);
 }
 
 /*
@@ -995,24 +997,24 @@ function get_filter_control($f)
 	$ct = $f->getControlType();
 	$descr['mc'] = $ct;
 	if($ct=='DL' && @$f->target) {
-		$descr['rel_target'] = file_URI('//az/server/php/chooser2.php', 
+		$descr['rel_target'] = file_URI(_ENV_CHOOSER_URI, 
 				[ 'table' => $f->target->___name 
 				  , 'add_empty' => ''
 				]);
 		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
-		$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+		$descr['refresher'] = file_URI(_ENV_TABLEID_URI, 
 				[ 'table' => $f->target->___name ]);
 		$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';	
 	} else
 	if($ct=='MENU' && @$f->values) {
-		$descr['rel_target'] = file_URI('//az/server/php/modeldata.php', 
+		$descr['rel_target'] = file_URI(_ENV_MODELDATA_URI, 
 			[ 'table' => $f->values 
 			  , 'add_empty' => ''
 			]);
 		$descr['rel_target'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['rel_target']).'\'';
 		$descr['ref'] = 'Y';
 		if(@$f->target) {
-			$descr['refresher'] = file_URI('//az/server/php/tableid.php', 
+			$descr['refresher'] = file_URI(_ENV_TABLEID_URI, 
 				[ 'table' => $f->target->___name ]);
 			$descr['refresher'] = '\''.str_replace(['\\', '\''], ['\\\\', '\\\''], $descr['refresher']).'\'';
 		}
@@ -1127,8 +1129,8 @@ class dynVals { // === zone
 				$ret = $v;
 			switch($a[0])
 			{ case '@check': $check = $v; break;
-			  case '@min':  $check = $ret >= $v; break;
-			  case '@max': 	$check = $ret <= $v; break;
+			  case '@min':  $check = (string)$ret >= $v; break;
+			  case '@max': 	$check = (string)$ret <= $v; break;
 			}
 		}
 		if(!($ret instanceof namedString))
@@ -1273,12 +1275,8 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			if(@$value->choose_url) {
 				$rel_target = $value->choose_url;
 			} else {
-				$uri = '//az/server/php/chooser2.php';
-				if($_ENV_UI_THEME) {
-					$uri = "//az/server/php/".$_ENV_UI_THEME.".choose.php";
-				}
 				$field_by_rel = name_of_relfield_in_nv($value);
-				$rel_target = file_URI($uri, 
+				$rel_target = file_URI(_ENV_CHOOSER_URI, 
 					[ 'table' => 
 							@$value->rel_target ?: $f->target->___name 
 					  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) ? '' : 'Y'
@@ -1300,7 +1298,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					(@$ModelDB[$f->values][(string)$value?:0] ?: '')
 			;
 	
-			$menu_src = file_URI('//az/server/php/modeldata.php', 
+			$menu_src = file_URI(_ENV_MODELDATA_URI, 
 				[ 'table' => $f->values 
 				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) 
 				  							? '' : 'Y'
