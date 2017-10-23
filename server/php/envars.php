@@ -8,13 +8,15 @@
 // URI: /uriprefix/test.php
 // File path: /var/www/serverprefix/test.php
 // /var/www/serverprefix
-define( '__ROOTDIR__', dirname(dirname(dirname(__DIR__))) );
+
+//directory where az folder reside (i.e "our" root dir)
+define( '__ROOTDIR__', dirname(dirname(dirname(__DIR__))) ); 
+
 // /serverprefix
-define( '__SERVER_URI_PREFIX__', substr_replace(__ROOTDIR__, '', 0, strlen($_SERVER['DOCUMENT_ROOT']) ) ?: '/' );
-//var_dump(__SERVER_URI_PREFIX__, __ROOTDIR__, $_SERVER['DOCUMENT_ROOT']);
-//exit;
-// /uriprefix
-define( '__CLIENT_URI_PREFIX__', '/' );
+// shift of "our" dir from server DOCROOT
+// (i.e. part of pth uri we should replace with '/')
+define( '__SERVER_URI_PREFIX__', substr_replace(__ROOTDIR__, '', 0, strlen($_SERVER['DOCUMENT_ROOT']) ) . '/' );
+//var_dump(__SERVER_URI_PREFIX__, __ROOTDIR__, $_SERVER['DOCUMENT_ROOT']); exit;
 
 define('PHP_PATH', realpath(__ROOTDIR__."/../../php/php.exe") ?: 'php');//find this file, if it doesnt exists, uses 'php' command
 
@@ -76,6 +78,11 @@ if(!defined('_ENV_LOAD_MODEL')) define('_ENV_LOAD_MODEL', FALSE);
 if(!defined('_ENV_CACHE_DIR')) define('_ENV_CACHE_DIR', __ROOTDIR__."/cache");
 if(!defined('_ENV_CACHE')) define('_ENV_CACHE', 'local');
 if(!defined('CACHE_TTL')) define('CACHE_TTL', 10);
+
+// /uriprefix
+// "global" translation from incoming uri to our uri
+// used when we took stipped (rewrited) uri somehow
+if( !defined( '__CLIENT_URI_PREFIX__') ) define( '__CLIENT_URI_PREFIX__', '/' );
 
 if(!defined('_AZ_SERVER_URI_PREFIX')) 
 	define('_AZ_SERVER_URI_PREFIX', '//az/server/php');

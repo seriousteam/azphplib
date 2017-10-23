@@ -5,7 +5,7 @@ mb_internal_encoding("UTF-8");
 define('REPLACED_TOPLEVEL', defined('TOPLEVEL_FILE'));
 
 if(!REPLACED_TOPLEVEL)
-	define('TOPLEVEL_FILE', @end(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))['file']?:__FILE__);
+	define('TOPLEVEL_FILE', realpath($_SERVER['SCRIPT_FILENAME']) ?:__FILE__);
 
 require_once (__DIR__.'/dialects.php');
 
@@ -393,7 +393,7 @@ $LOCALIZED_URI = (PHP_SAPI == 'cli' && !REPLACED_TOPLEVEL)?
 	:
 	( 
 		substr_compare($_SERVER['REQUEST_URI'], __SERVER_URI_PREFIX__, 0, strlen(__SERVER_URI_PREFIX__)) == 0?
-		substr_replace($_SERVER['REQUEST_URI'], '', 0, strlen(__SERVER_URI_PREFIX__))
+		substr_replace($_SERVER['REQUEST_URI'], '/', 0, strlen(__SERVER_URI_PREFIX__))
 	  : $_SERVER['REQUEST_URI']
 	)
 	;
@@ -443,7 +443,7 @@ function file_URI($path, $args = null, $stamp = FALSE) { //__FILE__ or __DIR__.'
 	}
 
 	if($path[0] == '/' && $path[1] == '/') { 
-		$path = __ROOTDIR__.substr($path,1); // `//` means from docroot
+		$path = __ROOTDIR__.substr($path,1); // `//` means from our docroot
 	}
 	else
 		if(substr_compare($path, __ROOTDIR__, 0, strlen(__ROOTDIR__))!==0)
@@ -687,7 +687,7 @@ echo <<<TFOOT
 	</table><pre>
 TFOOT;
 echo '<div><b>$main_cfg</b></div>';
-var_dump($main_cfg);
+//var_dump($main_cfg);
 echo '<div><b>$local_objects_rights</b></div>';
 var_dump($local_objects_rights);
 echo '<div><b>$a_table_db</b></div>';
