@@ -459,6 +459,17 @@ function fieldPart($value, $p) {
 	return $fp;
 }
 
+function fieldPartN($value, $p) {
+	$part = preg_quote($p);
+	$fp = preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", (string)$value, $m) ? $m[1] : '0';
+	if($value instanceof namedString) {
+		$value->value = $fp;
+		$value->part = $part;
+		return $value;
+	}
+	return $fp;
+}
+
 function URIPart($val, $name) {
 	if(is_array($val)) {
 		return implode('&',array_map(
