@@ -1238,7 +1238,7 @@ table[theme='swift']>tbody>tr>td:first-child:nth-child(1)
 }
 [theme="swift"]>[lobload][accept^='image/']>button:after
 {
-  content:'Загрузить фото';
+  content:'Загрузить';
   width:auto;
   height:auto;
   background:none;
