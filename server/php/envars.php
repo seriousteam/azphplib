@@ -88,6 +88,8 @@ if(!defined('_AZ_SERVER_URI_PREFIX'))
 	define('_AZ_SERVER_URI_PREFIX', '//az/server/php');
 if(!defined('_AZ_SERVER_URI_SUFFIX')) 
 	define('_AZ_SERVER_URI_SUFFIX', '.php');
+if(!defined('_AZ_STRIP_PHPT')) 
+	define('_AZ_STRIP_PHPT', FALSE);
 if(!defined('_ENV_CRUD_URI')) 
 	define('_ENV_CRUD_URI', _AZ_SERVER_URI_PREFIX.'/crud'._AZ_SERVER_URI_SUFFIX);
 if(!defined('_ENV_FILER_URI')) 

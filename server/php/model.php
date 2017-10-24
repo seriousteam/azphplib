@@ -68,6 +68,7 @@ class Table {
   function AUTO_GROUP() { return @$this->table_props['AUTO_GROUP']; }
   function ZERO_RECORD() { return isset($this->table_props['ZERO_RECORD']) ? 
 		$this->table_props['ZERO_RECORD']: ''; }
+  function LIMIT_CHOOSE() { return isset($this->table_props['LIMIT_CHOOSE']) ? $this->table_props['LIMIT_CHOOSE'] : 20; }
 }
 
 class _Field {
@@ -299,6 +300,8 @@ class modelParser extends _PreCmd {
 								$props[ 'ZERO_RECORD' ] = $this->unescape($m[1]);
 							else if($m['name'] == 'AUTO_KEY')
 								$props[ 'AUTO_KEY' ] = true;
+							else if($m['name'] == 'LIMIT_CHOOSE')
+								$props[ 'LIMIT_CHOOSE' ] = intval($m['value']);
 							else if($m['name'] == 'AUTO_GROUP')
 								$props[ 'AUTO_GROUP' ] = true;
 							else if($m['name'] == 'DICT')

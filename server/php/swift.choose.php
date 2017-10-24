@@ -78,8 +78,10 @@ echo <<<ST
 ST;
 
 //////////RENDER TEMPLATE//////////
+if($table->LIMIT_CHOOSE()) echo "[[PAGE BY ", $table->LIMIT_CHOOSE(), "]]\n";
+
 echo <<<ST
-[[PAGE BY 20]]
+
 <html>
 <head>
 <title>[[\$UI-:title]]</title>

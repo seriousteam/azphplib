@@ -702,6 +702,8 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 	$params = $call_parameters->___map; //only  recently added  parameters!!!!
 	$params['cmd'] = $cmd;
 	$params['args'] = $args;
+	
+	if( _AZ_STRIP_PHPT ) $file = substr($file, 0, -6); //.php.t
 	$ret = file_URI($file, $params, $perm);
 
 	$args = [];
