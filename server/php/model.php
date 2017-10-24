@@ -185,7 +185,8 @@ class _Field {
   }
   function getControlProps() {
 	switch($this->type) {
-	case 'DECIMAL': return ($this->precision? " re=\"/^\\d{0,$this->size}(?:\\.\d{0,$this->precision})?$/\"": " maxlength=$this->size") . $this->getControlXProps();
+	case 'DECIMAL': //return ($this->precision? " re=\"/^\\d{0,$this->size}(?:\\.\d{0,$this->precision})?$/\"": " maxlength=$this->size") . $this->getControlXProps();
+			return " maxlength=$this->size" . $this->getControlXProps();
 	case 'INTEGER': return " maxlength=$this->size" . $this->getControlXProps();
 	case 'CHAR': 
 	case 'VARCHAR': return 
