@@ -590,7 +590,7 @@ GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE FUNCTION [dbo].[field_part]
+ALTER FUNCTION [dbo].[field_part]
 (
 	@part nvarchar(64),
 	@fld  nvarchar(max),
@@ -617,13 +617,14 @@ BEGIN
 	 --Return the result of the function
 	RETURN case 
 	    when (@p1=0 or @p1 is null) and @fld is null then CONCAT(@s0,char(13),char(10),@value,@s2)
-		when (@p1=0 or @p1 is null) and @fld is not null then CONCAT(@fld,@s1,char(13),char(10),@value,@s2)
-		else CONCAT(SUBSTRING(@fld, 1, @p1),char(13),char(10),@value,SUBSTRING(@fld, @p2, LEN(@fld) - @p2 + 1)) --SUBSTRING(@fld, @p1, @p2 - @p1)
+		when (@p1=0 or @p1 is null) and @fld is not null then CONCAT(@fld,char(13),char(10),@s1,char(13),char(10),@value,@s2)
+		else CONCAT(SUBSTRING(@fld, 1, @p1),char(13),char(10),@value,SUBSTRING(@fld, @p2, LEN(@fld))) --SUBSTRING(@fld, @p1, @p2 - @p1)
 		end;
 
 END
 
-CREATE FUNCTION [dbo].[FP] 
+
+ALTER FUNCTION [dbo].[FP] 
 (
 	@part nvarchar(64),
 	@fld  nvarchar(max)
@@ -639,7 +640,7 @@ BEGIN
 	
 	if SUBSTRING(@fld, 1, LEN(@s0)) = @s0 
 		select @p1 = 1 + len(@s0); 
-	else select @p1 = CHARINDEX(@s1, @fld)  + len(@s0);
+	else select @p1 = CHARINDEX(@s1, @fld)  + len(@s1);
 	
 	if @p1 is not null select @p2 = CHARINDEX(@s2, @fld, @p1); 
 	
