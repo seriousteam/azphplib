@@ -412,10 +412,11 @@ function NVL($v, $def) {
 	}
 	return $v === null || $v === ''? $def: $v; 
 }
-function tr($v, $arr = null) {
+function tr($v, $arr = null, $trimz = false) {
 	{
 		$nv = $v;
 		if($v instanceof namedString)  $nv = $v->value;
+		if($trimz) $nv = trimZ($nv);
 		$nv = $nv === NULL ? 
 				NULL :
 				$arr[(string)$nv?:0]
@@ -1621,7 +1622,7 @@ function make_request($url, $srv = 'http://localhost') {
 		));
 	else 
 		$opts = stream_context_create();
-	return file_get_contents('http://localhost/'.$url, false, $opts);
+	return file_get_contents($srv.$url, false, $opts);
 }
 
 
