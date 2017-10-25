@@ -453,7 +453,7 @@ function fieldPart($value, $p) {
 	$fp = preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", (string)$value, $m) ? $m[1] : '';
 	if($value instanceof namedString) {
 		$value->value = $fp;
-		$value->part = $part;
+		$value->part = $p;
 		return $value;
 	}
 	return $fp;
@@ -464,7 +464,7 @@ function fieldPartN($value, $p) {
 	$fp = preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", (string)$value, $m) ? $m[1] : '0';
 	if($value instanceof namedString) {
 		$value->value = $fp;
-		$value->part = $part;
+		$value->part = $p;
 		return $value;
 	}
 	return $fp;
