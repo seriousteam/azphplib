@@ -989,7 +989,7 @@ function with_rid($v, $rid) {
 	return $v;
 }
 function with_self_rid($v) {
-	$v->key = $v;
+	$v->key = (string)$v;
 	return $v;
 }
 
