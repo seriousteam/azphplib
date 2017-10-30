@@ -1158,6 +1158,8 @@ class dynVals { // === zone
 	
 }
 
+function dyn_regexp($v) { return stripcslashes($v); }
+
 class ValueContext {
 	static $stack = [];
 	var $check_card = null; // set this when you want template output with errors shown

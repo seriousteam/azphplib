@@ -1504,28 +1504,3 @@ body[bullfinch]
   z-index:99999;
 }
 
-[datepicker="new"] .calendar .yearname 
-, [datepicker="new"] .calendar .monthname 
-{
-	color: black;
-	border: 1px solid #ccc;
-	background: white;
-	position: absolute;
-	top: -1.2em;
-	right: 0.7ex;
-	width: auto;
-	left: auto;
-	padding: 1px 1ex;
-}
-
-[datepicker="new"] .calendar .monthname  {
-	right: 5em;
-}
-
-[datepicker="new"] .calendar .yearname .letter 
-, [datepicker="new"] .calendar .monthname .letter 
-{
-	color: black;
-	font-size: 100%;
-	margin: 0;
-}
