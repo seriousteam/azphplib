@@ -32,6 +32,8 @@ try {
 	$table = $Tables->{$table};
 	$pk = $do_pk ?: $table->PK(true);
 	if(!$pk) throw new Exception("$table->___name don't have PK");
+	
+	$sas_table = $table->ZERO_RECORD();
 
 //$SQL_EMULATION = TRUE;
 
@@ -55,6 +57,9 @@ case 'C':
 			unset($vals[$f]);
 			$vals[substr($f,1)] = $v;
 		}
+		if($sas_table && $table->fields[$f] 
+			&& $table->fields[$f]->type === 'CLOB')
+				$vals['sy'.substr($f,2)] = 'text/serious';
 	}
 	$st = Insert($table->___name, $vals, $ss);
 	//echo $st->queryString;
@@ -72,7 +77,28 @@ case 'C':
 	
 	$ret[] = "I: _ $ncmd";
 	break;
-	
+		
+case 'U':
+	foreach($fieldvals as $field=>$value) {
+		if(preg_match('/^([^(]+)\((.+)\)$/', $field, $m)) {
+			$fields[($field = $m[1]).":FIELD_PART('$m[2]',$m[1], ? )"] = $value;
+		} else {
+			$fields[$field] = $value;
+		}
+		if($sas_table && $table->fields[$field] 
+			&& $table->fields[$field]->type === 'CLOB')
+				$fields['sy'.substr($field,2)] = 'text/serious';
+	}
+	//var_dump($sas_table, $fields, $table->fields['enf_defw']);
+	$stmt = Update($table->___name.' WHERE '.
+	 	implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
+	, $key_vals, $fields);
+
+	$ret[] = 'U: _ '.$stmt->rowCount();
+	//if($stmt->rowCount() == 0)
+		//echo "\n", $stmt->queryString;
+	break;
+
 case 'D':
 	Delete($table->___name.' WHERE '.
 		implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
@@ -81,23 +107,6 @@ case 'D':
 	$ret[] = 'D: _';
 	//if($stmt->rowCount() == 0)
 	//	echo "\n", $stmt->queryString;
-	break;
-	
-case 'U':
-	foreach($fieldvals as $field=>$value) {
-		if(preg_match('/^([^(]+)\((.+)\)$/', $field, $m)) {
-			$fields[$m[1].":FIELD_PART('$m[2]',$m[1], ? )"] = $value;
-		} else {
-			$fields[$field] = $value;
-		}
-	}
-	$stmt = Update($table->___name.' WHERE '.
-	 	implode(' AND ',array_map(function($x){ return "$x = ?"; }, $pk))
-	, $key_vals, $fields);
-
-	$ret[] = 'U: _ '.$stmt->rowCount();
-	//if($stmt->rowCount() == 0)
-		//echo "\n", $stmt->queryString;
 	break;
 
 case 'R':
