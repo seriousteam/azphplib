@@ -40,12 +40,18 @@ $cache_local_unset = function($key) {};
 if(_ENV_CACHE === 'local'){
   if(function_exists('xcache_get')) $cache_local_get = 'xcache_get';
   else if(function_exists('apc_fetch')) $cache_local_get = 'apc_fetch';
+  else if(function_exists('apcu_fetch')) $cache_local_get = 
+  	function($key) { $v = apcu_fetch($key); 
+  		return $v === FALE? NULL : unserialize($v); } ;
 
   if(function_exists('xcache_set')) $cache_local_set = 'xcache_set';
   else if(function_exists('apc_add')) $cache_local_set = 'apc_add';
+  else if(function_exists('apcu_add')) $cache_local_set =   	
+  	function($key, $value, $ttl) { return apcu_add($key, serialize($value), $ttl); };
 
   if(function_exists('xcache_unset')) $cache_local_unset = 'xcache_unset';
   else if(function_exists('apc_delete'))$cache_local_unset = 'apc_delete';
+  else if(function_exists('apcu_delete'))$cache_local_unset = 'apcu_delete';
 }
 
 $DELETE_CACHE_ENTRY = new stdClass;
