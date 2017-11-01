@@ -17,6 +17,7 @@ function __construct($n, $v, $c, $key = null) {
 	$this->container = $c;
 	$this->key = $key;
   }
+  function real() { return $this->container instanceof axROW; }
 }
 
 class axCommandInfo {

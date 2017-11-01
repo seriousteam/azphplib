@@ -1364,7 +1364,9 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 				. implode(';', array_map('htmlspecialchars', $p) ) . '"'; break;
 			}
 		}
-		if(@$valueContext->check_card) {
+		if(@$valueContext->check_card 
+			&& $value->real()
+		) {
 			foreach($value->run as $op=>$p) {
 				$vv = (string)$value;
 				if( $op == 'required' && $vv == '' 
