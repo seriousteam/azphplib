@@ -1377,6 +1377,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 					) {
 					$value->errors[] = $op;
 					$valueContext->hasError = TRUE;
+					if($op == 'check') $attrs .= ' error-vcheck ';
 				} else {
 					switch(getValueType($value, $vtype)) {
 					case 'DATE':
