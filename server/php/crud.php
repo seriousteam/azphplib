@@ -57,7 +57,7 @@ case 'C':
 			unset($vals[$f]);
 			$vals[substr($f,1)] = $v;
 		}
-		if($sas_table && $table->fields[$f] 
+		if($sas_table && @$table->fields[$f] 
 			&& $table->fields[$f]->type === 'CLOB')
 				$vals['sy'.substr($f,2)] = 'text/serious';
 	}
@@ -85,7 +85,7 @@ case 'U':
 		} else {
 			$fields[$field] = $value;
 		}
-		if($sas_table && $table->fields[$field] 
+		if($sas_table && @$table->fields[$field] 
 			&& $table->fields[$field]->type === 'CLOB')
 				$fields['sy'.substr($field,2)] = 'text/serious';
 	}
