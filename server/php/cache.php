@@ -42,7 +42,7 @@ if(_ENV_CACHE === 'local'){
   else if(function_exists('apc_fetch')) $cache_local_get = 'apc_fetch';
   else if(function_exists('apcu_fetch')) $cache_local_get = 
   	function($key) { $v = apcu_fetch($key); 
-  		return $v === FALE? NULL : unserialize($v); } ;
+  		return $v === FALSE? NULL : unserialize($v); } ;
 
   if(function_exists('xcache_set')) $cache_local_set = 'xcache_set';
   else if(function_exists('apc_add')) $cache_local_set = 'apc_add';
