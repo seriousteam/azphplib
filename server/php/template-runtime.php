@@ -1316,7 +1316,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	
 			$menu_src = file_URI(_ENV_MODELDATA_URI, 
 				[ 'table' => $f->values 
-				  , 'add_empty' => (@$value->run && $value->run['required'] || $f->required) 
+				  , 'add_empty' => (@$value->run && @$value->run['required'] || $f->required) 
 				  							? '' : 'Y'
 				]);
 			$attrs2 .= ' ref-src="' . htmlspecialchars($menu_src) . '" ';
