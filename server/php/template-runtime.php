@@ -1165,8 +1165,8 @@ class ValueContext {
 	static $stack = [];
 	var $check_card = null; // set this when you want template output with errors shown
 	var $hasError = FALSE;
-	function pushStack() { $this->stack[] = $this; return new ValueContext; }
-	function popStack() { return array_pop($this->stack); }
+	function pushStack() { self::$stack[] = $this; return new ValueContext; }
+	function popStack() { return array_pop(self::$stack); }
 }
 $valueContext = new ValueContext;
 
@@ -1190,7 +1190,8 @@ function Vre($value, $re) {
 	return $value;
 }
 function Vrequired($value) {
-	$value->run['required'] = TRUE;
+	if($value instanceof namedString)
+		$value->run['required'] = TRUE;
 	return $value;
 }
 function Vdummy($value, $dummy) {
