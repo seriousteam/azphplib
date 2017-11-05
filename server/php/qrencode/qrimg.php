@@ -2,7 +2,7 @@
 //date_default_timezone_set('Europe/Moscow');
 //need extension=php_gd2.dll
 //downloaded from http://sourceforge.net/projects/phpqrcode/
-require_once __DIR__."/phpqrcode/qrlib.php";
+require_once __DIR__."/phpqrcode/phpqrcode.php";
 function getQRBASE64($text,$size,$tempdir)
 {
 	//$size=4;	
@@ -12,4 +12,3 @@ function getQRBASE64($text,$size,$tempdir)
 	unlink($tmpfl);
 	return 'data:image/png;base64,'.base64_encode($imgdata);
 }
-?>
