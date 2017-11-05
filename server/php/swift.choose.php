@@ -131,7 +131,7 @@ ob_start();
 $headCount = 0;
 echo "<thead><tr>";
 foreach($ui_view as $f) {
-	if($f->captionAlreadyShown) {
+	if(@$f->captionAlreadyShown) {
 		echo "<th></th>";
 	} else {
 		$headCount++;
@@ -170,18 +170,18 @@ echo <<<ST
 </table>
 [[if( \$data.{COUNT} ) ob_end_flush(); else ob_end_flush(); ]]
 ST;
-if($ui->tabler || $ui->grouped) {
+if(@$ui->tabler || @$ui->grouped) {
 	echo <<<ST
 <div table-control>
 ST;
-	if($ui->tabler) {
+	if(@$ui->tabler) {
 	echo <<<ST
 	<script>
 	function openExpander(o, row) {
 		o.hasA('required_in_form') && row && row.QS('[expand_form_button]') && row.QS('[expand_form_button]').setDN_TR(toggle);
 	}
 	</script>
-	<button {$ui->required_in_form} type=button onclick="openExpander(this,startAddRow(this))" static add=suspend unlocked=Y
+	<button {@$ui->required_in_form} type=button onclick="openExpander(this,startAddRow(this))" static add=suspend unlocked=Y
 		[[if(is_array(\$where_vals)) foreach(\$where_vals as \$k=>\$v) { echo 'def-',\$k,'="'; output_html(\$v); echo '" '; }]]
 	><span suspend>+</span><span resume>OK</span></button>
 ST;
