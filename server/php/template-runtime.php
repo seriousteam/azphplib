@@ -463,6 +463,7 @@ function fieldPart($value, $p) {
 function fieldPartN($value, $p) {
 	$part = preg_quote($p);
 	$fp = preg_match("/(?:^|\r\n)§§$part:\r\n(.*?)\r\n§§$part\./s", (string)$value, $m) ? $m[1] : '0';
+	$fp = $fp ?: '0';
 	if($value instanceof namedString) {
 		$value->value = $fp;
 		$value->part = $p;
@@ -1189,7 +1190,7 @@ function Vre($value, $re) {
 	return $value;
 }
 function Vrequired($value) {
-	@$value->run['required'] = TRUE;
+	$value->run['required'] = TRUE;
 	return $value;
 }
 function Vdummy($value, $dummy) {
