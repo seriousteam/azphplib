@@ -419,7 +419,7 @@ function tr($v, $arr = null, $trimz = false) {
 		if($trimz) $nv = trimZ($nv);
 		$nv = $nv === NULL ? 
 				NULL :
-				$arr[(string)$nv?:0]
+				$arr[(string)$nv]
 		;
 		if($v instanceof namedString) {
 			$v->key = (string)$v;
