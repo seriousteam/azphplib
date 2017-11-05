@@ -1189,7 +1189,7 @@ function Vre($value, $re) {
 	return $value;
 }
 function Vrequired($value) {
-	$value->run['required'] = TRUE;
+	@$value->run['required'] = TRUE;
 	return $value;
 }
 function Vdummy($value, $dummy) {

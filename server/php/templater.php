@@ -682,7 +682,7 @@ EEE;
 										$vname = $m[1];
 										$vagg = $m[3];
 										$vfunc = $m[5];
-										$vfunc = preg_replace('/\[:N\]/', '+(string)($value)', $vfunc);
+										$vfunc = preg_replace('/\[:N\]/', '+((string)($value)?:0)', $vfunc);
 										$vfunc = preg_replace('/\[:([a-zA-Z0-9_]*)\]/', '$value', $vfunc);
 										$vfunc = preg_replace('/\[(\S+?)\]/', '$ctx->{\'$1\'}->value', $vfunc);
 									$vfunc = $vfunc ? "function (\$ctx, \$value) { return $vfunc; }" : 'null';
