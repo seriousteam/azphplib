@@ -669,10 +669,7 @@ EEE;
 					foreach($cmd_part as $c) {
 						if(preg_match("/^\\\$call_params\\.(.*)/s", $c, $m))
 							$res = "\$call_params->$m[1] = $res";
-						else if(preg_match("/^\\$$RE_ID(?:\s*=(.*))?/s", $c, $m)) {
-								if($m[2]) 
-									$res = "( $m[0] )||true ?: $res ";
-								else
+						else if(preg_match("/^\\$$RE_ID/s", $c, $m)) {
 									$res = "$m[0] = $res";
 						} else if(preg_match("/^\{(.*)\}$/s", $c, $m)) {
 								$a = explode(';', $ins = $m[1]);
