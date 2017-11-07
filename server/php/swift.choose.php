@@ -23,6 +23,7 @@ $ui->zero_record = $table->ZERO_RECORD();
 //define initial set of fields
 $table_fields = $table->fields;
 $has_choose = false;
+$ui_search = [];
 foreach($table_fields as $n=>$f) {
 	if($f->choose) $has_choose = true;
 	if($f->search_op) { //search
