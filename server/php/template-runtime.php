@@ -758,6 +758,7 @@ function dispatch_template($cmd, $args, $params = null, $file = null) {
 	
 	$func = $functions[$func_name];
 	$func($cmd, $args, new smap(null, $params ?: $_REQUEST));
+	return TRUE;
 }
 
 
