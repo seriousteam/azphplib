@@ -613,7 +613,7 @@ function startsWith($val, $w, $adv_char = '') {
 }
 
 set_exception_handler(function ($exception) {
-  echo "Exception: " , $exception->getFile(),':',$exception->getLine(), ':', $exception->getMessage(), "\n";
+  echo "Exception: " , $exception->getFile(),':',$exception->getLine(), ':', $exception->getMessage(), "\n", $exception->getTraceAsString(), "n";
 });
 
 if(__FILE__ != TOPLEVEL_FILE) return;
