@@ -129,8 +129,10 @@ class _XPath {
   function __get($name) {
     if($name === 'PK')
       $name = $this->___node->table->PK(); //one only
-    if(!isset($this->___node->table->fields[$this->___name]))
+    if(!isset($this->___node->table->fields[$this->___name])) {
+    	//var_dump($this->___node->table);
 		throw new Exception("rel $this->___name not found in {$this->___node->table->___name}");
+	}
     $n = $this->___node->addChild($this->___name, 
 			  $this->___node->table->fields[$this->___name]->target);
     return new _XPath($n, $name);
@@ -177,10 +179,9 @@ const _SQL_FUNC_KWD =
   NOW|TODAY|YEAR|MONTH|DAY|DATE_TO_MONTHS|TO_DATE|
   MONTHS_BETWEEN|DAYS_BETWEEN|ADD_DAYS|ADD_MONTHS|PARTS|
   DISTINCT|
-  TO_TSVECTOR|HEX2BIN|
+  TO_TSVECTOR|PLAINTO_TSQUERY|HEX2BIN|BINCOLLATE|
   FIELD_PART|
   FP|
-  PLAINTO_TSQUERY|
   TRUE|FALSE|
   VARCHAR|CHAR|DECIMAL|INTEGER|DATE|TIMESTAMPTZ|TIMESTAMP|TIME|CLOB|BLOB|
   XSESSION_[A-Z_0-9]+|
