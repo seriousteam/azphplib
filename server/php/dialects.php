@@ -76,6 +76,7 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 				 'oracle' => 'EXISTS$1SELECT $2 FROM dual INTERSECT SELECT $4 FROM dual$5' ,
 				],
 		'HEX2BIN' => [ 'mssql' => 'CONVERT$1VARBINARY(MAX),$2,2$3' ],
+		'BINCOLLATE.'  => [ 'mssql' => 'COLLATE Latin1_General_BIN' ],
 
 		'TRUNC' => [ 'pgsql' => 'TRUNC', 'oracle' => 'TRUNC', 'mssql' => 'ROUND$1$2,1$3', 'mysql' => 'TRUNCATE' ],
 		'POSITION' => [ 'mssql' => 'CHARINDEX', 'pgsql' => 'POSITION$1$2 IN $4$5', 'oracle' => 'INSTRC$1$4$3$2$5', 'mysql' => 'POSITION$1$2 IN $4$5'],
