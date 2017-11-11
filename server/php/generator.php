@@ -5,7 +5,7 @@ class TemplaterCache {
 	function file() { return $this->fphpname; }
 	function need_to_gen_from($with) {	
 		$mt = file_exists($this->fphpname) ? filemtime($this->fphpname) : 0;
-		$mtt = $with ? filemtime($with) : 1;
+		$mtt = $with ? @filemtime($with) : 1;
 		return $mt < $mtt;
 	}
 	function gen_from_ob($ob) {

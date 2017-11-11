@@ -14,20 +14,20 @@ class _XNode {
   var $childs = [];
   var $access_filters = [];
 
-  function __construct($table) {
+  function __construct($table, $reason = null) {
     $n = ++_XNode::$a_num;
     $this->alias = "a$n";
     $this->table = $table;
     if(!$table) {
     	debug_print_backtrace();
-  		var_dump($this);
+  		var_dump($this, $reason);
   		die('');
     }
   }
 
   function addChild($name, $table) {
     if(array_key_exists($name, $this->childs)) return $this->childs[$name];
-    return $this->childs[$name] = new _XNode($table);
+    return $this->childs[$name] = new _XNode($table, $name);
   }
 
   function __get($name) {
@@ -357,7 +357,7 @@ class _Cmd extends _PreCmd {
                       $t->tbl[0] === '('?
                         new Table($t->tbl) //subselect (only name, no fields and rels)
                         : $Tables->{$t->tbl} //normal table
-                    ); //add root table to tree
+                    , $t); //add root table to tree
       else if($t->tail)
         $t->tail = $this->process_ids($t->tail, $tree); //no externals in 'ON'!
 

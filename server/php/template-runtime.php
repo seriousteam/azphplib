@@ -1434,7 +1434,10 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 		default:
 	}
 
-	$template = $value_only ? '<span value-only $attrs>$value</span>' : default_templated_editor($vtype);
+	$template = $value_only ? (
+			$vtype === 'CLOB' ? '<pre value-only $attrs>$value</pre>'
+			: '<span value-only $attrs>$value</span>' )
+		: default_templated_editor($vtype);
 	
 	/*
 	$EXPR = new templated_editors_helper(
