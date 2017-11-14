@@ -429,6 +429,21 @@ function tr($v, $arr = null, $trimz = false) {
 	}
 	return $v;
 }
+function tr_with_select($v, $select) {
+	{
+		$nv = $v;
+		if($v instanceof namedString)  $nv = $v->value;
+		$nv = $nv === NULL ? 
+				NULL :
+				Select($select, [$nv])->fetchColumn()
+		;
+		if($v instanceof namedString) {
+			$v->key = (string)$v;
+			$v->value = $nv;
+		} else $v = $nv;
+	}
+	return $v;
+}
 function lpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_LEFT); }
 function rpad($v, $cnt, $symb = ' ') { return str_pad($v, $cnt, $symb, STR_PAD_RIGHT); }
 function replace($v, $from, $to) { return preg_replace($from, $to, $v); }
@@ -824,7 +839,7 @@ function make_manipulation_command($data, $counter, $stmt = NULL, $with_pk = '')
 				$d[] = $data->{'a__'.$e};
 			else {
 				if(!isset($where_vals[$e]))
-					var_dump($counter, $where_vals);
+					var_dump('make_manipulation_command', $counter, $where_vals);
 				$d[] = $where_vals[$e];
 			}
 		}
