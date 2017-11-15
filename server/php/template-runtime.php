@@ -605,7 +605,9 @@ function to_client_tz($v) { return $v ?
 		: $v
 	; }
 
-function ru_BOOL($v) { return $v === NULL || $v === '' ? '' : ($v[0] === '0' ? 'нет' : 'да'); }
+function ru_BOOL($v, $null = '') { 
+	return $v === NULL || $v === '' ? $null 
+	: ($v[0] === '0' ? 'нет' : 'да'); }
 
 require_once __DIR__."/ru_number.php";
 
@@ -908,6 +910,7 @@ static $a = [
 	, 'DATE' => '<dfn tag vtype=D fctl name="$name" $attrs $disabled>$value</dfn>'
 	, 'BOOL' => '<dfn tag vtype=2 mkii fctl name="$name" $attrs $disabled>$value</dfn>'
 	, 'BOOL3' => '<dfn tag vtype=3 fctl name="$name" $attrs $disabled>$value</dfn>'
+	, 'BOOL3ru' => '<dfn tag vtype=three fctl name="$name" $attrs $disabled>$value</dfn>'
 	, 'CLOB' => '<pre tag fctl name="$name" $attrs $disabled content-resizable >$value</pre>'
 	, 'HIDDEN' => '<input type=hidden name="$name" fctl $attrs $disabled value="$value">'
 	, 'DL' => '<a tag=A fctl name="$name" rid="$rid" $attrs>$value</a><dl mctl ref-src="$rel_target" $attrs2 $disabled></dl>'
