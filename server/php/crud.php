@@ -48,7 +48,7 @@ MYSQL
 switch($mode) {
 case 'C':
 	$vals = $fieldvals + $def_vals;
-	
+		
 	foreach($vals as $f=>$v) {
 		if($f[0] == '+') {
 			$v = $table->ZERO_RECORD() !== '' ?
