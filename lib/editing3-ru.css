@@ -4,12 +4,12 @@ dfn {
 	font-style: normal;
 }
 
-a[error="Y"] {
+a[error="Y"], dfn[error="Y"] {
 	border: 2px solid;
 	display: inline-block;
 }
 
-[error="Y"], textarea[tag][error="Y"],  input[tag][error="Y"], a[error="Y"] {
+[error="Y"], textarea[tag][error="Y"],  input[tag][error="Y"], a[error="Y"], dfn[error="Y"]  {
 	border-color: red;
 }
 
