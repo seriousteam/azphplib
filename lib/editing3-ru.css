@@ -27,6 +27,10 @@ span[error="Y"]:after, a[error="Y"]:after, pre[error="Y"]:after {
 	content: "\00a0";
 }
 
+span[bool-state="?"][required] {
+	border-color: red;
+}
+
 
 label[sas] {
 	display: inline-block;
