@@ -366,6 +366,7 @@ ST;
 	//echo $text;
 	//add closing tags
 	$text = preg_replace('#</>(.*)#', "[[{]]$1\n[[}]]", $text); //up to end of line/file
+	$text = str_replace(']]<<:>>[[',']][[', $text);
 	do {
 		$text = preg_replace('#<<:>>
 				(<(\S+?)(?:\s|>) [^<]*+
