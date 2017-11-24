@@ -323,7 +323,7 @@ input[readonly] { border: none; }
 
 textarea[content-resizable] { width: 100%; }
 
-pre[tag], pre[cmd], pre[values-only] { white-space: pre-wrap; margin:0 }
+pre[tag], pre[cmd], pre[value-only] { white-space: pre-wrap; margin:0 }
 
 a[href='javascript:undefined'] { text-decoration: none; }
 
