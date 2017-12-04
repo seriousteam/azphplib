@@ -10,9 +10,6 @@ class smap {
 		$this->___base = $base;
 		$this->___map = $arr;
 	}
-	function __destruct() {
-		if($this->___base) $this->___base->clear();
-	}
 	function __get($name) { 
 		return array_key_exists($name, $this->___map) ? $this->___map[$name] : 
 			($this->___base? $this->___base->{$name} : null);
@@ -621,58 +618,101 @@ function load_template($file) {
 	return $included_templates[$file];
 }
 
+function cache_load_template($file, $func_name = '_main_') {
+	if($file) {
+		$_file = $file;
+		if(_ENV_CACHE_DIR) {
+			//template-cache rules		
+			$cache = new TemplaterCache( 
+				urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
+			if(dirname($file) !== _ENV_CACHE_DIR) {
+				if( $cache->need_to_gen_from( $file ) ) {
+					$cache->gen_from_file( $file );
+				}
+			}		
+			$file = realpath( $cache->file() );	
+		} else {
+			//template monitor rules
+			$file = preg_replace('/\.t$/','',$file);
+		}
+		if(!$file) {
+			throw new Exception("$_file not found");
+			exit;
+		}
+	} else {
+		$file = TOPLEVEL_FILE;
+	}
+	
+	$functions = load_template($file);
+	
+	if(!@$functions[$func_name])
+		throw new Exception("cannot find template function '$func_name' in ".($file));
+		
+	return $functions[$func_name];
+}
+
 $CURRENT_TEMPLATE_URI = our_URI($LOCALIZED_URI);
 
+class TFuncs {
+	// take template/def name, file name and caller file name (for relative paths)
+	public static function makeName($file, $caller, &$uri) {
+		global $CURRENT_TEMPLATE_URI;	
+		
+		$uri = $CURRENT_TEMPLATE_URI;
+		if(!$file) $file = $caller;
+		else if($file[0] === '/') {
+				//absolute path ==> from sys doc root
+				$file = __ROOTDIR__.$file;
+				$uri = file_URI($file);
+			} else {
+				$uri = dirname($uri); //trim file part
+				$f = $file;
+				$f = preg_replace('#(?<=^|/)\./#', '', $f); // trim all `./ `
+				while(preg_match('|^\.\./|', $f)) { //go up (../)
+					$uri = dirname($uri); //go up
+					$f = substr($f,3);
+				}
+				if($uri === '/') $uri = '';
+				$uri .= '/'.$f; // add template part
+				$file = dirname($caller). '/' . $file;
+			}
+
+		return $file;
+	}
+	function __construct($name, $file, $caller, $call_params) {
+		$this->name = $name;
+		$this->file = $file;
+		$this->caller = $caller;
+		$this->params = new smap($call_params);
+	}
+	public static function __callStatic($name, $a) {
+		$file = array_shift($a); 
+		$caller = array_shift($a) ?: '';
+		$call_params = array_shift($a);
+		return new TFuncs($name, $file, $caller, $call_params);
+	}
+	public static function main($file, 	$caller = '', $call_params = null) {
+		return new TFuncs('_main_', $file, $caller, $call_params);
+	}
+	public function __call($name, $a) { return $this->param($name, $a[0]); }
+	public function param($name, $value) { $this->params->$name = $value; return $this; }
+	public function call(){
+		return call_template($this->name, $this->file, '', $args, $this->params, $this->caller);
+	}
+}
 
 function call_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
-	global $CURRENT_TEMPLATE_URI, $LOCALIZED_URI;	
-		
-	if(!$file) $file = $caller;
-	
-	else if($file[0] === '/') {
-			//absolute path ==> from sys doc root
-			$file = __ROOTDIR__.$file;
-			$CURRENT_TEMPLATE_URI = file_URI($file);
-		} else {
-			$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //trim file part
-			$f = $file;
-			$f = preg_replace('#(?<=^|/)\./#', '', $f); // trim all `./ `
-			while(preg_match('|^\.\./|', $f)) { //go up (../)
-				$CURRENT_TEMPLATE_URI = dirname($CURRENT_TEMPLATE_URI); //go up
-				$f = substr($f,3);
-			}
-			if($CURRENT_TEMPLATE_URI === '/') $CURRENT_TEMPLATE_URI = '';
-			$CURRENT_TEMPLATE_URI .= '/'.$f; // add template part
-			$file = dirname($caller). '/' . $file;
-		}
-	$_file = $file;
-	if(_ENV_CACHE_DIR) {
-		//template-cache rules		
-		$cache = new TemplaterCache( urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
-		if(dirname($file) !== _ENV_CACHE_DIR) {
-			if( $cache->need_to_gen_from( $file ) ) {
-				$cache->gen_from_file( $file );
-			}
-		}		
-		$file = realpath( $cache->file() );	
-	} else {
-		//template monitor rules
-		$file = preg_replace('/\.t$/','',$file);
-		$file = realpath( $file );
-	}
-
-	if(!$file) {
-		throw new Exception("$_file not found");
-		exit;
-	}
-	$funcs = load_template($file);
+	global $CURRENT_TEMPLATE_URI;
+	$old_uri = $CURRENT_TEMPLATE_URI;
+	$file = TFuncs::makeName($file, $caller, $CURRENT_TEMPLATE_URI);		
+	$func = cache_load_template($file, $name?:'_main_');
 
 	if(!$args) $args = [];
-
-	$func = $funcs[$name?:'_main_'];
-	$func($cmd, $args, $call_parameters); // call_parameters cleared in func automatically (with destroctor)
-
-	$args = [];
+	$ret = $func($cmd, $args, $call_parameters); // call_parameters cleared in func automatically (with destructor)
+	$args = []; //clear passed args
+	$call_parameters->clear(); //clear parameters after call
+	$CURRENT_TEMPLATE_URI = $old_uri; //restore URI
+	return $ret;
 }
 
 function check_template($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
@@ -688,28 +728,8 @@ function check_template($name, $file, $cmd, &$args, $call_parameters, $caller, $
 }
 
 function template_reference($name, $file, $cmd, &$args, $call_parameters, $caller, $perm = false) {
-	global $CURRENT_TEMPLATE_URI;
-	
-	$uri = $CURRENT_TEMPLATE_URI;
-	if($file)
-		if($file[0] === '/') {
-			//absolute path ==> from sys doc root
-			$uri = $file;
-			$file = __ROOTDIR__.$file;
-		} else {
-			$uri = dirname($uri); //trim file part
-			$f = $file;
-			$f = preg_replace('#(?<=^|/)\./#', '', $f);
-			while(preg_match('|^\.\./|', $f)) {
-				$uri = dirname($uri); //go up
-				$f = substr($f,3);
-			}
-			$uri .= '/'.$f; // add template part
-			$file = dirname($caller). '/' . $file;
-		}
-	else {
-		$file = $caller;
-	}
+	$file = TFuncs::makeName($file, $caller, $uri);		
+		
 	$file = realpath($file);
 	
 	if($name) { 
@@ -725,8 +745,8 @@ function template_reference($name, $file, $cmd, &$args, $call_parameters, $calle
 	if( _AZ_STRIP_PHPT ) $file = substr($file, 0, -6); //.php.t
 	$ret = file_URI($file, $params, $perm);
 
-	$args = [];
-	$call_parameters->clear(); //clear paramters after call
+	$args = [];//clear passed args
+	$call_parameters->clear(); //clear parameters after call
 	
 	$ret = str_replace('\\','/', $ret);
 	echo $ret;
@@ -743,9 +763,9 @@ function dispatch_template($cmd, $args, $params = null, $file = null) {
 			$text = ob_get_contents();
 		ob_end_clean();
 		$f($m[1], $text);
-		die('');
+		exit;
 	}
-
+	
 	if(is_string($cmd) && preg_match('/^T:(.*)/', $cmd, $m)) {
 		$func_name = $m[1];
 		$cmd = array_shift($args);
@@ -753,27 +773,7 @@ function dispatch_template($cmd, $args, $params = null, $file = null) {
 		$func_name = '_main_';
 	}
 
-	if($file)
-	if(_ENV_CACHE_DIR) {
-		//template-cache rules		
-		$cache = new TemplaterCache( urlencode( substr($file, strlen($_SERVER['DOCUMENT_ROOT'])+1 ) ) );
-		if(dirname($file) !== _ENV_CACHE_DIR) {
-			if( $cache->need_to_gen_from( $file ) ) {
-				$cache->gen_from_file( $file );
-			}
-		}		
-		$file = realpath( $cache->file() );	
-	} else {
-		//template monitor rules
-		$file = preg_replace('/\.t$/','',$file);
-	}
-	
-	$functions = load_template($file ?: TOPLEVEL_FILE);
-	
-	if(!@$functions[$func_name])
-		throw new Exception("cannot find template function '$func_name' in ".($file ?: TOPLEVEL_FILE));
-	
-	$func = $functions[$func_name];
+	$func = cache_load_template($file, $func_name);
 	$func($cmd, $args, new smap(null, $params ?: $_REQUEST));
 	return TRUE;
 }
