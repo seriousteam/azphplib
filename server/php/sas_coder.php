@@ -24,6 +24,7 @@ function sas_coder_DecodeValList( $s ) {
 function sas_coder_DecodeMap( $s ) {
 	$a = sas_coder_DecodeValList( $s );
 	$r = [];
+	if($a)
 	foreach($a as $v)
 		if(preg_match('/([^:]*+(?:::[^:]*+)*):([^:]*+(?:::[^:]*+)*)/s', $v, $m))
 			$r[str_replace('::',':',$m[1])] = str_replace('::',':', $m[2]);
