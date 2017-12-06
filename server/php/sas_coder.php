@@ -18,6 +18,7 @@ function sas_coder_Map($a) {
 }
 
 function sas_coder_DecodeValList( $s ) {
+	if(!is_string($s)) return []; 
 	preg_match_all('/(?<=_)[^~]*+(?:~~[^~]*+)*(?=~)/s', $s, $m);
 	return array_map(function($e) { return str_replace('~~','~', $e); }, $m[0]);
 }
