@@ -1247,6 +1247,20 @@ function Vcheck($value, $expr) {
 						: $expr;
 	return $value;
 }
+function VminSS($value, $expr) {
+	$expr = (string)$value >= $expr;
+	$value->run['check'] = isset($value->run['check']) ? 
+						$value->run['check'] && $expr
+						: $expr;
+	return $value;
+}
+function VmaxSS($value, $expr) {
+	$expr = (string)$value <= $expr;
+	$value->run['check'] = isset($value->run['check']) ? 
+						$value->run['check'] && $expr
+						: $expr;
+	return $value;
+}
 function Attr($value, $name, $expr) {
 	if($value instanceof namedString) {
 		$value->attrs[] = "$name=\"".htmlspecialchars($expr)."\"";
@@ -1282,6 +1296,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	$menu = '';
 	$table_name = '';
 	$rid = '';
+
 	if($_ENV_UI_THEME) {
 		$attrs .= ' theme="'.$_ENV_UI_THEME.'"';
 	}
@@ -1435,7 +1450,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 	if(!$name) {//field doesn't exist
 		$value_only = true;
 	}
-	
+		
 	$value = htmlspecialchars( $value );
 	$rid = htmlspecialchars( $rid );
 
