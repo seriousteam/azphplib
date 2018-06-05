@@ -324,7 +324,7 @@ ST;
 				$inside = false; if(substr($tag,-1)==='.') { $inside = true; $tag = substr($tag,0, -1); }
 				switch($tag) {
 				case '*': { //nearest tag
-						if(preg_match('/<([^\s>]+)[^>]*>\s*$/s', $to_process, $tg_split))
+						if(preg_match('/<([^!\s>]+)[^>]*>\s*$/s', $to_process, $tg_split))
 							$tag = $tg_split[1];
 					} 
 					// go next!!!
