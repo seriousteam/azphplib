@@ -146,6 +146,15 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 				'mssql' => "CAST(CURRENT_TIMESTAMP AS DATE)", //servel local
 				'mysql' => "CURRENT_DATE", //server local
 				],
+		'LPAD_NUM' => [
+				'pgsql' => "LPAD$1($2)::text$3$4,chr(48)$5",
+				'mssql' => "REVERSE(REPLACE( CAST$1 REVERSE($2) AS CHAR($4) $5,' ',char(48)))",
+				],
+		'ROWNUM.' => [
+				'pgsql' => "ROW_NUMBER() OVER ()",
+				'oracle' => "ROWNUM",
+				'mssql' => "ROW_NUMBER() OVER (ORDER BY (SELECT NULL))",
+				],
 		'TRUE.' => [ 
 				'pgsql' => "TRUE",
 				'oracle' => "1",
