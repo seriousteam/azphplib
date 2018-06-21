@@ -675,16 +675,19 @@ EEE;
 						} else if(preg_match("/^\{(.*)\}$/s", $c, $m)) {
 								$a = explode(';', $ins = $m[1]);
 								$r = [];
+								$vprev = '';
 								foreach($a as $p) {
 										preg_match('/^\s*([^:=]*)(\s*:\s*([^:=]+))?(\s*=(.*))?/s', $p, $m);
 										$vname = $m[1];
 										$vagg = $m[3];
 										$vfunc = $m[5];
+										$vfunc = preg_replace('/\[\.\]/', "[$vprev]", $vfunc);
 										$vfunc = preg_replace('/\[:N\]/', '+((string)($value)?:0)', $vfunc);
 										$vfunc = preg_replace('/\[:([a-zA-Z0-9_]*)\]/', '$value', $vfunc);
 										$vfunc = preg_replace('/\[(\S+?)\]/', '$ctx->{\'$1\'}->value', $vfunc);
-									$vfunc = $vfunc ? "function (\$ctx, \$value) { return $vfunc; }" : 'null';
+										$vfunc = $vfunc ? "function (\$ctx, \$value) { return $vfunc; }" : 'null';
 										$r[] = "[ \"$vname\", \"$vagg\", $vfunc ]";
+										$vprev = $vname;
 									}
 									$r = implode(', ', $r);
 									$res = "\$dynVals->def( $res, [ $r ], \"$ins\" )";
