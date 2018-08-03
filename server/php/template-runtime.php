@@ -1575,14 +1575,15 @@ function xlsx_file_output_old_variant($file_name, $templ) {
 		$elem['r'] = ++$rn;
 		foreach($r as $k=>$v) {
 		  $e = $elem->addChild('c');
-		  $e['r'] = $crefs[++$c] . $rn;
+		  $e['r'] = trim($crefs[(int)($c/26)] . $crefs[(int)($c%26)+1])  . $rn;
+		  ++$c;
 		  if(preg_match('/^\d+(\.\d*)?$/',$v)) {
 			  $e['t'] = 'n';
 			  $e->v = $v;
 		  } else {
 			  $e['t'] = 'inlineStr';
 			  $e->is = '';
-			  $e->is->t = preg_replace('/\s+/u',' ',$v);
+			  $e->is->t = rtrim(preg_replace('/\s+/u',' ',$v));
 		  }
 		}
 	}
@@ -1592,6 +1593,7 @@ function xlsx_file_output_old_variant($file_name, $templ) {
 	$zip = new ZipArchive;
 	$zip->open($file);
 
+	$zip->deleteName('xl/worksheets/sheet1.xml');
 	$zip->addFromString('xl/worksheets/sheet1.xml', $data->saveXML());
 	$zip->close();
 
@@ -1605,6 +1607,8 @@ function xlsx_file_output_old_variant($file_name, $templ) {
 	unlink($file);
 }
 function xlsx_file_output($file_name, $templ) {
+	if(preg_match('/\s*<\?xml\s/', $templ))
+		return xlsx_file_output_old_variant($file_name, $templ);
 	require_once(__DIR__.'/htmltoexcl.php');
 	htmlToExcel($templ,$file_name.'.xlsx',__DIR__.'/sample.xlsx');
 }
