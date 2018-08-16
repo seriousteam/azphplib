@@ -596,7 +596,6 @@ function CURRENT_URI() {
 
 //function round
 //function rel_round($v, $decs) {}
-function ru_date($v) { return preg_replace('/^(\s*)(\d\d\d\d)-(\d\d)-(\d\d)/', '$1$4.$3.$2', $v); }
 function to_client_tz($v) { return $v ? 
 		gmdate("Y-m-d H:i:s",strtotime(substr($v,0,19)."GMT") - (@$_COOKIE['client_tzo']?:0)*60)
 		: $v
@@ -607,6 +606,7 @@ function ru_BOOL($v, $null = '') {
 	: ($v[0] === '0' ? 'нет' : 'да'); }
 
 require_once __DIR__."/ru_number.php";
+require_once __DIR__."/ru_date.php";
 
 function load_template($file) {
 	global $functions;
