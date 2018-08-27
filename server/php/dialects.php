@@ -108,6 +108,16 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 				'oracle' => 'TO_CHAR$1$2,\'yyyy-mm\')$3', 
 				'mssql' => 'LEFT$1CONVERT<varchar,$2,120),7$3', 
 				'mysql' => 'DATE_FORMAT$1$2,\'%Y-%m\'$3' ],
+		'GROUP_CONCAT' => [
+				'pgsql' => 'string_agg$1$2, \' \'$3',
+				'mssql' => 'dbo.GROUP_CONCAT',
+				'oracle' => 'LISTAGG$1$2,\' \'$3',
+				],
+		'GROUP_CONCAT_D' => [
+				'pgsql' => 'string_agg',
+				'mssql' => 'dbo.GROUP_CONCAT_D',
+				'oracle' => 'LISTAGG',
+				],
 		'MONTHS_BETWEEN' => [
 				'pgsql' => 
 						"$1 SELECT DATE_PART('year', mbw.d1)*12 + DATE_PART('month', mbw.d1) - DATE_PART('year', mbw.d2)*12 - DATE_PART('month', mbw.d2) FROM ( SELECT $2 AS d1 $3 $4 AS d2 ) mbw $5",
@@ -659,5 +669,61 @@ BEGIN
 
 END
 
+
+*/
+/*
+https://github.com/orlando-colamatteo/ms-sql-server-group-concat-sqlclr/blob/master/GroupConcat/Installation%20Scripts/GroupConcatInstallation.sql
+
+dbo.GROUP_CONCAT(VALUE NVARCHAR(4000))
+--------------------------------------
+Description
+  Aggregate function accepts strings to be aggregated
+  and produces a comma-delimited list of grouped strings.
+Arguments
+  VALUE: any valid string
+Return type
+  NVARCHAR(MAX)
+
+
+dbo.GROUP_CONCAT_D(VALUE NVARCHAR(4000), DELIMITER NVARCHAR(10))
+----------------------------------------------------------------
+Description
+  Aggregate function accepts strings to be aggregated and
+  a custom delimiter and produces a delimited list of grouped strings.
+Arguments
+  VALUE: any valid string
+  DELIMITER: any valid string
+Return type
+  NVARCHAR(MAX)
+
+dbo.GROUP_CONCAT_DS(VALUE NVARCHAR(4000), DELIMITER NVARCHAR(10),
+SORT_ORDER TINYINT)
+-------------------------------------------------------------------------------------
+Description
+  Aggregate function accepts strings to be aggregated, a custom delimiter
+  and a sort order and produces a delimited list of grouped strings in the
+  desired order.
+Arguments
+  VALUE: any valid string
+  DELIMITER: any valid string
+  SORT_ORDER: tinyint;
+    1 = Ascending Order,
+    2 = Descending order
+Return type
+  NVARCHAR(MAX)
+
+dbo.GROUP_CONCAT_S(VALUE NVARCHAR(4000), SORT_ORDER TINYINT)
+------------------------------------------------------------
+Description
+  Aggregate function accepts strings to be aggregated and a sort order
+  and produces a comma-delimited list of grouped strings in the desired
+  order.
+Arguments
+  VALUE: any valid string
+  SORT_ORDER: tinyint;
+    1 = Ascending Order,
+    2 = Descending order
+Return type
+  NVARCHAR(MAX)
 
 */
