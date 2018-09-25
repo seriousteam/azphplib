@@ -1462,7 +1462,7 @@ function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false
 			$value = trimZ($value);
 			break;
 		case 'DATE':
-			$value = ru_date(substr($value,0,16));
+			$value = ru_date(substr($value,0,10));
 			break;
 		default:
 	}
