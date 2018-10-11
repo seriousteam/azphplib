@@ -295,7 +295,8 @@ function make_dbspecific_select($cmd, $parsed, $dialect) {
 		case 'mssql': 
 		 if(isset($parsed->LIMIT)) {
 		    $l = $parsed->LIMIT; $parsed->LIMIT = '';
-		    $sel = preg_replace('/^(\s*SELECT\s)/i', "$1TOP $l ", $parsed );
+		    $sel = preg_replace('/^(\s*+\(?\s*+SELECT\s)/i', "$1TOP $l ", $parsed );
+		    //var_dump('!!!!!', $l, $sel);
 	 	    $parsed->LIMIT = $l;
 		 }
 		  break;
