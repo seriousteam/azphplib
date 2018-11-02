@@ -108,12 +108,12 @@ function replace_dbspecific_funcs($cmd, $dialect, $dump=false) {
 				'oracle' => 'TO_CHAR$1$2,\'yyyy-mm\')$3', 
 				'mssql' => 'LEFT$1CONVERT<varchar,$2,120),7$3', 
 				'mysql' => 'DATE_FORMAT$1$2,\'%Y-%m\'$3' ],
-		'GROUP_CONCAT' => [
+		'LISTAGG' => [
 				'pgsql' => 'string_agg$1$2, \' \'$3',
-				'mssql' => 'dbo.GROUP_CONCAT',
+				'mssql' => 'dbo.GROUP_CONCAT_D$1$2, \' \'$3',
 				'oracle' => 'LISTAGG$1$2,\' \'$3',
 				],
-		'GROUP_CONCAT_D' => [
+		'LISTAGG_D' => [
 				'pgsql' => 'string_agg',
 				'mssql' => 'dbo.GROUP_CONCAT_D',
 				'oracle' => 'LISTAGG',
