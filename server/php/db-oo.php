@@ -223,9 +223,9 @@ function execute_and_get_generated_id($stmt, $a) {
 	global $RE_ID;
 	$a = prepare_db_args($a);
 	$stmt->execute($a);
-	if(preg_match('#^/*lastInsertedId_[a-zA-Z0-9]+:($RE_ID)#', $stmt->queryString, $m)) {
-		$f = $m[0];
-		return $f($m[1]);
+	if(preg_match("/^\/\*(lastInsertedId_[a-zA-Z0-9]+):($RE_ID)/", $stmt->queryString, $m)) {
+		$f = $m[1];
+		return $f($m[2]);
 	}
 	return $stmt->columnCount() ? $stmt->fetchColumn() : NULL;
 }
