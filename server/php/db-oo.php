@@ -75,8 +75,9 @@ function __recPrepare($dbh, $cmd) {
 	"SELECT $m[1]" : $cmd;
   $stmt = $dbh->prepare($cmd2);
   $substmts = [];
-  foreach($cmd->subselects as $i=>$subselect)
+  foreach($cmd->subselects as $i=>$subselect) {
       $substmts[$i] = __recPrepare($dbh, $subselect);
+   }
   $stmt->setFetchMode(PDO::FETCH_CLASS, 'axRow',
     			[$cmd, $substmts]); //we should set direct childs here
   return $stmt;
