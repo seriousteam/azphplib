@@ -20,9 +20,9 @@ command:
 
 function ru_number_take_word($n, $wlist) {
 	if(!is_array($wlist)) return $wlist;
-	switch((int)$n) {
-		case 1: return $wlist[0];
-		case 2: case 3: case 4: return $wlist[1];
+	switch((int)substr($n,-1)) {
+		case 1: return strlen($n) === 1 || substr($n,-2,1) !== '1' ? $wlist[0] : $wlist[2];
+		case 2: case 3: case 4: return strlen($n) === 1 || substr($n,-2,1) !== '1' ? $wlist[1] : $wlist[2];
 		default: return $wlist[2];
 	}
 }
