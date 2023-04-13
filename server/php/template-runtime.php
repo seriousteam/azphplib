@@ -1282,6 +1282,11 @@ function Vdump($v) {
 	return $v;
 }
 
+function VBOOLru($value) {
+	$value->value = (string)$value? 'да' : '';
+	return $value;
+}
+
 
 function output_editor2($value, $vtype, $attrs, $attrs2 = '', $read_only = false, $value_only = false)
 {
